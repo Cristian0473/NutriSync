@@ -617,27 +617,27 @@ def api_pacientes_buscar():
     
     # Buscar por DNI, nombres o apellidos (búsqueda flexible con ILIKE para coincidencias parciales)
     pacientes = fetch_all("""
-        SELECT DISTINCT p.id, p.dni, 
+        SELECT p.id, p.dni, 
                COALESCE(pr.nombres, '') AS nombres,
                COALESCE(pr.apellidos, '') AS apellidos,
                p.sexo, TO_CHAR(p.fecha_nac,'YYYY-MM-DD') AS fecha_nac,
-               p.telefono, u.email AS usuario_email
+               p.telefono, u.email AS usuario_email,
+               CASE 
+                 WHEN p.dni = %s THEN 1
+                 WHEN p.dni LIKE %s THEN 2
+                 WHEN pr.nombres ILIKE %s OR pr.apellidos ILIKE %s THEN 3
+                 ELSE 4
+               END AS orden_prioridad
         FROM paciente p
         LEFT JOIN pre_registro pr ON pr.dni = p.dni
         LEFT JOIN usuario u ON u.id = p.usuario_id
         WHERE p.dni ILIKE %s 
            OR pr.nombres ILIKE %s 
            OR pr.apellidos ILIKE %s
-        ORDER BY 
-          CASE 
-            WHEN p.dni = %s THEN 1
-            WHEN p.dni LIKE %s THEN 2
-            WHEN pr.nombres ILIKE %s OR pr.apellidos ILIKE %s THEN 3
-            ELSE 4
-          END,
-          p.dni
+        GROUP BY p.id, p.dni, pr.nombres, pr.apellidos, p.sexo, p.fecha_nac, p.telefono, u.email
+        ORDER BY orden_prioridad, p.dni
         LIMIT 50
-    """, (f"%{q}%", f"%{q}%", f"%{q}%", q, f"{q}%", f"{q}%", f"{q}%"))
+    """, (q, f"{q}%", f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%"))
     
     results = [{
         "id": p[0],

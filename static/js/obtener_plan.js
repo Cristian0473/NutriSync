@@ -252,18 +252,27 @@ async function buscarPacientes(query) {
     
     try {
         console.log('🔍 Buscando pacientes con query:', query);
-        const response = await fetch(`/api/pacientes/buscar?q=${encodeURIComponent(query)}`, {
+        const url = `/api/pacientes/buscar?q=${encodeURIComponent(query)}`;
+        console.log('📡 URL de búsqueda:', url);
+        
+        const response = await fetch(url, {
             credentials: 'same-origin',
             headers: {
-                'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }
         });
         
         console.log('📡 Response status:', response.status);
-        console.log('📡 Response headers:', response.headers);
         
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Error HTTP:', response.status, errorText);
+            
+            // Si es 401 o 403, podría ser problema de autenticación
+            if (response.status === 401 || response.status === 403) {
+                console.error('⚠️ Problema de autenticación. ¿Estás logueado?');
+            }
+            
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
@@ -276,11 +285,19 @@ async function buscarPacientes(query) {
             throw new Error('La respuesta del servidor no es JSON válido');
         }
         
-                const data = await response.json();
-                console.log('✅ Datos recibidos:', data);
-                return data.results || [];
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        if (!data.results) {
+            console.warn('⚠️ La respuesta no tiene campo "results":', data);
+            return [];
+        }
+        
+        console.log(`✅ ${data.results.length} pacientes encontrados`);
+        return data.results || [];
     } catch (error) {
         console.error('❌ Error buscando pacientes:', error);
+        console.error('Stack:', error.stack);
         return [];
     }
 }

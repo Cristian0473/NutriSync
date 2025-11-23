@@ -85,9 +85,6 @@
       <a class="nav-item {{ 'is-active' if active_nav=='generar_plan' else '' }}" href="{{ url_for('admin_generar_plan') }}">
         <i class="fas fa-magic"></i><span>Generar Plan</span>
       </a>
-      <a class="nav-item {{ 'is-active' if active_nav=='config' else '' }}" href="{{ url_for('admin_config') }}">
-        <i class="fas fa-cog"></i><span>Config. clínica</span>
-      </a>
 
       <div class="nav-title">Sesión</div>
       <a class="nav-item" href="{{ url_for('logout') }}">

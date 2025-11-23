@@ -8,8 +8,8 @@ gunicorn==21.2.0
 # No requiere librerías adicionales, usa smtplib (incluido en Python)
 
 # PostgreSQL driver (psycopg v3, recomendado)
-psycopg[binary]==3.1.18
-psycopg-pool==3.1.8
+psycopg[binary]>=3.2.0
+psycopg-pool>=3.2.0
 
 # Machine Learning (para modelo XGBoost de recomendaciones)
 pandas>=2.0.0

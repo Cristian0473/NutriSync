@@ -1,0 +1,2890 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Planes" %}
+{% set header_title = "Planes" %}
+{% set active_nav = "planes" %}
+
+{% block content %}
+{% if not plan_sel %}
+<div class="toolbar">
+  <div style="display: flex; gap: 12px; align-items: center; flex: 1;">
+    <div class="searchbox" style="flex: 1; max-width: 400px;">
+      <i class="fas fa-search"></i>
+      <input type="text" id="filtroPacientes" placeholder="Buscar paciente (nombre, DNI)..." autocomplete="off">
+      <button id="btnClearFiltro" class="clear" title="Limpiar" style="display: none;">×</button>
+    </div>
+  </div>
+  <a href="{{ url_for('admin_obtener_plan') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo plan</a>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-clipboard-list"></i> Planes</h3>
+    <div id="paginationInfo" style="font-size: 14px; color: #6b7280;"></div>
+  </div>
+  <div class="card-body">
+    {% if pacientes_agrupados %}
+    <div class="pacientes-planes-list" id="pacientesList">
+      <!-- Los pacientes se renderizarán dinámicamente con JavaScript -->
+    </div>
+    {% else %}
+    <div class="empty">No hay planes registrados.</div>
+    {% endif %}
+    
+    <!-- Paginación -->
+    <div id="paginationControls" class="pagination-wrapper" style="display: none; margin-top: 24px; display: flex; justify-content: center; align-items: center; gap: 12px;">
+      <button id="btnPrevPage" class="btn btn-sm" disabled>
+        <i class="fas fa-chevron-left"></i> Anterior
+      </button>
+      <span id="pageInfo" style="font-size: 14px; color: #6b7280;"></span>
+      <button id="btnNextPage" class="btn btn-sm">
+        Siguiente <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if plan_sel %}
+<!-- ====== RESUMEN DEL PACIENTE ====== -->
+<div class="content-card" style="margin-bottom: 24px;">
+  <div class="card-header" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 16px;">
+    <h3 style="margin: 0; color: #1f2937;"><i class="fas fa-user-circle" style="color: #3b82f6;"></i> Resumen del Paciente</h3>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+      <!-- Información Personal -->
+      <div style="padding: 16px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #3b82f6;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Información Personal</h4>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div><strong>Nombre:</strong> {{ paciente_resumen.nombre }}</div>
+          <div><strong>DNI:</strong> {{ paciente_resumen.dni }}</div>
+          {% if paciente_resumen.edad %}<div><strong>Edad:</strong> {{ paciente_resumen.edad }} años</div>{% endif %}
+          {% if paciente_resumen.sexo %}<div><strong>Sexo:</strong> {{ paciente_resumen.sexo }}</div>{% endif %}
+          {% if paciente_resumen.telefono %}<div><strong>Teléfono:</strong> {{ paciente_resumen.telefono }}</div>{% endif %}
+        </div>
+      </div>
+      
+      <!-- Antropometría -->
+      <div style="padding: 16px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #10b981;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Antropometría</h4>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% if paciente_resumen.antropometria.peso %}<div><strong>Peso:</strong> {{ paciente_resumen.antropometria.peso }} kg</div>{% endif %}
+          {% if paciente_resumen.antropometria.talla %}<div><strong>Talla:</strong> {{ paciente_resumen.antropometria.talla }} m</div>{% endif %}
+          {% if paciente_resumen.antropometria.imc %}<div><strong>IMC:</strong> {{ paciente_resumen.antropometria.imc }} kg/m²</div>{% endif %}
+          {% if paciente_resumen.antropometria.cc %}<div><strong>Circunferencia de cintura:</strong> {{ paciente_resumen.antropometria.cc }} cm</div>{% endif %}
+          {% if paciente_resumen.antropometria.actividad %}<div><strong>Actividad física:</strong> {{ paciente_resumen.antropometria.actividad }}</div>{% endif %}
+          {% if paciente_resumen.antropometria.fecha_medicion %}<div style="font-size: 12px; color: #9ca3af; margin-top: 4px;"><i class="fas fa-calendar"></i> {{ paciente_resumen.antropometria.fecha_medicion }}</div>{% endif %}
+        </div>
+      </div>
+      
+      <!-- Datos Clínicos -->
+      <div style="padding: 16px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #ef4444;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Datos Clínicos</h4>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% if paciente_resumen.clinico.hba1c %}<div><strong>HbA1c:</strong> {{ paciente_resumen.clinico.hba1c }}%</div>{% endif %}
+          {% if paciente_resumen.clinico.glucosa_ayunas %}<div><strong>Glucosa en ayunas:</strong> {{ paciente_resumen.clinico.glucosa_ayunas }} mg/dL</div>{% endif %}
+          {% if paciente_resumen.clinico.ldl %}<div><strong>LDL:</strong> {{ paciente_resumen.clinico.ldl }} mg/dL</div>{% endif %}
+          {% if paciente_resumen.clinico.trigliceridos %}<div><strong>Triglicéridos:</strong> {{ paciente_resumen.clinico.trigliceridos }} mg/dL</div>{% endif %}
+          {% if paciente_resumen.clinico.pa_sis and paciente_resumen.clinico.pa_dia %}<div><strong>Presión arterial:</strong> {{ paciente_resumen.clinico.pa_sis }}/{{ paciente_resumen.clinico.pa_dia }} mmHg</div>{% endif %}
+          {% if paciente_resumen.clinico.fecha_medicion %}<div style="font-size: 12px; color: #9ca3af; margin-top: 4px;"><i class="fas fa-calendar"></i> {{ paciente_resumen.clinico.fecha_medicion }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== CONFIGURACIÓN DEL SISTEMA ====== -->
+{% if plan_sel.metas_json_parsed %}
+{% set metas_json = plan_sel.metas_json_parsed %}
+{% set config_ajustada = metas_json.get('configuracion_ajustada', {}) %}
+{% set config_original = metas_json.get('configuracion_original', {}) %}
+{% set hay_diferencia = config_original and config_ajustada and (
+  config_original.get('kcal_objetivo') != config_ajustada.get('kcal_objetivo') or
+  config_original.get('cho_pct') != config_ajustada.get('cho_pct') or
+  config_original.get('pro_pct') != config_ajustada.get('pro_pct') or
+  config_original.get('fat_pct') != config_ajustada.get('fat_pct')
+) %}
+{% if config_ajustada or metas_json.calorias_diarias %}
+<div class="content-card" style="margin-bottom: 24px;">
+  <div class="card-header" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 16px;">
+    <h3 style="margin: 0; color: #1f2937;">
+      <i class="fas fa-cog" style="color: #8b5cf6;"></i> Configuración del Sistema
+      {% if config_ajustada.ml_disponible %}
+        <span style="font-size: 12px; font-weight: normal; color: #6b7280; margin-left: 8px;">
+          <i class="fas fa-brain" style="color: #8b5cf6;"></i> Ajustada por ML
+        </span>
+      {% endif %}
+    </h3>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+      <!-- Calorías -->
+      <div style="padding: 16px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <div style="font-size: 12px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          <i class="fas fa-fire"></i> Calorías Diarias
+        </div>
+        <div style="font-size: 24px; font-weight: 700; color: #78350f;">
+          {{ metas_json.calorias_diarias or config_ajustada.kcal_objetivo or '—' }} kcal
+        </div>
+      </div>
+      
+      <!-- Carbohidratos -->
+      <div style="padding: 16px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #10b981;">
+        <div style="font-size: 12px; font-weight: 600; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          <i class="fas fa-bread-slice"></i> Carbohidratos
+        </div>
+        <div style="font-size: 20px; font-weight: 700; color: #047857;">
+          {% if metas_json.carbohidratos_g %}
+            {{ metas_json.carbohidratos_g }}g
+          {% else %}
+            —
+          {% endif %}
+        </div>
+        <div style="font-size: 14px; color: #059669; margin-top: 4px;">
+          ({{ metas_json.carbohidratos_porcentaje or config_ajustada.cho_pct or '—' }}%)
+        </div>
+        {% if hay_diferencia and config_original.cho_pct != config_ajustada.cho_pct %}
+          <div style="font-size: 11px; color: #6b7280; margin-top: 4px; font-style: italic;">
+            Original: {{ config_original.cho_pct }}%
+          </div>
+        {% endif %}
+      </div>
+      
+      <!-- Proteínas -->
+      <div style="padding: 16px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <div style="font-size: 12px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          <i class="fas fa-drumstick-bite"></i> Proteínas
+        </div>
+        <div style="font-size: 20px; font-weight: 700; color: #78350f;">
+          {% if metas_json.proteinas_g %}
+            {{ metas_json.proteinas_g }}g
+          {% else %}
+            —
+          {% endif %}
+        </div>
+        <div style="font-size: 14px; color: #d97706; margin-top: 4px;">
+          ({{ metas_json.proteinas_porcentaje or config_ajustada.pro_pct or '—' }}%)
+        </div>
+        {% if hay_diferencia and config_original.pro_pct != config_ajustada.pro_pct %}
+          <div style="font-size: 11px; color: #6b7280; margin-top: 4px; font-style: italic;">
+            Original: {{ config_original.pro_pct }}%
+          </div>
+        {% endif %}
+      </div>
+      
+      <!-- Grasas -->
+      <div style="padding: 16px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #ef4444;">
+        <div style="font-size: 12px; font-weight: 600; color: #991b1b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          <i class="fas fa-oil-can"></i> Grasas
+        </div>
+        <div style="font-size: 20px; font-weight: 700; color: #7f1d1d;">
+          {% if metas_json.grasas_g %}
+            {{ metas_json.grasas_g }}g
+          {% else %}
+            —
+          {% endif %}
+        </div>
+        <div style="font-size: 14px; color: #dc2626; margin-top: 4px;">
+          ({{ metas_json.grasas_porcentaje or config_ajustada.fat_pct or '—' }}%)
+        </div>
+        {% if hay_diferencia and config_original.fat_pct != config_ajustada.fat_pct %}
+          <div style="font-size: 11px; color: #6b7280; margin-top: 4px; font-style: italic;">
+            Original: {{ config_original.fat_pct }}%
+          </div>
+        {% endif %}
+      </div>
+      
+      <!-- Fibra -->
+      {% if metas_json.fibra_g %}
+      <div style="padding: 16px; background: #f3e8ff; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+        <div style="font-size: 12px; font-weight: 600; color: #6b21a8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          <i class="fas fa-leaf"></i> Fibra
+        </div>
+        <div style="font-size: 20px; font-weight: 700; color: #581c87;">
+          {{ metas_json.fibra_g }}g
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Información ML -->
+      {% if config_ajustada.ml_disponible and config_ajustada.probabilidad_ml is not none %}
+      <div style="padding: 16px; background: #fce7f3; border-radius: 8px; border-left: 4px solid #ec4899;">
+        <div style="font-size: 12px; font-weight: 600; color: #9f1239; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          <i class="fas fa-brain"></i> Control Glucémico (ML)
+        </div>
+        <div style="font-size: 14px; color: #831843; margin-bottom: 4px;">
+          Probabilidad mal control: {{ "%.1f"|format(config_ajustada.probabilidad_ml * 100) }}%
+        </div>
+        {% set prob_ajustada = metas_json.get('debug_ml', {}).get('probabilidad_ajustada') or config_ajustada.probabilidad_ml %}
+        <div style="font-size: 16px; font-weight: 600; color: #9f1239; margin-top: 8px;">
+          {% if prob_ajustada > 0.6 %}
+            ⚠️ Control glucémico MALO
+          {% elif prob_ajustada > 0.4 %}
+            ⚡ Control glucémico MODERADO
+          {% else %}
+            ✅ Control glucémico BUENO
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ====== CONSTRUCTOR DE PLAN ====== -->
+<div class="content-card print-plan-container" id="constructor">
+  <div class="card-header">
+    <h3><i class="fas fa-calendar-alt"></i> Plan #{{ plan_sel.id }} — {{ plan_sel.paciente }} ({{ plan_sel.fecha_ini }} → {{ plan_sel.fecha_fin }})</h3>
+    <div id="aprendizaje-indicator" style="margin-top: 12px; padding: 12px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6; display: none;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-brain" style="color: #3b82f6;"></i>
+        <span style="font-weight: 600; color: #1e40af;">Aprendizaje Continuo:</span>
+        <span id="aprendizaje-status" style="color: #6b7280;">Verificando...</span>
+      </div>
+      <div id="aprendizaje-details" style="margin-top: 8px; font-size: 13px; color: #6b7280; display: none;">
+        <div id="aprendizaje-info"></div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <form method="post" action="{{ url_for('admin_plan_guardar', pid=plan_sel.id) }}" style="display: inline-block; margin: 0;">
+        <button type="submit" class="btn btn-sm" style="background-color: #6b7280; color: white; border: none;">
+          <i class="fas fa-save"></i> Guardar
+        </button>
+      </form>
+      <button type="button" class="btn btn-sm btn-primary" id="btnPublicarPlan" data-plan-id="{{ plan_sel.id }}">
+        <i class="fas fa-check-circle"></i> Publicar
+      </button>
+      <button class="btn btn-sm" id="btnNuevoSlot"><i class="fas fa-plus"></i> Nuevo día/tiempo</button>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if plan_por_dia and plan_por_dia|length > 0 %}
+    <!-- Vista en formato horario -->
+    <!-- Encabezado para impresión -->
+    <div class="print-header" style="display: none;">
+      <h1>Plan Nutricional - {{ plan_sel.paciente_nombre if plan_sel else 'Paciente' }}</h1>
+      <div class="plan-info">
+        Plan #{{ plan_sel.id if plan_sel else 'N/A' }} | DNI: {{ plan_sel.paciente_dni if plan_sel else 'N/A' }}
+      </div>
+      {% set dias_ordenados = plan_por_dia.keys()|sort|list %}
+      {% if dias_ordenados|length > 0 %}
+      <div class="plan-info">
+        Período: {{ dias_ordenados[0] }} al {{ dias_ordenados[-1] }}
+      </div>
+      {% endif %}
+    </div>
+    
+    <div class="plan-schedule-view">
+      {% set dias_ordenados = plan_por_dia.keys()|sort|list %}
+      {% set num_dias = dias_ordenados|length %}
+      {% set total_semanas = (num_dias / 7)|round(0, 'ceil')|int %}
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 16px;">
+        {% if total_semanas > 1 %}
+        <div class="pagination-controls no-print">
+          <button class="pagination-btn" id="prevWeek" onclick="cambiarSemana(-1)">
+            <i class="fas fa-chevron-left"></i> Anterior
+          </button>
+          <span class="week-info">
+            Semana <span id="currentWeek">1</span> de {{ total_semanas }}
+          </span>
+          <button class="pagination-btn" id="nextWeek" onclick="cambiarSemana(1)">
+            Siguiente <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        {% endif %}
+        <button class="btn btn-primary no-print" onclick="window.print()" style="padding: 8px 16px;">
+          <i class="fas fa-print"></i> Imprimir Plan
+        </button>
+      </div>
+      <div class="leyenda-grupos">
+        <span style="background:#8b5cf6; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Cereales</span>
+        <span style="background:#10b981; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Verduras</span>
+        <span style="background:#f59e0b; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Frutas</span>
+        <span style="background:#06b6d4; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Lácteos</span>
+        <span style="background:#ef4444; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Carnes</span>
+        <span style="background:#ec4899; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Azúcares</span>
+        <span style="background:#f97316; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Grasas</span>
+      </div>
+      
+      <div class="schedule-grid-wrapper">
+        <div class="schedule-grid" id="scheduleGrid" data-total-dias="{{ num_dias }}" data-total-semanas="{{ total_semanas }}">
+          <!-- El contenido se generará dinámicamente con JavaScript -->
+        </div>
+      </div>
+      
+      
+      <script>
+        // Datos del plan
+        const planData = {
+          planPorDia: {{ plan_por_dia|tojson|safe }},
+          diasOrdenados: {{ dias_ordenados|tojson|safe }},
+          numDias: {{ num_dias }},
+          totalSemanas: {{ total_semanas }},
+          metasNutricionales: {{ plan_sel.metas_json|safe if plan_sel.metas_json else '{}' }}
+        };
+        
+        let semanaActual = 1;
+        
+        // Función para calcular totales nutricionales por día
+        function calcularTotalesPorDia(diaFecha) {
+          const dia = planData.planPorDia[diaFecha] || {};
+          const totales = {
+            kcal: 0,
+            cho: 0,
+            pro: 0,
+            fat: 0,
+            fibra: 0,
+            cg: 0
+          };
+          
+          // Iterar por todos los tiempos de comida
+          ['des', 'mm', 'alm', 'mt', 'cena'].forEach(tiempo => {
+            const comida = dia[tiempo];
+            if (comida && comida.alimentos) {
+              comida.alimentos.forEach(alimento => {
+                totales.kcal += parseFloat(alimento.kcal || 0);
+                totales.cho += parseFloat(alimento.cho || 0);
+                totales.pro += parseFloat(alimento.pro || 0);
+                totales.fat += parseFloat(alimento.fat || 0);
+                totales.fibra += parseFloat(alimento.fibra || 0);
+                totales.cg += parseFloat(alimento.cg || 0);
+              });
+            }
+          });
+          
+          return totales;
+        }
+        
+        // Función para obtener las metas nutricionales
+        function obtenerMetas() {
+          const metas = planData.metasNutricionales || {};
+          return {
+            kcal: parseFloat(metas.calorias_diarias || metas.calorias || 2000),
+            cho: parseFloat(metas.carbohidratos_g || metas.carbohidratos || 250),
+            pro: parseFloat(metas.proteinas_g || metas.proteinas || 100),
+            fat: parseFloat(metas.grasas_g || metas.grasas || 65),
+            fibra: parseFloat(metas.fibra_g || metas.fibra || 25)
+          };
+        }
+        
+        // Función para calcular porcentaje de cumplimiento
+        function calcularPorcentaje(actual, meta) {
+          if (!meta || meta === 0) return 0;
+          return Math.round((actual / meta) * 100);
+        }
+        
+        // Función para obtener el ancho de la barra (máximo 100% para visualización)
+        function obtenerAnchoBarra(porcentaje) {
+          return Math.min(porcentaje, 100);
+        }
+        
+        // Función para obtener porcentaje mostrado (máximo 100% para no mostrar valores muy altos)
+        function obtenerPorcentajeMostrado(porcentaje) {
+          return Math.min(porcentaje, 100);
+        }
+        
+        // Función para obtener color según cumplimiento
+        function obtenerColorCumplimiento(porcentaje, macronutriente = 'kcal') {
+          let colorBase;
+          if (macronutriente === 'cho') colorBase = '#3b82f6'; // Azul
+          else if (macronutriente === 'pro') colorBase = '#8b5cf6'; // Púrpura
+          else if (macronutriente === 'fat') colorBase = '#f59e0b'; // Naranja/Ámbar
+          else colorBase = '#10b981'; // Verde por defecto para Kcal
+
+          if (porcentaje >= 90 && porcentaje <= 100) return colorBase; // Cumplimiento óptimo
+          if (porcentaje > 100) return '#10b981'; // Verde si excede (pero aún cumple)
+          if (porcentaje >= 80 && porcentaje < 90) return '#f59e0b'; // Amarillo: ligeramente bajo
+          return '#ef4444'; // Rojo: muy bajo
+        }
+        
+        // Función para determinar si cumple
+        // Criterio: Todos los macronutrientes (Kcal, CHO, PRO, FAT) deben estar entre 83% y 100%
+        function cumpleObjetivos(porcentajes) {
+          if (typeof porcentajes === 'number') {
+            // Si se pasa solo el promedio (compatibilidad hacia atrás)
+            return porcentajes >= 83 && porcentajes <= 100;
+          }
+          // Criterio: todos entre 83% y 100%
+          // Asegurar que los porcentajes sean números y comparar correctamente
+          const kcal = Number(porcentajes.kcal) || 0;
+          const cho = Number(porcentajes.cho) || 0;
+          const pro = Number(porcentajes.pro) || 0;
+          const fat = Number(porcentajes.fat) || 0;
+          return (
+            kcal >= 83 && kcal <= 100 &&
+            cho >= 83 && cho <= 100 &&
+            pro >= 83 && pro <= 100 &&
+            fat >= 83 && fat <= 100
+          );
+        }
+        
+        // Función para obtener color del promedio (verde si cumple, rojo si no)
+        function obtenerColorPromedio(porcentajes) {
+          return cumpleObjetivos(porcentajes) ? '#10b981' : '#ef4444';
+        }
+        
+        // Función para obtener texto del promedio
+        function obtenerTextoPromedio(porcentajes) {
+          return cumpleObjetivos(porcentajes) ? 'Cumple' : 'No cumple';
+        }
+        
+        function renderizarSemana(semana) {
+          const grid = document.getElementById('scheduleGrid');
+          if (!grid) return;
+          
+          const inicioSemana = (semana - 1) * 7;
+          const finSemana = Math.min(semana * 7, planData.numDias);
+          const diasSemana = planData.diasOrdenados.slice(inicioSemana, finSemana);
+          const numDiasSemana = diasSemana.length;
+          
+          // Establecer columnas del grid
+          grid.style.gridTemplateColumns = `100px repeat(${numDiasSemana}, minmax(200px, 1fr))`;
+          
+          let html = '';
+          
+          // Encabezado de días
+          html += '<div class="time-header">Hora</div>';
+          diasSemana.forEach((diaFecha, index) => {
+            const diaNum = inicioSemana + index + 1;
+            // Calcular análisis nutricional del día
+            const totales = calcularTotalesPorDia(diaFecha);
+            const metas = obtenerMetas();
+            const porcentajes = {
+              kcal: calcularPorcentaje(totales.kcal, metas.kcal),
+              cho: calcularPorcentaje(totales.cho, metas.cho),
+              pro: calcularPorcentaje(totales.pro, metas.pro),
+              fat: calcularPorcentaje(totales.fat, metas.fat),
+              fibra: calcularPorcentaje(totales.fibra, metas.fibra)
+            };
+            // Calcular promedio de cumplimiento (promedio simple de los 4 macronutrientes principales)
+            // El "cumplimiento" es el promedio de: Kcal, CHO, PRO, FAT (sin fibra, igual que backend)
+            // Criterio: Todos deben estar entre 83% y 100% para "Cumple"
+            const promedio = Math.round((porcentajes.kcal + porcentajes.cho + porcentajes.pro + porcentajes.fat) / 4);
+            
+            // Verificar que TODOS los macronutrientes estén entre 83% y 100% (criterio del backend)
+            const todosCumplen = (
+              porcentajes.kcal >= 83 && porcentajes.kcal <= 100 &&
+              porcentajes.cho >= 83 && porcentajes.cho <= 100 &&
+              porcentajes.pro >= 83 && porcentajes.pro <= 100 &&
+              porcentajes.fat >= 83 && porcentajes.fat <= 100
+            );
+            
+            html += `<div class="day-header">
+              <div>Día ${diaNum}<br><small>${diaFecha}</small></div>
+              <div class="day-nutrition-summary" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 10px;">
+                <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span style="color: #6b7280;">Kcal</span>
+                      <span style="color: ${obtenerColorCumplimiento(porcentajes.kcal)}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.kcal)}%</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                      <div style="width: ${obtenerAnchoBarra(porcentajes.kcal)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.kcal)}; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center; font-weight: 600;">${totales.kcal.toFixed(0)} / ${metas.kcal.toFixed(0)} kcal</div>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span style="color: #6b7280;">CHO</span>
+                      <span style="color: ${obtenerColorCumplimiento(porcentajes.cho, 'cho')}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.cho)}%</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                      <div style="width: ${obtenerAnchoBarra(porcentajes.cho)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.cho, 'cho')}; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center;">${totales.cho.toFixed(0)}/${metas.cho.toFixed(0)}g</div>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span style="color: #6b7280;">PRO</span>
+                      <span style="color: ${obtenerColorCumplimiento(porcentajes.pro, 'pro')}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.pro)}%</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                      <div style="width: ${obtenerAnchoBarra(porcentajes.pro)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.pro, 'pro')}; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center;">${totales.pro.toFixed(0)}/${metas.pro.toFixed(0)}g</div>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span style="color: #6b7280;">FAT</span>
+                      <span style="color: ${obtenerColorCumplimiento(porcentajes.fat, 'fat')}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.fat)}%</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                      <div style="width: ${obtenerAnchoBarra(porcentajes.fat)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.fat, 'fat')}; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center;">${totales.fat.toFixed(0)}/${metas.fat.toFixed(0)}g</div>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          });
+          
+          // Filas de horarios
+          const horarios = [
+            ['07:00', 'des', 'Desayuno'],
+            ['10:00', 'mm', 'Media Mañana'],
+            ['12:00', 'alm', 'Almuerzo'],
+            ['15:00', 'mt', 'Media Tarde'],
+            ['19:00', 'cena', 'Cena']
+          ];
+          
+          const coloresGrupo = {
+            'GRUPO1_CEREALES': '#e9d5ff',  // Morado suave
+            'GRUPO2_VERDURAS': '#d1fae5',  // Verde suave
+            'GRUPO3_FRUTAS': '#fed7aa',    // Naranja suave
+            'GRUPO4_LACTEOS': '#bfdbfe',   // Azul suave
+            'GRUPO5_CARNES': '#fecaca',    // Rojo suave
+            'GRUPO6_AZUCARES': '#fbcfe8',  // Rosa suave
+            'GRUPO7_GRASAS': '#fde68a'     // Amarillo suave
+          };
+          
+          const coloresGrupoBorde = {
+            'GRUPO1_CEREALES': '#c084fc',  // Morado
+            'GRUPO2_VERDURAS': '#34d399',  // Verde
+            'GRUPO3_FRUTAS': '#fb923c',    // Naranja
+            'GRUPO4_LACTEOS': '#60a5fa',   // Azul
+            'GRUPO5_CARNES': '#f87171',    // Rojo
+            'GRUPO6_AZUCARES': '#f472b6',  // Rosa
+            'GRUPO7_GRASAS': '#fbbf24'     // Amarillo
+          };
+          
+          const coloresGrupoTexto = {
+            'GRUPO1_CEREALES': '#6b21a8',  // Morado oscuro
+            'GRUPO2_VERDURAS': '#065f46',  // Verde oscuro
+            'GRUPO3_FRUTAS': '#9a3412',    // Naranja oscuro
+            'GRUPO4_LACTEOS': '#1e40af',   // Azul oscuro
+            'GRUPO5_CARNES': '#991b1b',    // Rojo oscuro
+            'GRUPO6_AZUCARES': '#9f1239',  // Rosa oscuro
+            'GRUPO7_GRASAS': '#854d0e'     // Amarillo oscuro
+          };
+          
+          horarios.forEach(([hora, tiempoCodigo, tiempoNombre]) => {
+            // Columna de horas con nombre de comida
+            html += `<div class="time-cell"><div class="time-label">${hora}</div><div class="meal-label">${tiempoNombre}</div></div>`;
+            
+            diasSemana.forEach(diaFecha => {
+              const dia = planData.planPorDia[diaFecha] || {};
+              const comida = dia[tiempoCodigo];
+              
+              if (comida && comida.detalle_id) {
+                // La celda tiene un plan_detalle (puede tener o no alimentos)
+                html += `<div class="meal-cell droppable" data-did="${comida.detalle_id}" data-dia="${diaFecha}" data-tiempo="${tiempoCodigo}">`;
+                
+                if (comida.alimentos && comida.alimentos.length > 0) {
+                  html += '<div class="meal-foods">';
+                  
+                  comida.alimentos.forEach(alimento => {
+                    const grupo = alimento.grupo || '';
+                    const colorGrupo = coloresGrupo[grupo] || '#f3f4f6';
+                    const colorBorde = coloresGrupoBorde[grupo] || '#d1d5db';
+                    const colorTexto = coloresGrupoTexto[grupo] || '#374151';
+                    let cantidadDisplay = String(alimento.cantidad || '');
+                    if (cantidadDisplay.endsWith('.00')) {
+                      cantidadDisplay = cantidadDisplay.slice(0, -3);
+                    } else if (cantidadDisplay.endsWith('.0')) {
+                      cantidadDisplay = cantidadDisplay.slice(0, -2);
+                    }
+                    
+                    const nombreCompleto = `${escapeHtml(alimento.ingrediente)} - ${cantidadDisplay}${alimento.unidad || ''}`;
+                    html += `<div class="food-item draggable" draggable="true" data-aid="${alimento.id}" data-did="${comida.detalle_id}" data-ingrediente-id="${alimento.ingrediente_id}" data-nombre="${escapeHtml(alimento.ingrediente)}" data-grupo="${grupo}" data-cantidad="${alimento.cantidad}" data-unidad="${alimento.unidad || ''}" data-kcal="${alimento.kcal || ''}" data-cho="${alimento.cho || ''}" data-pro="${alimento.pro || ''}" data-fat="${alimento.fat || ''}" data-fibra="${alimento.fibra || ''}" data-cg="${alimento.cg || ''}" data-ig="${alimento.ig || ''}" title="${nombreCompleto}" style="background: ${colorGrupo}; color: ${colorTexto}; border: 1px solid ${colorBorde}; padding: 6px 8px; border-radius: 4px; margin: 3px 0; font-size: 11px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; cursor: move; min-height: 32px; height: 32px;">`;
+                    html += `<span class="food-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px;">${nombreCompleto}</span>`;
+                    html += '<div class="food-actions" style="flex-shrink: 0;">';
+                    html += `<button class="btn-icon-xs js-view-food" data-aid="${alimento.id}" title="Ver detalles" style="margin-right: 4px; color: #3b82f6;">`;
+                    html += '<i class="fas fa-eye"></i></button>';
+                    html += `<button class="btn-icon-xs js-intercambiar-food" data-aid="${alimento.id}" data-ingrediente-id="${alimento.ingrediente_id}" data-cantidad="${alimento.cantidad}" data-unidad="${alimento.unidad || ''}" title="Intercambiar ingrediente" style="margin-right: 4px;">`;
+                    html += '<i class="fas fa-exchange-alt"></i></button>';
+                    html += `<button class="btn-icon-xs js-delete-food" data-aid="${alimento.id}" title="Eliminar alimento" style="color: #ef4444;">`;
+                    html += '<i class="fas fa-trash"></i></button>';
+                    html += '</div></div>';
+                  });
+                  
+                  html += '</div>';
+                  html += `<div style="margin-top: 8px; text-align: center;">`;
+                  html += `<button class="btn btn-xs js-add-food" data-did="${comida.detalle_id}" title="Agregar alimento" style="width: 100%; background-color: #e0e7ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: all 0.2s ease;">`;
+                  html += '<i class="fas fa-plus"></i> Agregar alimento</button>';
+                  html += '</div>';
+                } else {
+                  // Celda tiene plan_detalle pero está vacía
+                  html += '<div class="no-meal" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 60px;">';
+                  html += '<span>—</span>';
+                  html += `<button class="btn btn-xs js-add-food" data-did="${comida.detalle_id}" title="Agregar alimento" style="background-color: #e0e7ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: all 0.2s ease;">`;
+                  html += '<i class="fas fa-plus"></i> Agregar alimento</button>';
+                  html += '</div>';
+                }
+                
+                html += '</div>';
+              } else {
+                // Celda no tiene plan_detalle (celda completamente vacía)
+                html += `<div class="meal-cell droppable" data-dia="${diaFecha}" data-tiempo="${tiempoCodigo}">`;
+                html += '<div class="no-meal" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 60px;">';
+                html += '<span>—</span>';
+                html += `<button class="btn btn-xs js-add-slot" data-dia="${diaFecha}" data-tiempo="${tiempoCodigo}" title="Agregar comida" style="background-color: #e0e7ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: all 0.2s ease;">`;
+                html += '<i class="fas fa-plus"></i> Agregar comida</button>';
+                html += '</div></div>';
+              }
+            });
+          });
+          
+          grid.innerHTML = html;
+          
+          // Re-inicializar event listeners para los botones de edición
+          inicializarEventListenersPlan();
+        }
+        
+        // Función para escapar HTML
+        function escapeHtml(text) {
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        }
+        
+        function inicializarEventListenersPlan() {
+          // VER ALIMENTO
+          document.querySelectorAll('.js-view-food').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const foodItem = btn.closest('.food-item');
+              if (!foodItem) return;
+              
+              const nombre = foodItem.dataset.nombre || '';
+              const grupo = foodItem.dataset.grupo || '';
+              const cantidad = foodItem.dataset.cantidad || '';
+              const unidad = foodItem.dataset.unidad || '';
+              const kcal = foodItem.dataset.kcal || '';
+              const cho = foodItem.dataset.cho || '';
+              const pro = foodItem.dataset.pro || '';
+              const fat = foodItem.dataset.fat || '';
+              const fibra = foodItem.dataset.fibra || '';
+              const cg = foodItem.dataset.cg || '';
+              const ig = foodItem.dataset.ig || '';
+              
+              // Mapear nombres de grupos
+              const nombresGrupos = {
+                'GRUPO1_CEREALES': 'Cereales',
+                'GRUPO2_VERDURAS': 'Verduras',
+                'GRUPO3_FRUTAS': 'Frutas',
+                'GRUPO4_LACTEOS': 'Lácteos',
+                'GRUPO5_CARNES': 'Carnes',
+                'GRUPO6_AZUCARES': 'Azúcares',
+                'GRUPO7_GRASAS': 'Grasas'
+              };
+              
+              document.getElementById('detalleNombre').textContent = nombre;
+              document.getElementById('detalleGrupo').textContent = nombresGrupos[grupo] || grupo;
+              document.getElementById('detalleCantidad').textContent = cantidad ? parseFloat(cantidad).toString() : 'N/A';
+              document.getElementById('detalleUnidad').textContent = unidad || 'g';
+              document.getElementById('detalleKcal').textContent = kcal ? parseFloat(kcal).toFixed(2) : 'N/A';
+              document.getElementById('detalleCho').textContent = cho ? parseFloat(cho).toFixed(2) : 'N/A';
+              document.getElementById('detallePro').textContent = pro ? parseFloat(pro).toFixed(2) : 'N/A';
+              document.getElementById('detalleFat').textContent = fat ? parseFloat(fat).toFixed(2) : 'N/A';
+              document.getElementById('detalleFibra').textContent = fibra ? parseFloat(fibra).toFixed(2) : 'N/A';
+              document.getElementById('detalleCg').textContent = cg ? parseFloat(cg).toFixed(2) : 'N/A';
+              
+              if (ig) {
+                document.getElementById('detalleIg').textContent = ig;
+                document.getElementById('detalleIgRow').style.display = 'block';
+              } else {
+                document.getElementById('detalleIgRow').style.display = 'none';
+              }
+              
+              openModal('#modalVerAlimento');
+            });
+          });
+          
+          // AGREGAR ALIMENTO
+          document.querySelectorAll('.js-add-food').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const did = btn.dataset.did;
+              const f = document.getElementById('formFood');
+              f.action = "{{ url_for('admin_plan_alimento_nuevo', did=0) }}".replace('/0', '/' + did);
+              document.getElementById('ttlFood').innerText = "Agregar alimento";
+              document.getElementById('fd_did').value = did;
+              
+              // Obtener tiempo de la celda
+              const mealCell = btn.closest('.meal-cell');
+              const tiempo = mealCell ? mealCell.dataset.tiempo : '';
+              document.getElementById('fd_tiempo').value = tiempo || '';
+              
+              // Limpiar campos
+              document.getElementById('fd_ing_buscar').value = '';
+              document.getElementById('fd_ing').value = '';
+              document.getElementById('fd_ingredienteSeleccionadoInfo').style.display = 'none';
+              document.getElementById('fd_resultadosIngredientes').style.display = 'none';
+              ['fd_cant', 'fd_uni', 'fd_kcal', 'fd_cho', 'fd_pro', 'fd_fat', 'fd_fibra', 'fd_cg'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.value = '';
+              });
+              
+              openModal('#modalFood');
+            });
+          });
+          
+          // INTERCAMBIAR ALIMENTO
+          document.querySelectorAll('.js-intercambiar-food').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const aid = btn.dataset.aid;
+              const ingredienteId = btn.dataset.ingredienteId;
+              const cantidad = btn.dataset.cantidad;
+              const unidad = btn.dataset.unidad;
+              
+              // Obtener tiempo y día de la celda
+              const mealCell = btn.closest('.meal-cell');
+              const tiempo = mealCell ? mealCell.dataset.tiempo : '';
+              const dia = mealCell ? mealCell.dataset.dia : '';
+              
+              document.getElementById('intercambiarAid').value = aid;
+              document.getElementById('intercambiarCantidad').textContent = `${cantidad}${unidad || ''}`;
+              document.getElementById('intercambiarTiempo').value = tiempo || '';
+              document.getElementById('intercambiarDia').value = dia || '';
+              document.getElementById('buscarIngredienteInput').value = '';
+              document.getElementById('ingredienteSeleccionadoId').value = '';
+              document.getElementById('ingredienteSeleccionadoInfo').style.display = 'none';
+              document.getElementById('resultadosIngredientes').style.display = 'none';
+              document.getElementById('sugerenciaInteligenteIntercambio').style.display = 'none';
+              document.getElementById('btnConfirmarIntercambio').disabled = true;
+              
+              // Cargar sugerencia inteligente para intercambio
+              cargarSugerenciaIntercambio(ingredienteId, tiempo, dia);
+              
+              openModal('#modalIntercambiar');
+            });
+          });
+          
+          // ELIMINAR ALIMENTO
+          document.querySelectorAll('.js-delete-food').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const aid = btn.dataset.aid;
+              const confirmado = await mostrarConfirmacion(
+                '¿Eliminar este alimento del plan?',
+                'Confirmar eliminación',
+                'delete'
+              );
+              if (confirmado) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ url_for('admin_plan_alimento_borrar', aid=0) }}".replace('/0', '/' + aid);
+                document.body.appendChild(form);
+                form.submit();
+              }
+            });
+          });
+          
+          // AGREGAR SLOT
+          document.querySelectorAll('.js-add-slot').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const f = document.getElementById('formSlot');
+              f.action = "{{ url_for('admin_plan_detalle_nuevo', pid=plan_sel.id if plan_sel else 0) }}";
+              document.getElementById('ttlSlot').innerText = "Nuevo día/tiempo";
+              document.getElementById('sl_dia').value = btn.dataset.dia;
+              document.getElementById('sl_tiempo').value = btn.dataset.tiempo;
+              openModal('#modalSlot');
+            });
+          });
+          
+          // DRAG AND DROP
+          let draggedElement = null;
+          
+          document.querySelectorAll('.draggable').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+              draggedElement = item;
+              item.style.opacity = '0.5';
+              e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            item.addEventListener('dragend', () => {
+              item.style.opacity = '1';
+              document.querySelectorAll('.droppable').forEach(cell => {
+                cell.classList.remove('drag-over');
+              });
+            });
+          });
+          
+          document.querySelectorAll('.droppable').forEach(cell => {
+            cell.addEventListener('dragover', (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              cell.classList.add('drag-over');
+            });
+            
+            cell.addEventListener('dragleave', () => {
+              cell.classList.remove('drag-over');
+            });
+            
+            cell.addEventListener('drop', (e) => {
+              e.preventDefault();
+              cell.classList.remove('drag-over');
+              
+              if (draggedElement && draggedElement.classList.contains('draggable')) {
+                const aid = draggedElement.dataset.aid;
+                const nuevoDid = cell.dataset.did;
+                const dia = cell.dataset.dia;
+                const tiempo = cell.dataset.tiempo;
+                
+                if (aid) {
+                  const form = document.createElement('form');
+                  form.method = 'POST';
+                  form.action = "{{ url_for('admin_plan_alimento_mover', aid=0) }}".replace('/0', '/' + aid);
+                  
+                  if (nuevoDid) {
+                    // La celda ya tiene un plan_detalle, usar su ID
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'plan_detalle_id';
+                    input.value = nuevoDid;
+                    form.appendChild(input);
+                  } else if (dia && tiempo) {
+                    // La celda está vacía, enviar día y tiempo para que se cree el plan_detalle
+                    const inputDia = document.createElement('input');
+                    inputDia.type = 'hidden';
+                    inputDia.name = 'dia';
+                    inputDia.value = dia;
+                    form.appendChild(inputDia);
+                    
+                    const inputTiempo = document.createElement('input');
+                    inputTiempo.type = 'hidden';
+                    inputTiempo.name = 'tiempo';
+                    inputTiempo.value = tiempo;
+                    form.appendChild(inputTiempo);
+                  }
+                  
+                  document.body.appendChild(form);
+                  form.submit();
+                }
+              }
+              
+              draggedElement = null;
+            });
+          });
+        }
+        
+        function cambiarSemana(direccion) {
+          const nuevaSemana = semanaActual + direccion;
+          
+          if (nuevaSemana >= 1 && nuevaSemana <= planData.totalSemanas) {
+            semanaActual = nuevaSemana;
+            
+            // Actualizar indicador de semana
+            const currentWeekEl = document.getElementById('currentWeek');
+            if (currentWeekEl) {
+              currentWeekEl.textContent = semanaActual;
+            }
+            
+            // Actualizar botones de paginación
+            const prevBtn = document.getElementById('prevWeek');
+            const nextBtn = document.getElementById('nextWeek');
+            if (prevBtn) prevBtn.disabled = semanaActual === 1;
+            if (nextBtn) nextBtn.disabled = semanaActual === planData.totalSemanas;
+            
+            // Renderizar la semana
+            renderizarSemana(semanaActual);
+          }
+        }
+        
+        // Función para mostrar todas las semanas para impresión
+        function mostrarTodasLasSemanasParaImpresion() {
+          const gridContainer = document.querySelector('.schedule-grid-wrapper');
+          if (!gridContainer) return;
+          
+          const semanaActualGuardada = semanaActual;
+          const contenidoOriginal = gridContainer.innerHTML;
+          
+          let html = '';
+          
+          // Renderizar todas las semanas
+          for (let semana = 1; semana <= planData.totalSemanas; semana++) {
+            const inicioSemana = (semana - 1) * 7;
+            const finSemana = Math.min(semana * 7, planData.numDias);
+            const diasSemana = planData.diasOrdenados.slice(inicioSemana, finSemana);
+            const numDiasSemana = diasSemana.length;
+            
+            html += `<div class="schedule-grid" data-semana="${semana}" style="page-break-after: ${semana < planData.totalSemanas ? 'always' : 'auto'}; margin-bottom: ${semana < planData.totalSemanas ? '30px' : '0'}; grid-template-columns: 50px repeat(${numDiasSemana}, 1fr) !important; display: grid !important;">`;
+            html += `<div style="grid-column: 1 / -1; text-align: center; font-size: 14pt; font-weight: 700; margin-bottom: 10px; padding: 10px; background: #f3f4f6;">Semana ${semana} - Horarios de Comidas</div>`;
+            
+            // Encabezado de días
+            html += '<div class="time-header">Hora</div>';
+            diasSemana.forEach((diaFecha, index) => {
+              const diaNum = inicioSemana + index + 1;
+              // Calcular análisis nutricional del día
+              const totales = calcularTotalesPorDia(diaFecha);
+              const metas = obtenerMetas();
+              const porcentajes = {
+                kcal: calcularPorcentaje(totales.kcal, metas.kcal),
+                cho: calcularPorcentaje(totales.cho, metas.cho),
+                pro: calcularPorcentaje(totales.pro, metas.pro),
+                fat: calcularPorcentaje(totales.fat, metas.fat),
+                fibra: calcularPorcentaje(totales.fibra, metas.fibra)
+              };
+              // Calcular promedio sin fibra (igual que backend)
+              const promedio = Math.round((porcentajes.kcal + porcentajes.cho + porcentajes.pro + porcentajes.fat) / 4);
+              
+              html += `<div class="day-header">
+                <div>Día ${diaNum}<br><small>${diaFecha}</small></div>
+                <div class="day-nutrition-summary" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 10px;">
+                  <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="color: #6b7280;">Kcal</span>
+                        <span style="color: ${obtenerColorCumplimiento(porcentajes.kcal)}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.kcal)}%</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${obtenerAnchoBarra(porcentajes.kcal)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.kcal)}; transition: width 0.3s ease;"></div>
+                      </div>
+                      <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center; font-weight: 600;">${totales.kcal.toFixed(0)} / ${metas.kcal.toFixed(0)} kcal</div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="color: #6b7280;">CHO</span>
+                        <span style="color: ${obtenerColorCumplimiento(porcentajes.cho, 'cho')}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.cho)}%</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${obtenerAnchoBarra(porcentajes.cho)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.cho, 'cho')}; transition: width 0.3s ease;"></div>
+                      </div>
+                      <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center;">${totales.cho.toFixed(0)}/${metas.cho.toFixed(0)}g</div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="color: #6b7280;">PRO</span>
+                        <span style="color: ${obtenerColorCumplimiento(porcentajes.pro, 'pro')}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.pro)}%</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${obtenerAnchoBarra(porcentajes.pro)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.pro, 'pro')}; transition: width 0.3s ease;"></div>
+                      </div>
+                      <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center;">${totales.pro.toFixed(0)}/${metas.pro.toFixed(0)}g</div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="color: #6b7280;">FAT</span>
+                        <span style="color: ${obtenerColorCumplimiento(porcentajes.fat, 'fat')}; font-weight: 600;">${obtenerPorcentajeMostrado(porcentajes.fat)}%</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${obtenerAnchoBarra(porcentajes.fat)}%; height: 100%; background: ${obtenerColorCumplimiento(porcentajes.fat, 'fat')}; transition: width 0.3s ease;"></div>
+                      </div>
+                      <div style="font-size: 8px; color: #9ca3af; margin-top: 1px; text-align: center;">${totales.fat.toFixed(0)}/${metas.fat.toFixed(0)}g</div>
+                    </div>
+                  </div>
+                </div>
+              </div>`;
+            });
+            
+            // Filas de horarios
+            const horarios = [
+              ['07:00', 'des', 'Desayuno'],
+              ['10:00', 'mm', 'Media Mañana'],
+              ['12:00', 'alm', 'Almuerzo'],
+              ['15:00', 'mt', 'Media Tarde'],
+              ['19:00', 'cena', 'Cena']
+            ];
+            
+            const coloresGrupo = {
+              'GRUPO1_CEREALES': '#e9d5ff',
+              'GRUPO2_VERDURAS': '#d1fae5',
+              'GRUPO3_FRUTAS': '#fed7aa',
+              'GRUPO4_LACTEOS': '#bfdbfe',
+              'GRUPO5_CARNES': '#fecaca',
+              'GRUPO6_AZUCARES': '#fbcfe8',
+              'GRUPO7_GRASAS': '#fde68a'
+            };
+            
+            const coloresGrupoBorde = {
+              'GRUPO1_CEREALES': '#c084fc',
+              'GRUPO2_VERDURAS': '#34d399',
+              'GRUPO3_FRUTAS': '#fb923c',
+              'GRUPO4_LACTEOS': '#60a5fa',
+              'GRUPO5_CARNES': '#f87171',
+              'GRUPO6_AZUCARES': '#f472b6',
+              'GRUPO7_GRASAS': '#fbbf24'
+            };
+            
+            const coloresGrupoTexto = {
+              'GRUPO1_CEREALES': '#6b21a8',
+              'GRUPO2_VERDURAS': '#065f46',
+              'GRUPO3_FRUTAS': '#9a3412',
+              'GRUPO4_LACTEOS': '#1e40af',
+              'GRUPO5_CARNES': '#991b1b',
+              'GRUPO6_AZUCARES': '#9f1239',
+              'GRUPO7_GRASAS': '#854d0e'
+            };
+            
+            horarios.forEach(([hora, tiempoCodigo, tiempoNombre]) => {
+              html += `<div class="time-cell"><div class="time-label">${hora}</div><div class="meal-label">${tiempoNombre}</div></div>`;
+              
+              diasSemana.forEach(diaFecha => {
+                const dia = planData.planPorDia[diaFecha] || {};
+                const comida = dia[tiempoCodigo];
+                
+                if (comida && comida.alimentos && comida.alimentos.length > 0) {
+                  html += '<div class="meal-cell">';
+                  html += '<div class="meal-foods">';
+                  
+                  comida.alimentos.forEach(alimento => {
+                    const grupo = alimento.grupo || '';
+                    const colorGrupo = coloresGrupo[grupo] || '#6b7280';
+                    let cantidadDisplay = String(alimento.cantidad || '');
+                    if (cantidadDisplay.endsWith('.00')) {
+                      cantidadDisplay = cantidadDisplay.slice(0, -3);
+                    } else if (cantidadDisplay.endsWith('.0')) {
+                      cantidadDisplay = cantidadDisplay.slice(0, -2);
+                    }
+                    const nombreAlimento = alimento.ingrediente || alimento.nombre || '';
+                    const unidadAlimento = alimento.unidad || '';
+                    const textoCompleto = nombreAlimento + (cantidadDisplay ? ` - ${cantidadDisplay}${unidadAlimento}` : '');
+                    if (textoCompleto) {
+                      html += `<div class="food-item" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db;"><span>${textoCompleto}</span></div>`;
+                    }
+                  });
+                  
+                  html += '</div></div>';
+                } else {
+                  html += '<div class="meal-cell"><div class="no-meal">—</div></div>';
+                }
+              });
+            });
+            
+            html += '</div>';
+          }
+          
+          gridContainer.innerHTML = html;
+          
+          // Guardar referencia para restaurar después
+          window._contenidoOriginalImpresion = contenidoOriginal;
+          window._semanaActualGuardadaImpresion = semanaActualGuardada;
+        }
+        
+        // Ajustar grid para impresión
+        function ajustarGridParaImpresion() {
+          mostrarTodasLasSemanasParaImpresion();
+        }
+        
+        // Detectar cuando se va a imprimir
+        window.addEventListener('beforeprint', function() {
+          ajustarGridParaImpresion();
+        });
+        
+        // Restaurar después de imprimir
+        window.addEventListener('afterprint', function() {
+          const gridContainer = document.querySelector('.schedule-grid-wrapper');
+          if (gridContainer && window._contenidoOriginalImpresion) {
+            gridContainer.innerHTML = window._contenidoOriginalImpresion;
+            semanaActual = window._semanaActualGuardadaImpresion || 1;
+            renderizarSemana(semanaActual);
+            delete window._contenidoOriginalImpresion;
+            delete window._semanaActualGuardadaImpresion;
+          }
+        });
+        
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+          renderizarSemana(1);
+          const prevBtn = document.getElementById('prevWeek');
+          const nextBtn = document.getElementById('nextWeek');
+          if (prevBtn) prevBtn.disabled = true;
+          if (nextBtn && planData.totalSemanas <= 1) nextBtn.disabled = true;
+          
+          // Manejador para botón de publicar plan
+          const btnPublicar = document.getElementById('btnPublicarPlan');
+          if (btnPublicar) {
+            btnPublicar.addEventListener('click', async function() {
+              const confirmado = await mostrarConfirmacion(
+                '¿Estás seguro de publicar este plan? El paciente podrá verlo.',
+                'Confirmar publicación',
+                'warning'
+              );
+              if (confirmado) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ url_for('admin_plan_publicar', pid=plan_sel.id) }}";
+                document.body.appendChild(form);
+                form.submit();
+              }
+            });
+          }
+          
+          // Inicializar análisis nutricional
+        });
+      </script>
+      
+      <!-- Script para Análisis Nutricional Interactivo -->
+      <script>
+        // Función para calcular totales nutricionales por día
+        function calcularTotalesPorDia(diaFecha) {
+          const dia = planData.planPorDia[diaFecha] || {};
+          const totales = {
+            kcal: 0,
+            cho: 0,
+            pro: 0,
+            fat: 0,
+            fibra: 0,
+            cg: 0
+          };
+          
+          // Iterar por todos los tiempos de comida
+          ['des', 'mm', 'alm', 'mt', 'cena'].forEach(tiempo => {
+            const comida = dia[tiempo];
+            if (comida && comida.alimentos) {
+              comida.alimentos.forEach(alimento => {
+                totales.kcal += parseFloat(alimento.kcal || 0);
+                totales.cho += parseFloat(alimento.cho || 0);
+                totales.pro += parseFloat(alimento.pro || 0);
+                totales.fat += parseFloat(alimento.fat || 0);
+                totales.fibra += parseFloat(alimento.fibra || 0);
+                totales.cg += parseFloat(alimento.cg || 0);
+              });
+            }
+          });
+          
+          return totales;
+        }
+        
+        // Función para obtener las metas nutricionales
+        function obtenerMetas() {
+          const metas = planData.metasNutricionales || {};
+          return {
+            kcal: parseFloat(metas.calorias_diarias || metas.calorias || 2000),
+            cho: parseFloat(metas.carbohidratos_g || metas.carbohidratos || 250),
+            pro: parseFloat(metas.proteinas_g || metas.proteinas || 100),
+            fat: parseFloat(metas.grasas_g || metas.grasas || 65),
+            fibra: parseFloat(metas.fibra_g || metas.fibra || 25)
+          };
+        }
+        
+        // Función para calcular porcentaje de cumplimiento
+        function calcularPorcentaje(actual, meta) {
+          if (!meta || meta === 0) return 0;
+          return Math.round((actual / meta) * 100);
+        }
+        
+        // Función para obtener color según cumplimiento
+        function obtenerColorCumplimiento(porcentaje, macronutriente = 'kcal') {
+          let colorBase;
+          if (macronutriente === 'cho') colorBase = '#3b82f6'; // Azul
+          else if (macronutriente === 'pro') colorBase = '#8b5cf6'; // Púrpura
+          else if (macronutriente === 'fat') colorBase = '#f59e0b'; // Naranja/Ámbar
+          else colorBase = '#10b981'; // Verde por defecto para Kcal
+
+          if (porcentaje >= 90 && porcentaje <= 100) return colorBase; // Cumplimiento óptimo
+          if (porcentaje > 100) return '#10b981'; // Verde si excede (pero aún cumple)
+          if (porcentaje >= 80 && porcentaje < 90) return '#f59e0b'; // Amarillo: ligeramente bajo
+          return '#ef4444'; // Rojo: muy bajo
+        }
+        
+        // Función para renderizar análisis de un día (ya no se usa, pero se mantiene para compatibilidad)
+        function renderizarAnalisisDia(diaFecha) {
+          return '';
+        }
+        
+        // Función para renderizar análisis de todos los días (ya no se usa, pero se mantiene para compatibilidad)
+        function renderizarAnalisisTodos() {
+          return '';
+        }
+      </script>
+      
+      <!-- Script duplicado removido -->
+      <script>
+        // Las funciones ya están definidas arriba
+      </script>
+      
+      <!-- Pie de página para impresión -->
+      <div class="print-footer" style="display: none;">
+        <p>Documento generado el <span id="fecha-generacion"></span> | NutriSync - Sistema de Gestión Nutricional</p>
+      </div>
+      <script>
+        // Establecer fecha de generación
+        document.addEventListener('DOMContentLoaded', function() {
+          const fechaEl = document.getElementById('fecha-generacion');
+          if (fechaEl) {
+            const ahora = new Date();
+            const dia = String(ahora.getDate()).padStart(2, '0');
+            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+            const año = ahora.getFullYear();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            fechaEl.textContent = `${dia}/${mes}/${año} ${horas}:${minutos}`;
+          }
+        });
+      </script>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== MODAL PLAN ===== -->
+<div class="modal" id="modalPlan" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalPlan"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 id="ttlPlan"><i class="fas fa-clipboard-list"></i> Nuevo plan</h3>
+      <button class="modal-close js-close-modal" data-target="#modalPlan">×</button>
+    </div>
+    <form id="formPlan" method="post" action="{{ url_for('admin_plan_nuevo') }}">
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Paciente</label>
+          <select class="input" id="pl_paciente" name="paciente_id" required>
+            <option value="">— selecciona —</option>
+            {% for pac in pacientes %}
+            <option value="{{ pac.id }}">{{ pac.dni }} — {{ pac.nombre or '(sin nombre)' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-row two">
+          <div>
+            <label>Inicio</label>
+            <input class="input" type="date" id="pl_ini" name="fecha_ini" required>
+          </div>
+          <div>
+            <label>Fin</label>
+            <input class="input" type="date" id="pl_fin" name="fecha_fin" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Estado</label>
+          <select class="input" id="pl_estado" name="estado">
+            <option value="borrador">borrador</option>
+            <option value="aprobado">aprobado</option>
+            <option value="archivado">archivado</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Metas (JSON opcional)</label>
+          <textarea class="input mono" id="pl_metas" name="metas_json" rows="4" placeholder='{"kcal_dia":1800,"carb_pct":50}'></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalPlan">Cancelar</button>
+        <button class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL SLOT (plan_detalle) ===== -->
+<div class="modal" id="modalSlot" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalSlot"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 id="ttlSlot"><i class="fas fa-clock"></i> Nuevo día/tiempo</h3>
+      <button class="modal-close js-close-modal" data-target="#modalSlot">×</button>
+    </div>
+    <form id="formSlot" method="post" action="{{ url_for('admin_plan_detalle_nuevo', pid=plan_sel.id if plan_sel else 0) }}">
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Día</label>
+          <input class="input" type="date" id="sl_dia" name="dia" required>
+        </div>
+        <div class="form-row">
+          <label>Tiempo</label>
+          <select class="input" id="sl_tiempo" name="tiempo" required>
+            <option value="">— selecciona —</option>
+            <option value="des">Desayuno (des)</option>
+            <option value="mm">Media Mañana (mm)</option>
+            <option value="alm">Almuerzo (alm)</option>
+            <option value="mt">Media Tarde (mt)</option>
+            <option value="cena">Cena (cena)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalSlot">Cancelar</button>
+        <button class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL VER ALIMENTO ===== -->
+<div class="modal" id="modalVerAlimento" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalVerAlimento"></div>
+  <div class="modal-dialog" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3><i class="fas fa-eye"></i> Detalles del Alimento</h3>
+      <button class="modal-close js-close-modal" data-target="#modalVerAlimento">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="alimentoDetalles">
+        <div class="form-row">
+          <label><strong>Nombre:</strong></label>
+          <p id="detalleNombre" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+        </div>
+        <div class="form-row">
+          <label><strong>Grupo:</strong></label>
+          <p id="detalleGrupo" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+        </div>
+        <div class="form-row two">
+          <div>
+            <label><strong>Cantidad:</strong></label>
+            <p id="detalleCantidad" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+          <div>
+            <label><strong>Unidad:</strong></label>
+            <p id="detalleUnidad" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+        </div>
+        <hr style="margin: 16px 0;">
+        <h4 style="margin-bottom: 12px; color: #374151;">Información Nutricional</h4>
+        <div class="form-row two">
+          <div>
+            <label><strong>Calorías (kcal):</strong></label>
+            <p id="detalleKcal" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+          <div>
+            <label><strong>Carbohidratos (g):</strong></label>
+            <p id="detalleCho" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+        </div>
+        <div class="form-row two">
+          <div>
+            <label><strong>Proteínas (g):</strong></label>
+            <p id="detallePro" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+          <div>
+            <label><strong>Grasas (g):</strong></label>
+            <p id="detalleFat" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+        </div>
+        <div class="form-row two">
+          <div>
+            <label><strong>Fibra (g):</strong></label>
+            <p id="detalleFibra" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+          <div>
+            <label><strong>Carbohidratos Glucémicos (g):</strong></label>
+            <p id="detalleCg" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+          </div>
+        </div>
+        <div class="form-row" id="detalleIgRow" style="display: none;">
+          <label><strong>Índice Glucémico:</strong></label>
+          <p id="detalleIg" style="margin: 0; padding: 8px; background: #f3f4f6; border-radius: 4px;"></p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn js-close-modal" data-target="#modalVerAlimento">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL INTERCAMBIAR INGREDIENTE ===== -->
+<div class="modal" id="modalIntercambiar" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalIntercambiar"></div>
+  <div class="modal-dialog" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3><i class="fas fa-exchange-alt"></i> Intercambiar Ingrediente</h3>
+      <button class="modal-close js-close-modal" data-target="#modalIntercambiar">×</button>
+    </div>
+    <form id="formIntercambiar" method="post" action="">
+      <div class="modal-body">
+        <input type="hidden" id="intercambiarAid" name="aid" value="">
+        <input type="hidden" id="intercambiarPacienteId" value="{{ plan_sel.paciente_id if plan_sel else '' }}">
+        <input type="hidden" id="intercambiarTiempo" value="">
+        <input type="hidden" id="intercambiarDia" value="">
+        <p style="margin-bottom: 16px;">Cantidad actual: <strong id="intercambiarCantidad"></strong></p>
+        
+        <!-- Sugerencia inteligente -->
+        <div id="sugerenciaInteligenteIntercambio" style="display: none; margin-bottom: 16px; padding: 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+            <div>
+              <strong style="color: #1e40af;"><i class="fas fa-lightbulb"></i> Sugerencia inteligente:</strong>
+              <p id="sugerenciaTextoIntercambio" style="margin: 4px 0 0 0; color: #1e3a8a; font-size: 14px;"></p>
+            </div>
+            <button type="button" id="btnUsarSugerenciaIntercambio" class="btn btn-xs btn-primary" style="flex-shrink: 0; margin-left: 12px;">
+              <i class="fas fa-check"></i> Usar
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <label>Buscar ingrediente:</label>
+          <div style="position: relative;">
+            <input type="text" id="buscarIngredienteInput" placeholder="Escribe para buscar..." autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+            <div id="resultadosIngredientes" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #d1d5db; border-top: none; border-radius: 0 0 6px 6px; max-height: 300px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+        <input type="hidden" id="ingredienteSeleccionadoId" name="ingrediente_id" value="">
+        <div id="ingredienteSeleccionadoInfo" style="display: none; margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 6px;">
+          <strong>Ingrediente seleccionado:</strong> <span id="ingredienteSeleccionadoNombre"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalIntercambiar">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btnConfirmarIntercambio" disabled>Intercambiar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL ALIMENTO ===== -->
+<div class="modal" id="modalFood" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalFood"></div>
+  <div class="modal-dialog" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 id="ttlFood"><i class="fas fa-apple-alt"></i> Agregar alimento</h3>
+      <button class="modal-close js-close-modal" data-target="#modalFood">×</button>
+    </div>
+    <form id="formFood" method="post" action="{{ url_for('admin_plan_alimento_nuevo', did=0) }}">
+      <div class="modal-body">
+        <input type="hidden" id="fd_did" name="plan_detalle_id" value="">
+        <input type="hidden" id="fd_paciente_id" value="{{ plan_sel.paciente_id if plan_sel else '' }}">
+        <input type="hidden" id="fd_tiempo" value="">
+        
+        <div class="form-row">
+          <label>Buscar ingrediente:</label>
+          <div style="position: relative;">
+            <input type="text" id="fd_ing_buscar" placeholder="Escribe para buscar ingrediente..." autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+            <div id="fd_resultadosIngredientes" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #d1d5db; border-top: none; border-radius: 0 0 6px 6px; max-height: 300px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+        <input type="hidden" id="fd_ing" name="ingrediente_id" value="" required>
+        <div id="fd_ingredienteSeleccionadoInfo" style="display: none; margin-top: 12px; padding: 12px; background: #f3f4f6; border-radius: 6px;">
+          <strong>Ingrediente seleccionado:</strong> <span id="fd_ingredienteSeleccionadoNombre"></span>
+        </div>
+        <div class="form-row two">
+          <div>
+            <label>Cantidad</label>
+            <input class="input" type="number" step="0.01" min="0" id="fd_cant" name="cantidad" required>
+          </div>
+          <div>
+            <label>Unidad</label>
+            <input class="input" type="text" id="fd_uni" name="unidad" value="g" placeholder="g, ml, etc.">
+          </div>
+        </div>
+
+        <details class="form-row">
+          <summary>Macros (opcionales — se calcularán automáticamente si se dejan en blanco)</summary>
+          <div class="form-row two">
+            <div><label>Kcal</label><input class="input" type="number" step="0.01" id="fd_kcal" name="kcal"></div>
+            <div><label>CHO</label><input class="input" type="number" step="0.01" id="fd_cho" name="cho"></div>
+          </div>
+          <div class="form-row two">
+            <div><label>PRO</label><input class="input" type="number" step="0.01" id="fd_pro" name="pro"></div>
+            <div><label>FAT</label><input class="input" type="number" step="0.01" id="fd_fat" name="fat"></div>
+          </div>
+          <div class="form-row two">
+            <div><label>Fibra</label><input class="input" type="number" step="0.01" id="fd_fibra" name="fibra"></div>
+            <div><label>CG</label><input class="input" type="number" step="0.01" id="fd_cg" name="cg"></div>
+          </div>
+        </details>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalFood">Cancelar</button>
+        <button class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .mono { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .slot { border:1px solid #e5e7eb; border-radius:12px; margin:14px 0; }
+  .slot-head { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:#fafafa; border-bottom:1px solid #eee; }
+  .slot-date { font-weight:600; margin-right:8px; }
+  .slot-time { color:#666; }
+  .tbl.compact td, .tbl.compact th { padding:8px 10px; }
+  .form-row.two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  
+  /* Estilos para lista agrupada de pacientes y planes */
+  .pacientes-planes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .paciente-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+  }
+  
+  .paciente-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border-bottom: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  
+  .paciente-header:hover {
+    background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+  }
+  
+  .paciente-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+  }
+  
+  .toggle-icon {
+    transition: transform 0.3s ease;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  
+  .paciente-group.expanded .toggle-icon {
+    transform: rotate(90deg);
+  }
+  
+  .paciente-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .paciente-details strong {
+    font-size: 16px;
+    color: #1f2937;
+  }
+  
+  .paciente-meta {
+    font-size: 13px;
+    color: #6b7280;
+  }
+  
+  .planes-count {
+    background: #3b82f6;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
+  .planes-container {
+    padding: 0;
+    background: #fafafa;
+  }
+  
+  .planes-container .tbl {
+    margin: 0;
+    border: none;
+  }
+  
+  .planes-container .tbl thead {
+    background: #f3f4f6;
+  }
+  
+  .planes-container .tbl tbody tr {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .planes-container .tbl tbody tr:hover {
+    background: #f9fafb;
+  }
+  
+  /* Estilos para paginación */
+  .pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .pagination-wrapper button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* Estilos para el searchbox */
+  .searchbox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .searchbox i.fa-search {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    z-index: 1;
+    font-size: 14px;
+  }
+  
+  .searchbox input {
+    width: 100%;
+    padding: 10px 40px 10px 44px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  
+  .searchbox input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .searchbox .clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 20px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    z-index: 1;
+    padding: 0;
+    line-height: 1;
+  }
+  
+  .searchbox .clear:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  .modal-dialog { width:min(560px, 96vw); }
+  
+  /* Estilos para formato horario */
+  .plan-schedule-view {
+    margin-bottom: 32px;
+  }
+  
+  .leyenda-grupos {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+  }
+  
+  .schedule-grid-wrapper {
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+  
+  .schedule-grid {
+    display: grid;
+    gap: 8px;
+    min-width: fit-content;
+    border: 2px solid #374151;
+    border-radius: 8px;
+    padding: 8px;
+    background: #f9fafb;
+  }
+  
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .pagination-btn {
+    padding: 8px 16px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  
+  .pagination-btn:hover:not(:disabled) {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  }
+  
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .week-info {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 14px;
+  }
+  
+  /* Estilos para impresión */
+  @media print {
+    /* Configuración de página */
+    @page {
+      size: A4 landscape;
+      margin: 1cm;
+    }
+    
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      background: white;
+      font-size: 10pt;
+    }
+    
+    /* Ocultar todo excepto el plan */
+    .fixed-top-section,
+    .toolbar,
+    .card-header:not(.print-header),
+    .no-print,
+    .sidebar,
+    .header,
+    .pagination-controls,
+    button,
+    .btn,
+    .leyenda-grupos,
+    .plan-actions,
+    hr,
+    nav,
+    aside,
+    header,
+    h4,
+    .slot,
+    .table-responsive,
+    .tbl,
+    .empty,
+    .no-print {
+      display: none !important;
+    }
+    
+    /* Ocultar todos los content-card excepto el que contiene el plan */
+    .content-card:not(.print-plan-container) {
+      display: none !important;
+    }
+    
+    /* Mostrar solo el card que contiene el plan */
+    .print-plan-container {
+      display: block !important;
+    }
+    
+    .print-plan-container .card-header {
+      display: none !important;
+    }
+    
+    .plan-schedule-view {
+      display: block !important;
+    }
+    
+    /* Ocultar sidebar y header */
+    aside,
+    .sidebar {
+      display: none !important;
+      width: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+    
+    .main {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      position: static !important;
+    }
+    
+    /* Mostrar solo el plan */
+    .plan-schedule-view {
+      display: block !important;
+      page-break-inside: avoid;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .content-card:has(.plan-schedule-view) {
+      display: block !important;
+      box-shadow: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+    
+    .card-body:has(.plan-schedule-view) {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+    
+    /* Encabezado del documento */
+    .print-header {
+      display: block !important;
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #3b82f6;
+    }
+    
+    .print-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 24pt;
+      color: #3b82f6;
+      font-weight: 700;
+    }
+    
+    .print-header .plan-info {
+      font-size: 11pt;
+      color: #374151;
+      margin: 5px 0;
+    }
+    
+    .schedule-grid-wrapper {
+      overflow: visible;
+      width: 100%;
+    }
+    
+    .schedule-grid {
+      display: grid !important;
+      gap: 3px !important;
+      border: 2px solid #1f2937 !important;
+      page-break-inside: avoid;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    
+    .time-header {
+      grid-column: 1;
+      padding: 6px 4px;
+      background: #1f2937 !important;
+      color: white !important;
+      font-weight: 700;
+      text-align: center;
+      font-size: 8pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    .day-header {
+      padding: 6px 4px;
+      background: #374151 !important;
+      color: white !important;
+      font-weight: 700;
+      text-align: center;
+      font-size: 8pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    .day-header small {
+      display: block;
+      font-size: 7pt;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+    
+    .time-cell {
+      padding: 6px 4px;
+      background: #f3f4f6 !important;
+      font-weight: 600;
+      text-align: center;
+      font-size: 8pt;
+      border: 1px solid #d1d5db;
+    }
+    
+    .meal-cell {
+      padding: 4px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      min-height: auto;
+      page-break-inside: avoid;
+      font-size: 7pt;
+    }
+    
+    .meal-name {
+      font-size: 8pt;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 3px;
+      display: block;
+    }
+    
+    .meal-header-cell {
+      margin-bottom: 3px;
+    }
+    
+    .food-item {
+      font-size: 7pt !important;
+      padding: 2px 4px !important;
+      margin: 1px 0 !important;
+      border: 1px solid !important;
+      background: white !important;
+      color: #1f2937 !important;
+      page-break-inside: avoid;
+      line-height: 1.2;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    .food-item span {
+      color: #1f2937 !important;
+    }
+    
+    .no-meal {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 9pt;
+      padding: 10px;
+    }
+    
+    /* Pie de página */
+    .print-footer {
+      display: block !important;
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 2px solid #e5e7eb;
+      text-align: center;
+      font-size: 9pt;
+      color: #6b7280;
+    }
+    
+    /* Ajustes generales */
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+  
+  .time-header,
+  .day-header {
+    padding: 12px;
+    background: #374151;
+    color: white;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 8px;
+    font-size: 14px;
+    border: 2px solid #1f2937;
+  }
+  
+  .day-header {
+    background: #4b5563;
+    border: 2px solid #374151;
+  }
+  
+  .day-header small {
+    display: block;
+    font-size: 11px;
+    opacity: 0.9;
+    margin-top: 4px;
+  }
+  
+  
+  .time-cell {
+    padding: 12px;
+    background: #f8fafc;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    border: 2px solid #374151;
+    border-right: 3px solid #1f2937;
+  }
+  
+  .time-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+  
+  .meal-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: capitalize;
+  }
+  
+  .food-item {
+    transition: all 0.2s ease;
+    min-height: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+  }
+  
+  .food-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .food-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
+  }
+  
+  .food-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  
+  .meal-foods {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  
+  .droppable {
+    min-height: 60px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .droppable.drag-over {
+    background-color: #dbeafe;
+    border: 2px dashed #3b82f6;
+  }
+  
+  .draggable {
+    cursor: move;
+  }
+  
+  .draggable:active {
+    cursor: grabbing;
+  }
+  
+  .no-meal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 60px;
+    padding: 8px;
+  }
+  
+  .time-cell-old {
+    padding: 12px;
+    background: #f8fafc;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1f2937;
+  }
+  
+  .meal-cell {
+    padding: 8px;
+    background: white;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .meal-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .meal-header-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  
+  .meal-name {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .meal-name.des { color: #fbbf24; }
+  .meal-name.mm { color: #6b7280; }
+  .meal-name.alm { color: #10b981; }
+  .meal-name.mt { color: #6b7280; }
+  .meal-name.cena { color: #8b5cf6; }
+  
+  .meal-foods {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 0;
+  }
+  
+  .meal-actions-cell {
+    display: flex;
+    gap: 4px;
+  }
+  
+  .meal-foods {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .food-item {
+    word-break: break-word;
+    line-height: 1.4;
+  }
+  
+  .js-add-food:hover,
+  .js-add-slot:hover {
+    background-color: #c7d2fe !important;
+    border-color: #a5b4fc !important;
+    transform: translateY(-1px);
+  }
+  
+  .no-meal {
+    text-align: center;
+    color: #cbd5e1;
+    font-style: italic;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn-xs {
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  
+  .btn-icon-xs {
+    padding: 2px 6px;
+    font-size: 10px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  
+  .btn-icon-xs:hover {
+    opacity: 1;
+  }
+  
+  @media (max-width: 768px) {
+    .schedule-grid {
+      grid-template-columns: 80px repeat(auto-fit, minmax(150px, 1fr));
+      font-size: 12px;
+    }
+    
+    .time-cell,
+    .meal-cell {
+      padding: 6px;
+      font-size: 11px;
+    }
+    
+    .food-item {
+      font-size: 10px;
+      padding: 2px 4px;
+    }
+  }
+  
+  /* Estilos para análisis nutricional */
+  .btn-nutri-day {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .btn-nutri-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .btn-nutri-day.active {
+    font-weight: 600;
+  }
+  
+  .analisis-dia {
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Ocultar análisis nutricional en impresión */
+  @media print {
+    /* Estilos de análisis nutricional removidos */
+    .day-nutrition-summary {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  const openModal = sel => document.querySelector(sel).classList.add('open');
+  const closeModal = sel => document.querySelector(sel).classList.remove('open');
+  document.querySelectorAll('.js-close-modal').forEach(b => b.addEventListener('click', ()=>closeModal(b.dataset.target)));
+
+  // Función para expandir/colapsar planes de un paciente
+  function togglePacientePlanes(pacienteId) {
+    const container = document.getElementById(`planes-${pacienteId}`);
+    const icon = document.getElementById(`icon-${pacienteId}`);
+    const group = container.closest('.paciente-group');
+    
+    if (container.style.display === 'none') {
+      container.style.display = 'block';
+      group.classList.add('expanded');
+    } else {
+      container.style.display = 'none';
+      group.classList.remove('expanded');
+    }
+  }
+  
+  // Variables globales para paginación y filtrado
+  let pacientesData = [];
+  let pacientesFiltrados = [];
+  let paginaActual = 1;
+  const pacientesPorPagina = 7;
+  
+  // Función para buscar coincidencias secuenciales (las letras deben aparecer en orden)
+  function buscarCoincidenciaSecuencial(texto, busqueda) {
+    if (!busqueda) return true;
+    const textoLower = texto.toLowerCase();
+    const busquedaLower = busqueda.toLowerCase();
+    let indiceTexto = 0;
+    
+    for (let i = 0; i < busquedaLower.length; i++) {
+      const char = busquedaLower[i];
+      const indiceEncontrado = textoLower.indexOf(char, indiceTexto);
+      if (indiceEncontrado === -1) {
+        return false;
+      }
+      indiceTexto = indiceEncontrado + 1;
+    }
+    return true;
+  }
+  
+  // Función para filtrar pacientes
+  function filtrarPacientes(termino) {
+    if (!termino || termino.trim() === '') {
+      pacientesFiltrados = pacientesData;
+    } else {
+      const busqueda = termino.trim();
+      pacientesFiltrados = pacientesData.filter(paciente => {
+        const nombre = (paciente.paciente_nombre || '').toLowerCase();
+        const dni = (paciente.paciente_dni || '').toLowerCase();
+        const busquedaLower = busqueda.toLowerCase();
+        
+        // Buscar coincidencias secuenciales en nombre o DNI
+        return buscarCoincidenciaSecuencial(nombre, busquedaLower) || 
+               buscarCoincidenciaSecuencial(dni, busquedaLower);
+      });
+    }
+    paginaActual = 1;
+    renderizarPacientes();
+  }
+  
+  // Función para renderizar pacientes con paginación
+  function renderizarPacientes() {
+    const lista = document.getElementById('pacientesList');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const pageInfo = document.getElementById('pageInfo');
+    const btnPrev = document.getElementById('btnPrevPage');
+    const btnNext = document.getElementById('btnNextPage');
+    const paginationControls = document.getElementById('paginationControls');
+    
+    if (!lista) return;
+    
+    const totalPacientes = pacientesFiltrados.length;
+    const totalPaginas = Math.ceil(totalPacientes / pacientesPorPagina);
+    const inicio = (paginaActual - 1) * pacientesPorPagina;
+    const fin = Math.min(inicio + pacientesPorPagina, totalPacientes);
+    const pacientesPagina = pacientesFiltrados.slice(inicio, fin);
+    
+    // Renderizar pacientes de la página actual
+    let html = '';
+    pacientesPagina.forEach(paciente => {
+      html += `
+        <div class="paciente-group" data-paciente-id="${paciente.paciente_id}">
+          <div class="paciente-header" onclick="togglePacientePlanes(${paciente.paciente_id})">
+            <div class="paciente-info">
+              <i class="fas fa-chevron-right toggle-icon" id="icon-${paciente.paciente_id}"></i>
+              <div class="paciente-details">
+                <strong>${escapeHtml(paciente.paciente_nombre)}</strong>
+                <span class="paciente-meta">DNI: ${escapeHtml(paciente.paciente_dni)}${paciente.paciente_edad ? ` • ${paciente.paciente_edad} años` : ''}</span>
+              </div>
+            </div>
+            <span class="planes-count">${paciente.planes.length} plan${paciente.planes.length !== 1 ? 'es' : ''}</span>
+          </div>
+          <div class="planes-container" id="planes-${paciente.paciente_id}" style="display: none;">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Plan</th>
+                  <th>Período</th>
+                  <th>Estado</th>
+                  <th style="width:200px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${paciente.planes.map(plan => `
+                  <tr>
+                    <td><strong>#${plan.id}</strong></td>
+                    <td>
+                      <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <span>${plan.fecha_ini}</span>
+                        <span style="color: #6b7280; font-size: 0.9em;">al ${plan.fecha_fin}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge ${plan.estado === 'aprobado' || plan.estado === 'publicado' ? 'success' : (plan.estado === 'borrador' ? 'warn' : '')}">
+                        ${plan.estado.charAt(0).toUpperCase() + plan.estado.slice(1)}
+                      </span>
+                    </td>
+                    <td class="actions">
+                      <a class="btn btn-sm btn-primary" href="${urlVerPlan}/${plan.id}" style="margin-right: 8px;">
+                        <i class="fas fa-eye"></i> Ver y editar
+                      </a>
+                      <button class="btn btn-sm btn-danger js-borrar-plan" data-plan-id="${plan.id}">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    });
+    
+    lista.innerHTML = html;
+    
+    // Actualizar información de paginación
+    if (totalPacientes === 0) {
+      lista.innerHTML = '<div class="empty">No se encontraron pacientes que coincidan con la búsqueda.</div>';
+      paginationInfo.textContent = '';
+      if (paginationControls) paginationControls.style.display = 'none';
+    } else {
+      paginationInfo.textContent = `Mostrando ${inicio + 1}-${fin} de ${totalPacientes} paciente${totalPacientes !== 1 ? 's' : ''}`;
+      if (pageInfo) pageInfo.textContent = `Página ${paginaActual} de ${totalPaginas}`;
+      if (paginationControls) paginationControls.style.display = 'flex';
+      
+      // Actualizar botones de paginación
+      if (btnPrev) btnPrev.disabled = paginaActual === 1;
+      if (btnNext) btnNext.disabled = paginaActual === totalPaginas;
+    }
+    
+    // Expandir automáticamente el primer paciente de la página
+    const firstPaciente = document.querySelector('.paciente-group');
+    if (firstPaciente) {
+      const pacienteId = firstPaciente.dataset.pacienteId;
+      togglePacientePlanes(pacienteId);
+    }
+  }
+  
+  // Función para escapar HTML (prevenir XSS)
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // Función para cambiar de página
+  function cambiarPagina(direccion) {
+    const totalPaginas = Math.ceil(pacientesFiltrados.length / pacientesPorPagina);
+    const nuevaPagina = paginaActual + direccion;
+    
+    if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas) {
+      paginaActual = nuevaPagina;
+      renderizarPacientes();
+      // Scroll al inicio de la lista
+      const lista = document.getElementById('pacientesList');
+      if (lista) lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  
+  // URLs base para las acciones
+  const urlVerPlan = "{{ url_for('admin_plan_ver', pid=0) }}".replace('/0', '');
+  
+  // Datos de pacientes (se inicializan desde el template si están disponibles)
+  {% if pacientes_agrupados %}
+  var pacientesDataTemplate = {{ pacientes_agrupados|tojson|safe }};
+  {% else %}
+  var pacientesDataTemplate = [];
+  {% endif %}
+  
+  // Inicializar datos y renderizar
+  document.addEventListener('DOMContentLoaded', function() {
+    // Solo inicializar si estamos en la vista de listado (no en detalle de plan)
+    const filtroInput = document.getElementById('filtroPacientes');
+    if (!filtroInput) return; // Si no hay filtro, estamos en vista de detalle, salir
+    
+    // Obtener datos de pacientes desde el template
+    pacientesData = typeof pacientesDataTemplate !== 'undefined' ? pacientesDataTemplate : [];
+    pacientesFiltrados = pacientesData;
+    
+    // Configurar filtro de búsqueda
+    const btnClearFiltro = document.getElementById('btnClearFiltro');
+    
+    filtroInput.addEventListener('input', function(e) {
+      const termino = e.target.value;
+      if (termino.trim() === '') {
+        if (btnClearFiltro) btnClearFiltro.style.display = 'none';
+      } else {
+        if (btnClearFiltro) btnClearFiltro.style.display = 'block';
+      }
+      filtrarPacientes(termino);
+    });
+    
+    if (btnClearFiltro) {
+      btnClearFiltro.addEventListener('click', function() {
+        filtroInput.value = '';
+        btnClearFiltro.style.display = 'none';
+        filtrarPacientes('');
+      });
+    }
+    
+    // Configurar botones de paginación
+    const btnPrev = document.getElementById('btnPrevPage');
+    const btnNext = document.getElementById('btnNextPage');
+    
+    if (btnPrev) {
+      btnPrev.addEventListener('click', () => cambiarPagina(-1));
+    }
+    
+    if (btnNext) {
+      btnNext.addEventListener('click', () => cambiarPagina(1));
+    }
+    
+    // Renderizar inicialmente
+    renderizarPacientes();
+  });
+
+  // NUEVO PLAN - Ya no se usa, el botón ahora es un enlace directo a obtener-plan
+
+  // El botón "Editar" fue eliminado - ahora se usa "Ver y editar" que lleva directamente a la vista de edición
+
+  // NUEVO SLOT
+  document.getElementById('btnNuevoSlot')?.addEventListener('click', ()=>{
+    const f = document.getElementById('formSlot');
+    f.action = "{{ url_for('admin_plan_detalle_nuevo', pid=plan_sel.id if plan_sel else 0) }}";
+    document.getElementById('ttlSlot').innerText = "Nuevo día/tiempo";
+    document.getElementById('sl_dia').value = "";
+    document.getElementById('sl_tiempo').value = "";
+    openModal('#modalSlot');
+  });
+
+  // EDITAR SLOT
+  document.querySelectorAll('.js-edit-slot').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const f = document.getElementById('formSlot');
+      const did = btn.dataset.id;
+      f.action = "{{ url_for('admin_plan_detalle_editar', did=0) }}".replace('/0','/'+did);
+      document.getElementById('ttlSlot').innerText = "Editar día/tiempo";
+      document.getElementById('sl_dia').value = btn.dataset.dia;
+      document.getElementById('sl_tiempo').value = btn.dataset.tiempo;
+      openModal('#modalSlot');
+    });
+  });
+
+  // AGREGAR ALIMENTO
+  document.querySelectorAll('.js-add-food').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const did = btn.dataset.did;
+      const f = document.getElementById('formFood');
+      f.action = "{{ url_for('admin_plan_alimento_nuevo', did=0) }}".replace('/0','/'+did);
+      document.getElementById('ttlFood').innerText = "Agregar alimento";
+      document.getElementById('fd_did').value = did;
+      ['fd_ing','fd_cant','fd_uni','fd_kcal','fd_cho','fd_pro','fd_fat','fd_fibra','fd_cg'].forEach(id=>{
+        const el = document.getElementById(id); if (!el) return;
+        if (id==='fd_uni') el.value='g'; else el.value='';
+      });
+      openModal('#modalFood');
+    });
+  });
+  
+  // AGREGAR SLOT (nuevo día/tiempo desde formato horario)
+  document.querySelectorAll('.js-add-slot').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const f = document.getElementById('formSlot');
+      f.action = "{{ url_for('admin_plan_detalle_nuevo', pid=plan_sel.id if plan_sel else 0) }}";
+      document.getElementById('ttlSlot').innerText = "Nuevo día/tiempo";
+      document.getElementById('sl_dia').value = btn.dataset.dia || "";
+      document.getElementById('sl_tiempo').value = btn.dataset.tiempo || "";
+      openModal('#modalSlot');
+    });
+  });
+
+  // EDITAR ALIMENTO
+  document.querySelectorAll('.js-edit-food').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const f = document.getElementById('formFood');
+      const aid = btn.dataset.id;
+      f.action = "{{ url_for('admin_plan_alimento_editar', aid=0) }}".replace('/0','/'+aid);
+      document.getElementById('ttlFood').innerText = "Editar alimento";
+      document.getElementById('fd_did').value = btn.dataset.did;
+      document.getElementById('fd_ing').value = btn.dataset.ingrediente_id || "";
+      document.getElementById('fd_cant').value = btn.dataset.cantidad || "";
+      document.getElementById('fd_uni').value = btn.dataset.unidad || "g";
+      document.getElementById('fd_kcal').value = btn.dataset.kcal || "";
+      document.getElementById('fd_cho').value  = btn.dataset.cho  || "";
+      document.getElementById('fd_pro').value  = btn.dataset.pro  || "";
+      document.getElementById('fd_fat').value  = btn.dataset.fat  || "";
+      document.getElementById('fd_fibra').value= btn.dataset.fibra|| "";
+      document.getElementById('fd_cg').value   = btn.dataset.cg   || "";
+      openModal('#modalFood');
+    });
+  });
+  
+  // Búsqueda de ingredientes para intercambio
+  let timeoutBusqueda = null;
+  const buscarIngredienteInput = document.getElementById('buscarIngredienteInput');
+  const resultadosIngredientes = document.getElementById('resultadosIngredientes');
+  const ingredienteSeleccionadoId = document.getElementById('ingredienteSeleccionadoId');
+  const ingredienteSeleccionadoNombre = document.getElementById('ingredienteSeleccionadoNombre');
+  const ingredienteSeleccionadoInfo = document.getElementById('ingredienteSeleccionadoInfo');
+  const btnConfirmarIntercambio = document.getElementById('btnConfirmarIntercambio');
+  const formIntercambiar = document.getElementById('formIntercambiar');
+  
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  if (buscarIngredienteInput) {
+    buscarIngredienteInput.addEventListener('input', function() {
+      const query = this.value.trim();
+      
+      clearTimeout(timeoutBusqueda);
+      
+      if (query.length < 2) {
+        resultadosIngredientes.style.display = 'none';
+        return;
+      }
+      
+      timeoutBusqueda = setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/ingredientes/buscar?q=${encodeURIComponent(query)}`);
+          const data = await response.json();
+          
+          if (data.ok && data.results && data.results.length > 0) {
+            let html = '';
+            data.results.forEach(ing => {
+              html += `<div class="ingrediente-resultado" data-id="${ing.id}" data-nombre="${escapeHtml(ing.nombre)}" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">`;
+              html += `<strong>${escapeHtml(ing.nombre)}</strong>`;
+              if (ing.grupo) {
+                html += ` <span style="color: #6b7280; font-size: 12px;">(${escapeHtml(ing.grupo)})</span>`;
+              }
+              html += `</div>`;
+            });
+            resultadosIngredientes.innerHTML = html;
+            resultadosIngredientes.style.display = 'block';
+            
+            // Agregar event listeners a los resultados
+            resultadosIngredientes.querySelectorAll('.ingrediente-resultado').forEach(item => {
+              item.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const nombre = this.dataset.nombre;
+                
+                ingredienteSeleccionadoId.value = id;
+                ingredienteSeleccionadoNombre.textContent = nombre;
+                ingredienteSeleccionadoInfo.style.display = 'block';
+                btnConfirmarIntercambio.disabled = false;
+                resultadosIngredientes.style.display = 'none';
+                buscarIngredienteInput.value = nombre;
+              });
+            });
+          } else {
+            resultadosIngredientes.innerHTML = '<div style="padding: 10px; color: #6b7280;">No se encontraron ingredientes</div>';
+            resultadosIngredientes.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Error buscando ingredientes:', error);
+          resultadosIngredientes.innerHTML = '<div style="padding: 10px; color: #ef4444;">Error al buscar ingredientes</div>';
+          resultadosIngredientes.style.display = 'block';
+        }
+      }, 300);
+    });
+    
+    // Cerrar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      if (!buscarIngredienteInput.contains(e.target) && !resultadosIngredientes.contains(e.target)) {
+        resultadosIngredientes.style.display = 'none';
+      }
+    });
+  }
+  
+  // Configurar formulario de intercambio
+  if (formIntercambiar) {
+    formIntercambiar.addEventListener('submit', function(e) {
+      const aid = document.getElementById('intercambiarAid').value;
+      if (aid) {
+        this.action = "{{ url_for('admin_plan_alimento_intercambiar', aid=0) }}".replace('/0', '/' + aid);
+      }
+    });
+  }
+  
+  // Búsqueda de ingredientes para agregar alimento
+  let timeoutBusquedaAgregar = null;
+  const fdIngBuscar = document.getElementById('fd_ing_buscar');
+  const fdResultadosIngredientes = document.getElementById('fd_resultadosIngredientes');
+  const fdIngredienteSeleccionadoId = document.getElementById('fd_ing');
+  const fdIngredienteSeleccionadoNombre = document.getElementById('fd_ingredienteSeleccionadoNombre');
+  const fdIngredienteSeleccionadoInfo = document.getElementById('fd_ingredienteSeleccionadoInfo');
+  
+  function cargarSugerenciaIntercambio(ingredienteActualId, tiempo, dia) {
+    const pacienteId = document.getElementById('intercambiarPacienteId').value;
+    if (!pacienteId || !tiempo || !ingredienteActualId) {
+      document.getElementById('sugerenciaInteligenteIntercambio').style.display = 'none';
+      return;
+    }
+    
+    // Obtener sugerencia del endpoint (excluyendo el ingrediente actual)
+    // El backend ahora prioriza ingredientes del mismo grupo y varía por día
+    const url = `/api/reco/ingredientes?pid=${pacienteId}&tiempo=${tiempo}&limit=10&excluir=${ingredienteActualId}`;
+    const urlConDia = dia ? `${url}&dia=${encodeURIComponent(dia)}` : url;
+    
+    fetch(urlConDia)
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok && data.results && data.results.length > 0) {
+          // Filtrar el ingrediente actual si está en los resultados (por seguridad)
+          const sugerencias = data.results.filter(ing => ing.id != ingredienteActualId);
+          if (sugerencias.length > 0) {
+            // Usar el día para seleccionar un índice diferente (variación determinística)
+            let indice = 0;
+            if (dia) {
+              // Convertir la fecha a un número para usar como semilla
+              const fecha = new Date(dia);
+              const diaSemana = fecha.getDay(); // 0-6
+              const diaMes = fecha.getDate(); // 1-31
+              // Combinar día de semana y día del mes para variación
+              indice = (diaSemana + diaMes) % Math.min(sugerencias.length, 5);
+            }
+            
+            const sugerencia = sugerencias[indice] || sugerencias[0];
+            const unidad = sugerencia.unidad || sugerencia.unidad_base || 'g';
+            const porcion = sugerencia.porcion || sugerencia.porcion_base || 100;
+            document.getElementById('sugerenciaTextoIntercambio').textContent = `${sugerencia.nombre} - ${porcion}${unidad}`;
+            document.getElementById('sugerenciaInteligenteIntercambio').style.display = 'block';
+            
+            // Configurar botón de usar sugerencia
+            const btnUsarSugerencia = document.getElementById('btnUsarSugerenciaIntercambio');
+            btnUsarSugerencia.onclick = function() {
+              document.getElementById('ingredienteSeleccionadoId').value = sugerencia.id;
+              document.getElementById('ingredienteSeleccionadoNombre').textContent = sugerencia.nombre;
+              document.getElementById('ingredienteSeleccionadoInfo').style.display = 'block';
+              document.getElementById('buscarIngredienteInput').value = sugerencia.nombre;
+              document.getElementById('btnConfirmarIntercambio').disabled = false;
+              document.getElementById('sugerenciaInteligenteIntercambio').style.display = 'none';
+            };
+          } else {
+            document.getElementById('sugerenciaInteligenteIntercambio').style.display = 'none';
+          }
+        } else {
+          document.getElementById('sugerenciaInteligenteIntercambio').style.display = 'none';
+        }
+      })
+      .catch(error => {
+        console.error('Error cargando sugerencia:', error);
+        document.getElementById('sugerenciaInteligenteIntercambio').style.display = 'none';
+      });
+  }
+  
+  if (fdIngBuscar) {
+    fdIngBuscar.addEventListener('input', function() {
+      const query = this.value.trim();
+      
+      clearTimeout(timeoutBusquedaAgregar);
+      
+      if (query.length < 2) {
+        fdResultadosIngredientes.style.display = 'none';
+        return;
+      }
+      
+      timeoutBusquedaAgregar = setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/ingredientes/buscar?q=${encodeURIComponent(query)}`);
+          const data = await response.json();
+          
+          if (data.ok && data.results && data.results.length > 0) {
+            let html = '';
+            data.results.forEach(ing => {
+              html += `<div class="ingrediente-resultado" data-id="${ing.id}" data-nombre="${escapeHtml(ing.nombre)}" data-grupo="${ing.grupo || ''}" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">`;
+              html += `<strong>${escapeHtml(ing.nombre)}</strong>`;
+              if (ing.grupo) {
+                html += ` <span style="color: #6b7280; font-size: 12px;">(${escapeHtml(ing.grupo)})</span>`;
+              }
+              html += `</div>`;
+            });
+            fdResultadosIngredientes.innerHTML = html;
+            fdResultadosIngredientes.style.display = 'block';
+            
+            // Agregar event listeners a los resultados
+            fdResultadosIngredientes.querySelectorAll('.ingrediente-resultado').forEach(item => {
+              item.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const nombre = this.dataset.nombre;
+                
+                fdIngredienteSeleccionadoId.value = id;
+                fdIngredienteSeleccionadoNombre.textContent = nombre;
+                fdIngredienteSeleccionadoInfo.style.display = 'block';
+                fdResultadosIngredientes.style.display = 'none';
+                fdIngBuscar.value = nombre;
+                
+                // Pre-llenar cantidad y unidad con valores por defecto
+                const cantidadInput = document.getElementById('fd_cant');
+                const unidadInput = document.getElementById('fd_uni');
+                if (cantidadInput && !cantidadInput.value) {
+                  cantidadInput.value = '100';
+                }
+                if (unidadInput && !unidadInput.value) {
+                  unidadInput.value = 'g';
+                }
+              });
+            });
+          } else {
+            fdResultadosIngredientes.innerHTML = '<div style="padding: 10px; color: #6b7280;">No se encontraron ingredientes</div>';
+            fdResultadosIngredientes.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Error buscando ingredientes:', error);
+          fdResultadosIngredientes.innerHTML = '<div style="padding: 10px; color: #ef4444;">Error al buscar ingredientes</div>';
+          fdResultadosIngredientes.style.display = 'block';
+        }
+      }, 300);
+    });
+    
+    // Cerrar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      if (fdIngBuscar && !fdIngBuscar.contains(e.target) && fdResultadosIngredientes && !fdResultadosIngredientes.contains(e.target)) {
+        fdResultadosIngredientes.style.display = 'none';
+      }
+    });
+    
+    // Manejador para botones de borrar plan
+    document.addEventListener('click', async function(e) {
+      if (e.target.closest('.js-borrar-plan')) {
+        const btn = e.target.closest('.js-borrar-plan');
+        const planId = btn.dataset.planId;
+        
+        const confirmado = await mostrarConfirmacion(
+          `¿Borrar el plan #${planId}? Se eliminarán detalles y alimentos.`,
+          'Confirmar eliminación',
+          'delete'
+        );
+        
+        if (confirmado) {
+          try {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/planes/${planId}/borrar`;
+            document.body.appendChild(form);
+            form.submit();
+          } catch (error) {
+            mostrarAlerta('Error al eliminar el plan.', 'Error');
+          }
+        }
+      }
+    });
+    
+    // Verificar estado del aprendizaje continuo
+    {% if plan_sel %}
+    (async function verificarAprendizaje() {
+      const planId = {{ plan_sel.id }};
+      const indicator = document.getElementById('aprendizaje-indicator');
+      const status = document.getElementById('aprendizaje-status');
+      const details = document.getElementById('aprendizaje-details');
+      const info = document.getElementById('aprendizaje-info');
+      
+      if (!indicator) return;
+      
+      try {
+        const response = await fetch(`/admin/aprendizaje/verificar/${planId}`);
+        const data = await response.json();
+        
+        indicator.style.display = 'block';
+        
+        if (data.ok && data.baseline_registrado) {
+          const d = data.datos;
+          status.innerHTML = '<span style="color: #10b981; font-weight: 600;">✅ Baseline registrado</span>';
+          details.style.display = 'block';
+          
+          let infoHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 8px;">';
+          infoHtml += `<div><strong>Estado:</strong> ${d.estado === 'pendiente' ? '⏳ Pendiente de resultados' : '✅ Completado'}</div>`;
+          if (d.hba1c_inicial) infoHtml += `<div><strong>HbA1c inicial:</strong> ${d.hba1c_inicial}%</div>`;
+          if (d.glucosa_inicial) infoHtml += `<div><strong>Glucosa inicial:</strong> ${d.glucosa_inicial} mg/dL</div>`;
+          if (d.peso_inicial) infoHtml += `<div><strong>Peso inicial:</strong> ${d.peso_inicial} kg</div>`;
+          if (d.imc_inicial) infoHtml += `<div><strong>IMC inicial:</strong> ${d.imc_inicial}</div>`;
+          if (d.fecha_fin) {
+            infoHtml += `<div><strong>Fecha fin:</strong> ${d.fecha_fin}</div>`;
+            if (d.resultado_exitoso !== null) {
+              infoHtml += `<div><strong>Resultado:</strong> <span style="color: ${d.resultado_exitoso ? '#10b981' : '#ef4444'}">${d.resultado_exitoso ? '✅ Exitoso' : '❌ No exitoso'}</span></div>`;
+            }
+          }
+          infoHtml += '</div>';
+          infoHtml += `<div style="margin-top: 8px; font-size: 12px; color: #9ca3af;"><i class="fas fa-info-circle"></i> El sistema está aprendiendo de este plan. Cuando se completen los resultados, se actualizarán los patrones aprendidos.</div>`;
+          info.innerHTML = infoHtml;
+        } else if (data.error === 'tabla_no_existe') {
+          status.innerHTML = '<span style="color: #ef4444; font-weight: 600;">❌ Tabla no existe</span>';
+          details.style.display = 'block';
+          info.innerHTML = `<div style="color: #6b7280; font-size: 13px;">
+            <strong>⚠️ Acción requerida:</strong><br>
+            La tabla 'plan_resultado' no existe en la base de datos.<br>
+            <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 8px;">
+              psql -U postgres -d proyecto_tesis -f SQL/aprendizaje_continuo.sql
+            </code>
+          </div>`;
+        } else {
+          status.innerHTML = '<span style="color: #f59e0b;">⚠️ Baseline no registrado</span>';
+          details.style.display = 'block';
+          let mensaje = data.mensaje || 'El aprendizaje continuo puede estar deshabilitado o no se pudo registrar el baseline.';
+          if (data.error) {
+            mensaje += `<br><small style="color: #9ca3af;">Error: ${data.error}</small>`;
+          }
+          info.innerHTML = `<div style="color: #6b7280; font-size: 13px;">${mensaje}<br><small style="margin-top: 8px; display: block;">Verifica la configuración en .env (APRENDIZAJE_CONTINUO=true) y que las tablas estén creadas.</small></div>`;
+        }
+      } catch (error) {
+        indicator.style.display = 'block';
+        status.innerHTML = '<span style="color: #ef4444;">❌ Error al verificar</span>';
+        console.error('Error verificando aprendizaje:', error);
+      }
+    })();
+    {% endif %}
+  }
+</script>
+{% endblock %}

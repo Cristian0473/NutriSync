@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Admin · NutriSync</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  <style>
+    .wrap{max-width:1000px;margin:24px auto;padding:0 16px}
+    .tbl{width:100%;border-collapse:collapse;background:#fff}
+    .tbl th,.tbl td{border:1px solid #e5e7eb;padding:8px 10px}
+    .actions a, .actions button{margin-right:6px}
+    .form{display:grid;gap:12px;max-width:520px;background:#fff;padding:16px;border:1px solid #e5e7eb}
+    .form input, .form select{width:100%;padding:8px}
+    .btn{display:inline-block;padding:8px 12px;background:#2563eb;color:#fff;text-decoration:none}
+    .chk{display:block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul>
+          {% for c,m in messages %}<li>[{{c}}] {{ m }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

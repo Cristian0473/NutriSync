@@ -1,0 +1,729 @@
+{% extends "admin/base_admin.html" %}
+
+{% set active_nav = 'home' %}
+{% set page_title = 'Dashboard' %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
+    <p class="dashboard-subtitle">Resumen general del sistema</p>
+  </div>
+
+  <!-- ========== 1. RESUMEN GENERAL (CARDS) ========== -->
+  <section class="dashboard-section">
+    <h2 class="section-title">Resumen General</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ total_pacientes }}</div>
+          <div class="stat-label">Total Pacientes</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ planes_30d }}</div>
+          <div class="stat-label">Planes (30 días)</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #fef3c7; color: #d97706;">
+          <i class="fas fa-clipboard-list"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ pacientes_con_datos }}</div>
+          <div class="stat-label">Con Datos Recientes</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #fce7f3; color: #be185d;">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ planes_activos }}</div>
+          <div class="stat-label">Planes Activos</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #e0f2fe; color: #0369a1;">
+          <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ promedio_planes }}</div>
+          <div class="stat-label">Promedio Planes/Paciente</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #fee2e2; color: #dc2626;">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ riesgo_metabolico }}</div>
+          <div class="stat-label">Riesgo Metabólico Alto</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 2. ESTADÍSTICAS DE PACIENTES ========== -->
+  <section class="dashboard-section">
+    <h2 class="section-title">Estadísticas de Pacientes</h2>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3 class="chart-title">Distribución por Sexo</h3>
+        <canvas id="chartSexo"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3 class="chart-title">Distribución por Edad</h3>
+        <canvas id="chartEdad"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3 class="chart-title">Distribución por IMC</h3>
+        <canvas id="chartIMC"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3 class="chart-title">Control Glucémico</h3>
+        <canvas id="chartControl"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 3. MÉTRICAS CLÍNICAS (TENDENCIAS) ========== -->
+  <section class="dashboard-section">
+    <h2 class="section-title">Métricas Clínicas - Tendencia</h2>
+    <div class="charts-grid">
+      <div class="chart-card chart-wide">
+        <h3 class="chart-title">Evolución de HbA1c (últimos 6 meses)</h3>
+        <div class="chart-wrapper">
+          <canvas id="chartHbA1c"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card chart-wide">
+        <h3 class="chart-title">Evolución de Glucosa en Ayunas (últimos 6 meses)</h3>
+        <div class="chart-wrapper">
+          <canvas id="chartGlucosa"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card chart-wide">
+        <h3 class="chart-title">Evolución de IMC (últimos 6 meses)</h3>
+        <div class="chart-wrapper">
+          <canvas id="chartIMCTendencia"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 4. ALERTAS Y ACCIONES PENDIENTES ========== -->
+  <section class="dashboard-section">
+    <h2 class="section-title">Alertas y Acciones Pendientes</h2>
+    <div class="alerts-grid">
+      <div class="alert-card">
+        <div class="alert-header">
+          <i class="fas fa-exclamation-circle" style="color: #dc2626;"></i>
+          <h3>Pacientes sin Plan Activo</h3>
+          <span class="badge">{{ sin_plan_activo|length }}</span>
+        </div>
+        <div class="alert-content">
+          {% if sin_plan_activo %}
+          <table class="alert-table">
+            <thead>
+              <tr>
+                <th>Paciente</th>
+                <th>DNI</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for paciente in sin_plan_activo[:5] %}
+              <tr>
+                <td>{{ paciente[1] or 'Sin nombre' }}</td>
+                <td>{{ paciente[2] }}</td>
+                <td>
+                  <a href="{{ url_for('admin_generar_plan') }}?paciente_id={{ paciente[0] }}" class="btn-small">
+                    <i class="fas fa-plus"></i> Crear Plan
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="no-data">No hay pacientes sin plan activo</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="alert-card">
+        <div class="alert-header">
+          <i class="fas fa-clock" style="color: #f59e0b;"></i>
+          <h3>Datos Clínicos Desactualizados</h3>
+          <span class="badge">{{ datos_desactualizados|length }}</span>
+        </div>
+        <div class="alert-content">
+          {% if datos_desactualizados %}
+          <table class="alert-table">
+            <thead>
+              <tr>
+                <th>Paciente</th>
+                <th>Última Fecha</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for paciente in datos_desactualizados[:5] %}
+              <tr>
+                <td>{{ paciente[1] or 'Sin nombre' }}</td>
+                <td>{{ paciente[3].strftime('%d/%m/%Y') if paciente[3] else 'Nunca' }}</td>
+                <td>
+                  <a href="{{ url_for('admin_pacientes') }}?id={{ paciente[0] }}" class="btn-small">
+                    <i class="fas fa-edit"></i> Actualizar
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="no-data">Todos los pacientes tienen datos actualizados</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="alert-card">
+        <div class="alert-header">
+          <i class="fas fa-calendar-times" style="color: #7c3aed;"></i>
+          <h3>Planes por Vencer (7 días)</h3>
+          <span class="badge">{{ planes_por_vencer|length }}</span>
+        </div>
+        <div class="alert-content">
+          {% if planes_por_vencer %}
+          <table class="alert-table">
+            <thead>
+              <tr>
+                <th>Paciente</th>
+                <th>Vence</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for plan in planes_por_vencer[:5] %}
+              <tr>
+                <td>{{ plan[3] or 'Sin nombre' }}</td>
+                <td>{{ plan[1].strftime('%d/%m/%Y') }}</td>
+                <td>
+                  <a href="{{ url_for('admin_generar_plan') }}?paciente_id={{ plan[2] }}" class="btn-small">
+                    <i class="fas fa-sync"></i> Renovar
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="no-data">No hay planes próximos a vencer</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+// Esperar a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+// Datos para los gráficos
+const distribucionSexo = {{ distribucion_sexo | tojson }};
+const distribucionEdad = {{ distribucion_edad | tojson }};
+const distribucionIMC = {{ distribucion_imc | tojson }};
+const controlGlucemico = {{ control_glucemico | tojson }};
+const tendenciaHbA1c = {{ tendencia_hba1c | tojson }};
+const tendenciaGlucosa = {{ tendencia_glucosa | tojson }};
+const tendenciaIMC = {{ tendencia_imc | tojson }};
+
+// Configuración común para gráficos de dona
+const donutConfig = {
+  type: 'doughnut',
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 1,
+    layout: {
+      padding: {
+        top: 10,
+        bottom: 10
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          padding: 10,
+          font: {
+            size: 11
+          },
+          boxWidth: 12
+        }
+      }
+    }
+  }
+};
+
+// Gráfico de distribución por sexo
+if (distribucionSexo && distribucionSexo.length > 0) {
+  const ctxSexo = document.getElementById('chartSexo');
+  if (ctxSexo) {
+    new Chart(ctxSexo, {
+      ...donutConfig,
+      data: {
+        labels: distribucionSexo.map(item => item[0]),
+        datasets: [{
+          data: distribucionSexo.map(item => parseInt(item[1]) || 0),
+          backgroundColor: ['#4f46e5', '#ec4899', '#94a3b8']
+        }]
+      }
+    });
+  }
+} else {
+  const wrapper = document.getElementById('chartSexo')?.parentElement;
+  if (wrapper) wrapper.innerHTML = '<p class="no-data">No hay datos disponibles</p>';
+}
+
+// Gráfico de distribución por edad
+if (distribucionEdad && distribucionEdad.length > 0) {
+  const ctxEdad = document.getElementById('chartEdad');
+  if (ctxEdad) {
+    new Chart(ctxEdad, {
+      ...donutConfig,
+      data: {
+        labels: distribucionEdad.map(item => item[0]),
+        datasets: [{
+          data: distribucionEdad.map(item => parseInt(item[1]) || 0),
+          backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444']
+        }]
+      }
+    });
+  }
+} else {
+  const wrapper = document.getElementById('chartEdad')?.parentElement;
+  if (wrapper) wrapper.innerHTML = '<p class="no-data">No hay datos disponibles</p>';
+}
+
+// Gráfico de distribución por IMC
+if (distribucionIMC && distribucionIMC.length > 0) {
+  const ctxIMC = document.getElementById('chartIMC');
+  if (ctxIMC) {
+    new Chart(ctxIMC, {
+      ...donutConfig,
+      data: {
+        labels: distribucionIMC.map(item => item[0]),
+        datasets: [{
+          data: distribucionIMC.map(item => parseInt(item[1]) || 0),
+          backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#94a3b8']
+        }]
+      }
+    });
+  }
+} else {
+  const wrapper = document.getElementById('chartIMC')?.parentElement;
+  if (wrapper) wrapper.innerHTML = '<p class="no-data">No hay datos disponibles</p>';
+}
+
+// Gráfico de control glucémico
+if (controlGlucemico && controlGlucemico.length > 0) {
+  const ctxControl = document.getElementById('chartControl');
+  if (ctxControl) {
+    new Chart(ctxControl, {
+      ...donutConfig,
+      data: {
+        labels: controlGlucemico.map(item => item[0]),
+        datasets: [{
+          data: controlGlucemico.map(item => parseInt(item[1]) || 0),
+          backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#94a3b8']
+        }]
+      }
+    });
+  }
+} else {
+  const wrapper = document.getElementById('chartControl')?.parentElement;
+  if (wrapper) wrapper.innerHTML = '<p class="no-data">No hay datos disponibles</p>';
+}
+
+// Configuración para gráficos de línea
+const lineConfig = {
+  type: 'line',
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    aspectRatio: 2.5,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        ticks: {
+          precision: 1
+        }
+      },
+      x: {
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45
+        }
+      }
+    }
+  }
+};
+
+// Gráfico de tendencia HbA1c
+if (tendenciaHbA1c.length > 0) {
+  new Chart(document.getElementById('chartHbA1c'), {
+    ...lineConfig,
+    data: {
+      labels: tendenciaHbA1c.map(item => item[0]),
+      datasets: [{
+        label: 'HbA1c (%)',
+        data: tendenciaHbA1c.map(item => parseFloat(item[1])),
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    }
+  });
+}
+
+// Gráfico de tendencia Glucosa
+if (tendenciaGlucosa.length > 0) {
+  new Chart(document.getElementById('chartGlucosa'), {
+    ...lineConfig,
+    data: {
+      labels: tendenciaGlucosa.map(item => item[0]),
+      datasets: [{
+        label: 'Glucosa (mg/dL)',
+        data: tendenciaGlucosa.map(item => parseFloat(item[1])),
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    }
+  });
+}
+
+// Gráfico de tendencia IMC
+if (tendenciaIMC && tendenciaIMC.length > 0) {
+  const ctxIMCTendencia = document.getElementById('chartIMCTendencia');
+  if (ctxIMCTendencia) {
+    new Chart(ctxIMCTendencia, {
+      ...lineConfig,
+      data: {
+        labels: tendenciaIMC.map(item => item[0]),
+        datasets: [{
+          label: 'IMC (kg/m²)',
+          data: tendenciaIMC.map(item => parseFloat(item[1]) || 0),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      }
+    });
+  }
+} else {
+  const wrapper = document.getElementById('chartIMCTendencia')?.parentElement;
+  if (wrapper) wrapper.innerHTML = '<p class="no-data">No hay datos disponibles</p>';
+}
+}); // Fin del DOMContentLoaded
+</script>
+
+<style>
+.dashboard-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-header h1 i {
+  color: var(--primary);
+}
+
+.dashboard-subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.dashboard-section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--line);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  max-height: 400px !important;
+  overflow: hidden;
+}
+
+.chart-card.chart-wide {
+  grid-column: 1 / -1;
+  max-height: 450px !important;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 20px 0;
+  flex-shrink: 0;
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px !important;
+  max-height: 280px !important;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.chart-card.chart-wide .chart-wrapper {
+  height: 350px !important;
+  max-height: 350px !important;
+}
+
+.chart-card canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain;
+}
+
+/* Alerts Grid */
+.alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.alert-card {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.alert-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  flex: 1;
+}
+
+.badge {
+  background: var(--primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.alert-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.alert-table th {
+  text-align: left;
+  padding: 8px 0;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+
+.alert-table td {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.alert-table tr:last-child td {
+  border-bottom: none;
+}
+
+.btn-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--primary);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-small:hover {
+  background: #1d4ed8;
+}
+
+.no-data {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+  margin: 0;
+}
+
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .alerts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}
+

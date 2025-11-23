@@ -1,0 +1,43 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Usuarios" %}
+{% set header_title = "Usuarios" %}
+{% set active_nav = "usuarios" %}
+
+{% block content %}
+<div class="form-card">
+  <h3>{{ 'Nuevo usuario' if mode=='new' else 'Editar usuario' }}</h3>
+  <form method="post">
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" required value="{{ user[1] if user else '' }}">
+    </div>
+
+    <div class="form-group">
+      <label>Estado</label>
+      <select name="estado">
+        {% set st = user[2] if user else 'activo' %}
+        <option value="activo" {{ 'selected' if st=='activo' else '' }}>Activo</option>
+        <option value="bloqueado" {{ 'selected' if st=='bloqueado' else '' }}>Bloqueado</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Requiere MFA
+        <input type="checkbox" name="mfa" {{ 'checked' if (user and user[3]) else '' }}>
+        
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" name="password" placeholder="{{ 'Dejar vacío para no cambiar' if mode=='edit' }}">
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      <a class="btn" href="{{ url_for('admin_usuarios') }}">Volver</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

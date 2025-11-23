@@ -1,0 +1,18 @@
+
+Flask==3.0.2
+Werkzeug==3.0.1
+python-dotenv==1.0.1
+gunicorn==21.2.0
+
+# Email (SMTP)
+# No requiere librerías adicionales, usa smtplib (incluido en Python)
+
+# PostgreSQL driver (psycopg v3, recomendado)
+psycopg[binary]==3.1.18
+psycopg-pool==3.1.8
+
+# Machine Learning (para modelo XGBoost de recomendaciones)
+pandas>=2.0.0
+numpy>=1.24.0
+xgboost>=2.0.0
+scikit-learn>=1.3.0

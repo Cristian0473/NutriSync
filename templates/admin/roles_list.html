@@ -1,0 +1,523 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Roles" %}
+{% set header_title = "Roles" %}
+{% set active_nav = "roles" %}
+
+{% block content %}
+<div class="toolbar" style="justify-content: space-between; gap:10px;">
+  <button id="btnNuevoRol" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Nuevo rol
+  </button>
+
+  <!-- 🔎 Buscador de roles -->
+  <div class="searchbox" style="min-width:360px;">
+    <i class="fas fa-user-shield"></i>
+    <input id="buscarRolInput" type="text" placeholder="Buscar rol por nombre...">
+    <button id="btnClearRol" class="clear" title="Limpiar">×</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-user-shield"></i> Lista de roles</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <!-- 🔄 Render dinámico -->
+      <div id="tablaRoles"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: ROL (nuevo/editar) ===== -->
+<div class="modal" id="modalRol" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalRol"></div>
+
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-shield"></i> <span id="rol_titulo">Nuevo rol</span></h3>
+      <button class="modal-close js-close-modal" data-target="#modalRol" aria-label="Cerrar">×</button>
+    </div>
+
+    <form id="formRol" method="post" action="{{ url_for('admin_rol_nuevo') }}">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-row">
+            <label for="r_nombre">Nombre</label>
+            <input type="text" id="r_nombre" name="nombre" required maxlength="40" placeholder="ej.: recepcion">
+          </div>
+          <div class="form-row full">
+            <label for="r_desc">Descripción</label>
+            <input type="text" id="r_desc" name="descripcion" maxlength="140" placeholder="Opcional">
+          </div>
+        </div>
+        <small class="form-help">Evita duplicados. Los roles reservados <code>admin</code> y <code>paciente</code> no pueden borrarse.</small>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalRol">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
+<script src="{{ url_for('static', filename='js/roles.js') }}"></script>
+
+<style>
+  /* ===== ESTILOS MODERNOS PARA ROLES ===== */
+  /* Modal básico (visible al tener .open) */
+  .modal { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    z-index: 1000; 
+  }
+  .modal.open { 
+    display: block; 
+  }
+  .modal-backdrop { 
+    position: absolute; 
+    inset: 0; 
+    background: rgba(0,0,0,0.45); 
+  }
+  .modal-dialog { 
+    position: relative; 
+    max-width: 560px; 
+    margin: 60px auto; 
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+  .modal-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  .modal-body {
+    padding: 24px;
+  }
+  .modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  
+  /* Formulario dentro del modal */
+  .form-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-row.full {
+    grid-column: 1 / -1;
+  }
+  .form-row label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 14px;
+  }
+  .form-row input {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  .form-row input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  .form-row input[readonly] {
+    background-color: #f9fafb;
+    color: #6b7280;
+  }
+  .form-help {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .form-help code {
+    background: #f3f4f6;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  
+  /* Tabla compacta y moderna */
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+  }
+  
+  .tbl th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .tbl td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  
+  .tbl tbody tr:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  /* Badges para roles especiales */
+  .rol-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .rol-badge.admin {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+  }
+  
+  .rol-badge.paciente {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+  }
+  
+  .rol-badge.custom {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+  
+  /* Botones de acción modernos */
+  .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .actions .btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .actions .btn-sm {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .actions .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  .actions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  }
+  
+  .actions .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+  
+  .actions .btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  }
+  
+  .actions .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+  
+  /* Modal mejorado */
+  .modal-dialog {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .modal-body {
+    padding: 24px;
+  }
+  
+  .form-row {
+    margin-bottom: 20px;
+  }
+  
+  .form-row label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .form-row input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+  
+  .form-row input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .form-row input:read-only {
+    background: #f8fafc;
+    color: #64748b;
+  }
+  
+  .form-help {
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  
+  .form-help code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  
+  .modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  
+  .modal-footer .btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .modal-footer .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+  
+  .modal-footer .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .tbl {
+      font-size: 12px;
+    }
+    
+    .tbl th, .tbl td {
+      padding: 8px 6px;
+    }
+    
+    .actions {
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .modal-dialog {
+      margin: 20px;
+      width: calc(100% - 40px);
+    }
+  }
+</style>
+
+<script>
+  // ====== Cargar datos cuando el DOM esté listo ======
+  document.addEventListener('DOMContentLoaded', function() {
+    // Obtener datos del template
+    ALL_ROLES = [
+      {% for r in rows %}
+      {
+        id: {{ r.id }},
+        nombre: "{{ r.nombre }}",
+        descripcion: "{{ r.descripcion or '' }}",
+        usuarios: {{ r.usuarios }},
+        esReservado: {{ 'true' if r.nombre in ['admin','paciente'] else 'false' }}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    console.log('ALL_ROLES cargados:', ALL_ROLES);
+    
+    // ====== CRUD de roles ======
+    // Nuevo rol
+    const btnNuevoRol = document.getElementById('btnNuevoRol');
+    if (btnNuevoRol) {
+      btnNuevoRol.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Botón nuevo rol clickeado!');
+        
+        const f = document.getElementById('formRol');
+        const modal = document.getElementById('modalRol');
+        
+        if (f && modal) {
+          f.action = "{{ url_for('admin_rol_nuevo') }}";
+          document.getElementById('rol_titulo').innerText = "Nuevo rol";
+          document.getElementById('r_nombre').value = "";
+          document.getElementById('r_nombre').readOnly = false;
+          document.getElementById('r_desc').value = "";
+          
+          console.log('Abriendo modal...');
+          modal.classList.add('open');
+          console.log('Modal classes:', modal.className);
+        } else {
+          console.error('No se encontró el formulario o modal');
+        }
+      });
+    } else {
+      console.error('No se pudo encontrar btnNuevoRol');
+    }
+
+    // Renderizar tabla inicial
+    renderTablaRoles();
+    
+    // Verificar que el modal funcione
+    console.log('btnNuevoRol:', document.getElementById('btnNuevoRol'));
+    console.log('modalRol:', document.getElementById('modalRol'));
+
+    // ====== Búsqueda (sin jQuery) ======
+    const buscarInput = document.getElementById('buscarRolInput');
+    const btnClear = document.getElementById('btnClearRol');
+    let searchTimeout;
+    if (buscarInput) {
+      buscarInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        searchTimeout = setTimeout(() => renderTablaRoles(query), 300);
+        if (btnClear) btnClear.style.visibility = query ? 'visible' : 'hidden';
+      });
+    }
+    if (btnClear) {
+      btnClear.addEventListener('click', function() {
+        if (buscarInput) buscarInput.value = '';
+        renderTablaRoles('');
+        this.style.visibility = 'hidden';
+        if (buscarInput) buscarInput.focus();
+      });
+      btnClear.style.visibility = 'hidden';
+    }
+  });
+
+  // ====== Util modales (delegación para cerrar) ======
+  document.addEventListener('click', (ev) => {
+    const target = ev.target;
+    
+    // Cerrar modal con botones
+    if (target.classList.contains('js-close-modal')) {
+      const sel = target.dataset.target;
+      if (sel) {
+        const m = document.querySelector(sel);
+        if (m) {
+          m.classList.remove('open');
+          console.log('Modal cerrado:', sel);
+        }
+      }
+    }
+    
+    // Cerrar modal haciendo clic en el backdrop
+    if (target.classList.contains('modal-backdrop')) {
+      const modal = target.closest('.modal');
+      if (modal) {
+        modal.classList.remove('open');
+        console.log('Modal cerrado por backdrop');
+      }
+    }
+  });
+</script>
+{% endblock %}

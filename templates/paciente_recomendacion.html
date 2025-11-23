@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Recomendación Nutricional{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-utensils text-primary"></i>
+                Mi Recomendación Nutricional Personalizada
+            </h2>
+            
+            <!-- Información del Paciente -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i>
+                        Información del Paciente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nombre:</strong> {{ paciente_data[1] }} {{ paciente_data[2] }}</p>
+                            <p><strong>Edad:</strong> {{ recomendacion.perfil.edad }} años</p>
+                            <p><strong>Sexo:</strong> {{ recomendacion.perfil.sexo }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Peso:</strong> {{ recomendacion.perfil.peso }} kg</p>
+                            <p><strong>Talla:</strong> {{ recomendacion.perfil.talla }} m</p>
+                            <p><strong>IMC:</strong> {{ recomendacion.perfil.imc }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if recomendacion.perfil.hba1c %}
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <p><strong>HbA1c:</strong> {{ recomendacion.perfil.hba1c }}%</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Glucosa en ayunas:</strong> {{ recomendacion.perfil.glucosa_ayunas }} mg/dL</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Metas Nutricionales -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-target"></i>
+                        Metas Nutricionales Diarias
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-primary">{{ recomendacion.metas_nutricionales.calorias_diarias }}</h3>
+                                <p class="text-muted">Calorías</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-warning">{{ recomendacion.metas_nutricionales.carbohidratos_g }}g</h3>
+                                <p class="text-muted">Carbohidratos ({{ recomendacion.metas_nutricionales.carbohidratos_porcentaje }}%)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-info">{{ recomendacion.metas_nutricionales.proteinas_g }}g</h3>
+                                <p class="text-muted">Proteínas ({{ recomendacion.metas_nutricionales.proteinas_porcentaje }}%)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-danger">{{ recomendacion.metas_nutricionales.grasas_g }}g</h3>
+                                <p class="text-muted">Grasas ({{ recomendacion.metas_nutricionales.grasas_porcentaje }}%)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6 text-center">
+                            <div class="metric-card">
+                                <h4 class="text-success">{{ recomendacion.metas_nutricionales.fibra_g }}g</h4>
+                                <p class="text-muted">Fibra</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-center">
+                            <div class="metric-card">
+                                <h4 class="text-secondary">{{ recomendacion.metas_nutricionales.sodio_mg }}mg</h4>
+                                <p class="text-muted">Sodio máximo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recomendaciones Especiales -->
+            {% if recomendacion.recomendaciones_especiales %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Recomendaciones Especiales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for recomendacion_esp in recomendacion.recomendaciones_especiales %}
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            {{ recomendacion_esp }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Plan de Comidas - Diseño de Horario -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i>
+                        Horario de Comidas Personalizado
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for tiempo, comida in recomendacion.comidas.items() %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
+                                {% if tiempo == 'des' %}
+                                    <i class="fas fa-sun"></i>
+                                {% elif tiempo == 'mm' %}
+                                    <i class="fas fa-coffee"></i>
+                                {% elif tiempo == 'alm' %}
+                                    <i class="fas fa-sun"></i>
+                                {% elif tiempo == 'mt' %}
+                                    <i class="fas fa-coffee"></i>
+                                {% elif tiempo == 'cena' %}
+                                    <i class="fas fa-moon"></i>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <div class="meal-header">
+                                    <h6 class="meal-time">
+                                        {% if tiempo == 'des' %}
+                                            07:00 - Desayuno
+                                        {% elif tiempo == 'mm' %}
+                                            10:00 - Media Mañana
+                                        {% elif tiempo == 'alm' %}
+                                            13:00 - Almuerzo
+                                        {% elif tiempo == 'mt' %}
+                                            16:00 - Media Tarde
+                                        {% elif tiempo == 'cena' %}
+                                            19:00 - Cena
+                                        {% endif %}
+                                    </h6>
+                                    <span class="cho-target">{{ comida.carbohidratos_meta }}g CHO</span>
+                                </div>
+                                
+                                {% if comida.alimentos_sugeridos %}
+                                <div class="food-grid">
+                                    {% for alimento in comida.alimentos_sugeridos %}
+                                    <div class="food-card">
+                                        <div class="food-name">{{ alimento.ingrediente.nombre }}</div>
+                                        <div class="food-quantity">{{ alimento.cantidad_sugerida }}{{ alimento.unidad }}</div>
+                                        <div class="food-nutrition">
+                                            <span class="nutrition-item">
+                                                <i class="fas fa-bread-slice"></i>
+                                                {{ "%.1f"|format(alimento.ingrediente.cho * alimento.cantidad_sugerida / 100) }}g CHO
+                                            </span>
+                                            <span class="nutrition-item">
+                                                <i class="fas fa-drumstick-bite"></i>
+                                                {{ "%.1f"|format(alimento.ingrediente.pro * alimento.cantidad_sugerida / 100) }}g Pro
+                                            </span>
+                                        </div>
+                                        <div class="food-reason">{{ alimento.motivo }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="no-foods">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>No hay alimentos sugeridos para esta comida.</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Información Adicional
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Fecha de generación:</strong> {{ recomendacion.fecha }}</p>
+                            <p><strong>Ingredientes disponibles:</strong> {{ recomendacion.ingredientes_disponibles }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Nivel de actividad:</strong> {{ recomendacion.perfil.actividad }}</p>
+                            <p><strong>Motor de recomendación:</strong> NutriSync v1.0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="fas fa-lightbulb"></i> Consejos importantes:</h6>
+                        <ul class="mb-0">
+                            <li>Consulte siempre con su nutricionista antes de realizar cambios en su dieta</li>
+                            <li>Monitoree sus niveles de glucosa regularmente</li>
+                            <li>Mantenga horarios regulares de comida</li>
+                            <li>Combine carbohidratos con proteínas y grasas saludables</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.metric-card {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+/* Timeline Styles */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #007bff, #28a745, #ffc107, #dc3545, #6f42c1);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+    padding-left: 2rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.timeline-item:nth-child(1) .timeline-marker { background: #ffc107; } /* Desayuno - amarillo */
+.timeline-item:nth-child(2) .timeline-marker { background: #6c757d; } /* Media mañana - gris */
+.timeline-item:nth-child(3) .timeline-marker { background: #28a745; } /* Almuerzo - verde */
+.timeline-item:nth-child(4) .timeline-marker { background: #6c757d; } /* Media tarde - gris */
+.timeline-item:nth-child(5) .timeline-marker { background: #6f42c1; } /* Cena - morado */
+
+.timeline-content {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+
+.meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.meal-time {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+}
+
+.cho-target {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.food-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.food-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid #007bff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.food-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.food-name {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.food-quantity {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 0.75rem;
+}
+
+.food-nutrition {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.nutrition-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nutrition-item i {
+    color: #007bff;
+}
+
+.food-reason {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-style: italic;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border-left: 3px solid #28a745;
+}
+
+.no-foods {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6c757d;
+    font-style: italic;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 1.5rem;
+    }
+    
+    .timeline::before {
+        left: 0.75rem;
+    }
+    
+    .timeline-item {
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-marker {
+        left: -1rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+    }
+    
+    .food-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .meal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .food-nutrition {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

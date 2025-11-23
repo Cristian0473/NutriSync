@@ -1,0 +1,982 @@
+{% extends "paciente/base_paciente.html" %}
+{% set page_title = "NutriSync · Mi Plan Nutricional" %}
+{% set header_title = "Mi Plan Nutricional" %}
+{% set active_nav = "plan" %}
+
+{% block content %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-utensils"></i> Mi Plan Nutricional Personalizado</h3>
+  </div>
+  <div class="card-body">
+    <!-- Información del Paciente -->
+    <div class="patient-info-section">
+      <h4><i class="fas fa-user"></i> Información del Paciente</h4>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Nombre:</span>
+          <span class="info-value">{{ paciente_data[6] }} {{ paciente_data[7] }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">DNI:</span>
+          <span class="info-value">{{ paciente_data[1] }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metas Nutricionales -->
+    {% if metas_nutricionales %}
+    <div class="metas-section">
+      <h4><i class="fas fa-target"></i> Metas Nutricionales Diarias</h4>
+      <div class="metas-grid">
+        <div class="meta-card">
+          <div class="meta-icon"><i class="fas fa-fire"></i></div>
+          <div class="meta-value">{{ metas_nutricionales.get('calorias_diarias', 0) }}</div>
+          <div class="meta-label">Calorías</div>
+        </div>
+        <div class="meta-card cho">
+          <div class="meta-icon"><i class="fas fa-bread-slice"></i></div>
+          <div class="meta-value">{{ metas_nutricionales.get('carbohidratos_g', 0) }}g</div>
+          <div class="meta-label">Carbohidratos ({{ metas_nutricionales.get('carbohidratos_porcentaje', 0) }}%)</div>
+        </div>
+        <div class="meta-card pro">
+          <div class="meta-icon"><i class="fas fa-drumstick-bite"></i></div>
+          <div class="meta-value">{{ metas_nutricionales.get('proteinas_g', 0) }}g</div>
+          <div class="meta-label">Proteínas ({{ metas_nutricionales.get('proteinas_porcentaje', 0) }}%)</div>
+        </div>
+        <div class="meta-card fat">
+          <div class="meta-icon"><i class="fas fa-seedling"></i></div>
+          <div class="meta-value">{{ metas_nutricionales.get('grasas_g', 0) }}g</div>
+          <div class="meta-label">Grasas ({{ metas_nutricionales.get('grasas_porcentaje', 0) }}%)</div>
+        </div>
+        {% if metas_nutricionales.get('fibra_g') %}
+        <div class="meta-card fiber">
+          <div class="meta-icon"><i class="fas fa-leaf"></i></div>
+          <div class="meta-value">{{ metas_nutricionales.get('fibra_g', 0) }}g</div>
+          <div class="meta-label">Fibra</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Plan de Comidas en Formato Horario -->
+    {% if plan_completo and plan_completo.dias %}
+    <!-- Encabezado para impresión -->
+    <div class="print-header" style="display: none;">
+      <h1>Plan Nutricional Personalizado</h1>
+      <div class="patient-info">
+        <strong>{{ paciente_data[6] }} {{ paciente_data[7] }}</strong> | DNI: {{ paciente_data[1] }}
+      </div>
+      {% if plan_completo.fecha_ini and plan_completo.fecha_fin %}
+      <div class="patient-info">
+        Período: {{ plan_completo.fecha_ini }} al {{ plan_completo.fecha_fin }}
+      </div>
+      {% endif %}
+    </div>
+    
+    <div class="comidas-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h4 style="margin: 0;"><i class="fas fa-clock"></i> Horario de Comidas</h4>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          {% set dias_ordenados = plan_completo.dias.keys()|sort|list %}
+          {% set num_dias = dias_ordenados|length %}
+          {% set total_semanas = (num_dias / 7)|round(0, 'ceil')|int %}
+          {% if total_semanas > 1 %}
+          <div class="pagination-controls no-print">
+            <button class="pagination-btn" id="prevWeek" onclick="cambiarSemana(-1)">
+              <i class="fas fa-chevron-left"></i> Anterior
+            </button>
+            <span class="week-info">
+              Semana <span id="currentWeek">1</span> de {{ total_semanas }}
+            </span>
+            <button class="pagination-btn" id="nextWeek" onclick="cambiarSemana(1)">
+              Siguiente <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          {% endif %}
+          <button class="btn btn-primary no-print" onclick="window.print()" style="padding: 8px 16px;">
+            <i class="fas fa-print"></i> Imprimir Plan
+          </button>
+        </div>
+      </div>
+      
+      {% if plan_completo.fecha_ini and plan_completo.fecha_fin %}
+      <div class="plan-dates">
+        <p><strong>Período:</strong> {{ plan_completo.fecha_ini }} al {{ plan_completo.fecha_fin }}</p>
+      </div>
+      {% endif %}
+      
+      <div class="plan-schedule">
+        <div class="leyenda-grupos">
+          <span style="background:#8b5cf6; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Cereales</span>
+          <span style="background:#10b981; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Verduras</span>
+          <span style="background:#f59e0b; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Frutas</span>
+          <span style="background:#06b6d4; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Lácteos</span>
+          <span style="background:#ef4444; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Carnes</span>
+          <span style="background:#ec4899; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Azúcares</span>
+          <span style="background:#f97316; color:white; padding:4px 8px; border-radius:6px; font-size:12px;">Grasas</span>
+        </div>
+        
+      {% set dias_ordenados = plan_completo.dias.keys()|sort|list %}
+      {% set num_dias = dias_ordenados|length %}
+      {% set total_semanas = (num_dias / 7)|round(0, 'ceil')|int %}
+      <div class="schedule-grid-wrapper">
+        <div class="schedule-grid" id="scheduleGrid" data-total-dias="{{ num_dias }}" data-total-semanas="{{ total_semanas }}">
+          <!-- El contenido se generará dinámicamente con JavaScript -->
+        </div>
+      </div>
+      
+      <script>
+        // Datos del plan
+        const planData = {
+          dias: {{ plan_completo.dias|tojson|safe }},
+          diasOrdenados: {{ dias_ordenados|tojson|safe }},
+          numDias: {{ num_dias }},
+          totalSemanas: {{ total_semanas }}
+        };
+        
+        let semanaActual = 1;
+        
+        function renderizarSemana(semana) {
+          const grid = document.getElementById('scheduleGrid');
+          if (!grid) return;
+          
+          const inicioSemana = (semana - 1) * 7;
+          const finSemana = Math.min(semana * 7, planData.numDias);
+          const diasSemana = planData.diasOrdenados.slice(inicioSemana, finSemana);
+          const numDiasSemana = diasSemana.length;
+          
+          // Establecer columnas del grid
+          grid.style.gridTemplateColumns = `100px repeat(${numDiasSemana}, minmax(200px, 1fr))`;
+          
+          let html = '';
+          
+          // Encabezado de días
+          html += '<div class="time-header">Hora</div>';
+          diasSemana.forEach((diaFecha, index) => {
+            const diaNum = inicioSemana + index + 1;
+            html += `<div class="day-header">Día ${diaNum}<br><small>${diaFecha}</small></div>`;
+          });
+          
+          // Filas de horarios
+          const horarios = [
+            ['07:00', 'des', 'Desayuno'],
+            ['10:00', 'mm', 'Media Mañana'],
+            ['12:00', 'alm', 'Almuerzo'],
+            ['15:00', 'mt', 'Media Tarde'],
+            ['19:00', 'cena', 'Cena']
+          ];
+          
+          const coloresGrupo = {
+            'GRUPO1_CEREALES': '#8b5cf6',
+            'GRUPO2_VERDURAS': '#10b981',
+            'GRUPO3_FRUTAS': '#f59e0b',
+            'GRUPO4_LACTEOS': '#06b6d4',
+            'GRUPO5_CARNES': '#ef4444',
+            'GRUPO6_AZUCARES': '#ec4899',
+            'GRUPO7_GRASAS': '#f97316'
+          };
+          
+          horarios.forEach(([hora, tiempoCodigo, tiempoNombre]) => {
+            html += `<div class="time-cell">${hora}</div>`;
+            
+            diasSemana.forEach(diaFecha => {
+              const dia = planData.dias[diaFecha] || {};
+              const comida = dia[tiempoCodigo];
+              
+              if (comida && comida.alimentos && comida.alimentos.length > 0) {
+                html += '<div class="meal-cell">';
+                html += '<div class="meal-info">';
+                html += `<strong class="meal-name ${tiempoCodigo}">${tiempoNombre}</strong>`;
+                html += '<div class="meal-foods">';
+                
+                comida.alimentos.forEach(alimento => {
+                  const grupo = alimento.grupo || '';
+                  const colorGrupo = coloresGrupo[grupo] || '#6b7280';
+                  let cantidadDisplay = String(alimento.cantidad || '');
+                  if (cantidadDisplay.endsWith('.00')) {
+                    cantidadDisplay = cantidadDisplay.slice(0, -3);
+                  } else if (cantidadDisplay.endsWith('.0')) {
+                    cantidadDisplay = cantidadDisplay.slice(0, -2);
+                  }
+                  const unidadDisplay = alimento.unidad || '';
+                  
+                  html += `<div class="food-item" style="background: ${colorGrupo}20; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 2px 6px; border-radius: 4px; margin: 2px 0; font-size: 11px; font-weight: 500;">`;
+                  html += `${alimento.nombre} - ${cantidadDisplay}${unidadDisplay}`;
+                  html += '</div>';
+                });
+                
+                html += '</div></div></div>';
+              } else {
+                html += '<div class="meal-cell"><div class="no-meal">—</div></div>';
+              }
+            });
+          });
+          
+          grid.innerHTML = html;
+        }
+        
+        function cambiarSemana(direccion) {
+          const nuevaSemana = semanaActual + direccion;
+          
+          if (nuevaSemana >= 1 && nuevaSemana <= planData.totalSemanas) {
+            semanaActual = nuevaSemana;
+            
+            // Actualizar indicador de semana
+            const currentWeekEl = document.getElementById('currentWeek');
+            if (currentWeekEl) {
+              currentWeekEl.textContent = semanaActual;
+            }
+            
+            // Actualizar botones de paginación
+            const prevBtn = document.getElementById('prevWeek');
+            const nextBtn = document.getElementById('nextWeek');
+            if (prevBtn) prevBtn.disabled = semanaActual === 1;
+            if (nextBtn) nextBtn.disabled = semanaActual === planData.totalSemanas;
+            
+            // Renderizar la semana
+            renderizarSemana(semanaActual);
+          }
+        }
+        
+        // Ajustar grid para impresión
+        function ajustarGridParaImpresion() {
+          const grid = document.getElementById('scheduleGrid');
+          if (!grid) return;
+          
+          const numDiasSemana = semanaActual === planData.totalSemanas 
+            ? planData.numDias - (planData.totalSemanas - 1) * 7 
+            : 7;
+          
+          // En impresión, usar columnas más pequeñas y distribuidas uniformemente
+          grid.style.setProperty('grid-template-columns', `50px repeat(${numDiasSemana}, 1fr)`, 'important');
+        }
+        
+        // Detectar cuando se va a imprimir
+        window.addEventListener('beforeprint', function() {
+          ajustarGridParaImpresion();
+        });
+        
+        // Restaurar después de imprimir
+        window.addEventListener('afterprint', function() {
+          const grid = document.getElementById('scheduleGrid');
+          if (grid) {
+            const numDiasSemana = semanaActual === planData.totalSemanas 
+              ? planData.numDias - (planData.totalSemanas - 1) * 7 
+              : 7;
+            grid.style.gridTemplateColumns = `100px repeat(${numDiasSemana}, minmax(200px, 1fr))`;
+          }
+        });
+        
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+          renderizarSemana(1);
+          const prevBtn = document.getElementById('prevWeek');
+          const nextBtn = document.getElementById('nextWeek');
+          if (prevBtn) prevBtn.disabled = true;
+          if (nextBtn && planData.totalSemanas <= 1) nextBtn.disabled = true;
+        });
+      </script>
+      </div>
+      
+      <!-- Pie de página para impresión -->
+      <div class="print-footer" style="display: none;">
+        <p>Documento generado el <span id="fecha-generacion"></span> | NutriSync - Sistema de Gestión Nutricional</p>
+      </div>
+      <script>
+        // Establecer fecha de generación
+        document.addEventListener('DOMContentLoaded', function() {
+          const fechaEl = document.getElementById('fecha-generacion');
+          if (fechaEl) {
+            const ahora = new Date();
+            const dia = String(ahora.getDate()).padStart(2, '0');
+            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+            const año = ahora.getFullYear();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            fechaEl.textContent = `${dia}/${mes}/${año} ${horas}:${minutos}`;
+          }
+        });
+      </script>
+    </div>
+    {% else %}
+    <div class="content-card">
+      <div class="card-body">
+        <div class="empty-state">
+          <i class="fas fa-utensils"></i>
+          <h3>No tienes un plan nutricional activo</h3>
+          <p>Contacta con tu nutricionista para obtener un plan personalizado.</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.patient-info-section,
+.metas-section,
+.comidas-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.patient-info-section:last-child,
+.metas-section:last-child,
+.comidas-section:last-child {
+  border-bottom: none;
+}
+
+.patient-info-section h4,
+.metas-section h4,
+.comidas-section h4 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.patient-info-section h4 i,
+.metas-section h4 i,
+.comidas-section h4 i {
+  color: var(--primary);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.metas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.meta-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.meta-card.cho {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.meta-card.pro {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.meta-card.fat {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.meta-card.fiber {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.meta-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.9;
+}
+
+.meta-value {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.meta-label {
+  font-size: 13px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plan-dates {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.plan-dates p {
+  margin: 0;
+  color: #64748b;
+}
+
+.leyenda-grupos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.schedule-grid-wrapper {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.schedule-grid {
+  display: grid;
+  gap: 8px;
+  min-width: fit-content;
+}
+
+.time-header,
+.day-header {
+  padding: 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.day-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.schedule-row {
+  display: contents;
+}
+
+.time-cell {
+  padding: 12px;
+  background: #f8fafc;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f2937;
+}
+
+.meal-cell {
+  padding: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-height: 80px;
+}
+
+.meal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meal-name {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.meal-name.des { color: #fbbf24; }
+.meal-name.mm { color: #6b7280; }
+.meal-name.alm { color: #10b981; }
+.meal-name.mt { color: #6b7280; }
+.meal-name.cena { color: #8b5cf6; }
+
+.meal-foods {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.food-item {
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.no-meal {
+  text-align: center;
+  color: #cbd5e1;
+  font-style: italic;
+  padding: 20px 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.empty-state i {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  color: #1f2937;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.week-info {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+/* Estilos para impresión */
+@media print {
+  /* Ocultar elementos no necesarios */
+  .no-print,
+  .sidebar,
+  .header,
+  .card-header,
+  .pagination-controls,
+  button,
+  .btn,
+  .leyenda-grupos,
+  nav,
+  aside,
+  header {
+    display: none !important;
+  }
+  
+  /* Asegurar que el contenido ocupe todo el ancho */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* Ocultar completamente el sidebar y eliminar su espacio */
+  aside,
+  .sidebar {
+    display: none !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  /* Eliminar el margin-left del main que deja espacio para el sidebar */
+  .main {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+  }
+  
+  /* Asegurar que el contenido principal empiece desde el borde izquierdo */
+  .main > * {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+  
+  .content-card,
+  .card-body,
+  .comidas-section,
+  .schedule-grid-wrapper,
+  .patient-info-section,
+  .metas-section {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* Configuración de página */
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+  
+  body {
+    background: white;
+    color: black;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+  
+  /* Ocultar completamente el layout principal */
+  .main,
+  .content-wrapper,
+  .container {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .content-card {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    page-break-inside: avoid;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .card-body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+  
+  /* Encabezado del documento */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid #10b981;
+  }
+  
+  .print-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 24pt;
+    color: #10b981;
+    font-weight: 700;
+  }
+  
+  .print-header .patient-info {
+    font-size: 11pt;
+    color: #374151;
+    margin: 5px 0;
+  }
+  
+  /* Información del paciente */
+  .patient-info-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    page-break-inside: avoid;
+  }
+  
+  .patient-info-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 14pt;
+    color: #1f2937;
+    border-bottom: 2px solid #10b981;
+    padding-bottom: 5px;
+  }
+  
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  
+  .info-item {
+    font-size: 10pt;
+  }
+  
+  .info-label {
+    font-weight: 600;
+    color: #6b7280;
+  }
+  
+  .info-value {
+    color: #1f2937;
+    font-weight: 500;
+  }
+  
+  /* Metas nutricionales */
+  .metas-section {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+  
+  .metas-section h4 {
+    margin: 0 0 15px 0;
+    font-size: 14pt;
+    color: #1f2937;
+    border-bottom: 2px solid #10b981;
+    padding-bottom: 5px;
+  }
+  
+  .metas-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+  
+  .meta-card {
+    padding: 12px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    text-align: center;
+  }
+  
+  .meta-value {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #10b981;
+    margin: 5px 0;
+  }
+  
+  .meta-label {
+    font-size: 9pt;
+    color: #6b7280;
+  }
+  
+  /* Plan de comidas */
+  .comidas-section {
+    page-break-inside: avoid;
+  }
+  
+  .comidas-section h4 {
+    margin: 0 0 15px 0;
+    font-size: 14pt;
+    color: #1f2937;
+    border-bottom: 2px solid #10b981;
+    padding-bottom: 5px;
+  }
+  
+  .schedule-grid-wrapper {
+    overflow: visible;
+    width: 100%;
+  }
+  
+  .schedule-grid {
+    display: grid !important;
+    gap: 3px !important;
+    border: 2px solid #1f2937 !important;
+    page-break-inside: avoid;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    /* Forzar que todas las columnas se ajusten al ancho disponible */
+    grid-template-columns: 50px repeat(var(--num-dias, 7), 1fr) !important;
+  }
+  
+  /* Ajustar dinámicamente según el número de días */
+  .schedule-grid[data-total-dias="7"] {
+    grid-template-columns: 50px repeat(7, 1fr) !important;
+  }
+  
+  .schedule-grid[data-total-dias="14"] {
+    grid-template-columns: 50px repeat(7, 1fr) !important;
+  }
+  
+  .time-header {
+    grid-column: 1;
+    padding: 6px 4px;
+    background: #1f2937 !important;
+    color: white !important;
+    font-weight: 700;
+    text-align: center;
+    font-size: 8pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .day-header {
+    padding: 6px 4px;
+    background: #374151 !important;
+    color: white !important;
+    font-weight: 700;
+    text-align: center;
+    font-size: 8pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .day-header {
+    background: #374151 !important;
+  }
+  
+  .day-header small {
+    display: block;
+    font-size: 7pt;
+    opacity: 0.9;
+    margin-top: 2px;
+  }
+  
+  .time-cell {
+    padding: 6px 4px;
+    background: #f3f4f6 !important;
+    font-weight: 600;
+    text-align: center;
+    font-size: 8pt;
+    border: 1px solid #d1d5db;
+  }
+  
+  .meal-cell {
+    padding: 4px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    min-height: auto;
+    page-break-inside: avoid;
+    font-size: 7pt;
+  }
+  
+  .meal-name {
+    font-size: 8pt;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 3px;
+    display: block;
+  }
+  
+  .food-item {
+    font-size: 7pt !important;
+    padding: 2px 4px !important;
+    margin: 1px 0 !important;
+    border: 1px solid !important;
+    background: white !important;
+    color: #1f2937 !important;
+    page-break-inside: avoid;
+    line-height: 1.2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .no-meal {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 9pt;
+    padding: 10px;
+  }
+  
+  /* Fecha del plan */
+  .plan-dates {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f9fafb;
+    border-radius: 6px;
+    font-size: 10pt;
+  }
+  
+  .plan-dates p {
+    margin: 0;
+    font-weight: 500;
+  }
+  
+  /* Pie de página */
+  .print-footer {
+    display: block !important;
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 2px solid #e5e7eb;
+    text-align: center;
+    font-size: 9pt;
+    color: #6b7280;
+  }
+  
+  /* Evitar saltos de página dentro de elementos */
+  .meal-cell {
+    page-break-inside: avoid;
+  }
+  
+  /* Ajustes generales */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+@media (max-width: 768px) {
+  .schedule-grid {
+    grid-template-columns: 80px repeat(auto-fit, minmax(150px, 1fr));
+    font-size: 12px;
+  }
+  
+  .time-cell,
+  .meal-cell {
+    padding: 6px;
+    font-size: 11px;
+  }
+  
+  .food-item {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+  
+  .metas-grid,
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}

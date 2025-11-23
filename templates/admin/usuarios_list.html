@@ -1,0 +1,692 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Usuarios" %}
+{% set header_title = "Usuarios" %}
+{% set active_nav = "usuarios" %}
+
+{% block content %}
+<div class="toolbar" style="justify-content: space-between; gap:10px;">
+  <button id="btnNuevoUsuario" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Nuevo usuario
+  </button>
+
+  <!-- 🔎 Buscador por email -->
+  <div class="searchbox" style="min-width:360px;">
+    <i class="fas fa-search"></i>
+    <input id="buscarUsuarioInput" type="text" placeholder="Buscar usuario por email...">
+    <button id="btnClearUsuario" class="clear" title="Limpiar">×</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-users-cog"></i> Lista de usuarios</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <!-- 🔄 Render dinámico -->
+      <div id="tablaUsuarios"></div>
+      <div id="paginacionUsuarios" class="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: USUARIO (nuevo/editar) ============ -->
+<div class="modal" id="modalUsuario" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalUsuario"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 id="modalUsuarioTitulo"><i class="fas fa-user-cog"></i> Usuario</h3>
+      <button class="modal-close js-close-modal" data-target="#modalUsuario" aria-label="Cerrar">×</button>
+    </div>
+    <form id="formUsuario" method="post">
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Email
+            <input type="email" name="email" id="u_email" required>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label>Estado
+            <select name="estado" id="u_estado">
+              <option value="activo">activo</option>
+              <option value="bloqueado">bloqueado</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox-label">
+            Requiere MFA
+            <input type="checkbox" id="u_mfa" name="mfa">
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label>Contraseña
+            <input type="password" name="password" id="u_password" placeholder="">
+          </label>
+          <small class="muted" id="u_pwd_help"></small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalUsuario">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODAL: ROLES ============ -->
+<div class="modal" id="modalRoles" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalRoles"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-shield"></i> Roles de <span id="roles_email"></span></h3>
+      <button class="modal-close js-close-modal" data-target="#modalRoles" aria-label="Cerrar">×</button>
+    </div>
+
+    <form id="formRoles" method="post">
+      <div class="modal-body">
+        <div id="roles_checks" class="roles-grid">
+          {% for r in all_roles %}
+          <label class="chk">
+            <input type="checkbox" name="roles" value="{{ r[0] }}">
+            {{ r[1] }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalRoles">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODAL: CONFIRMAR ELIMINAR USUARIO ============ -->
+<div class="modal" id="modalConfirmarBorrarUsuario" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalConfirmarBorrarUsuario"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h3>
+      <button class="modal-close js-close-modal" data-target="#modalConfirmarBorrarUsuario" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de eliminar el usuario <strong id="emailUsuarioBorrar"></strong>?</p>
+      <p class="muted" style="margin-top: 10px; color: #6b7280;">Esto eliminará el usuario y todos sus datos asociados permanentemente.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn js-close-modal" data-target="#modalConfirmarBorrarUsuario">Cancelar</button>
+      <form id="formConfirmarBorrarUsuario" method="post" style="display:inline-block">
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash"></i> Sí, eliminar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Dependencies -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
+
+<style>
+  /* ===== ESTILOS MODERNOS PARA USUARIOS ===== */
+  
+  /* Tabla compacta y moderna */
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+  }
+  
+  .tbl th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .tbl td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  
+  .tbl tbody tr:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  /* Badges modernos */
+  .badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .badge.ok {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  }
+  
+  .badge.warn {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+  }
+  
+  /* Botones de acción modernos */
+  .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .actions .btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .actions .btn-sm {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .actions .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  .actions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  }
+  
+  .actions .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+  
+  .actions .btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  }
+  
+  /* Paginación moderna */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 16px;
+  }
+  
+  .pagination button {
+    padding: 10px 16px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: #64748b;
+  }
+  
+  .pagination button:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+  }
+  
+  .pagination button.active {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Modal mejorado */
+  .modal-dialog {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .modal-body {
+    padding: 24px;
+  }
+  
+  .form-row {
+    margin-bottom: 20px;
+  }
+  
+  .form-row label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .form-row input,
+  .form-row select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+  }
+  
+  .form-row select {
+    min-height: 48px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+  
+  .form-row input:focus,
+  .form-row select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  
+  .checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+  }
+  
+  .modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  
+  .modal-footer .btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .modal-footer .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+  
+  .modal-footer .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Grid de roles */
+  .roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  
+  .roles-grid .chk {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .roles-grid .chk:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
+  
+  .roles-grid .chk input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .tbl {
+      font-size: 12px;
+    }
+    
+    .tbl th, .tbl td {
+      padding: 8px 6px;
+    }
+    
+    .actions {
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .modal-dialog {
+      margin: 20px;
+      width: calc(100% - 40px);
+    }
+  }
+</style>
+
+<script>
+  // ====== Estado paginación/filtro ======
+  const perPageU = 10;
+  let currentPageU = 1;
+  let currentQueryU = ""; // fragmento de email
+
+  // ====== Carga/paginación por AJAX ======
+  async function cargarUsuarios(page = 1, q = "") {
+    const tabla = document.getElementById("tablaUsuarios");
+    const pagin = document.getElementById("paginacionUsuarios");
+    tabla.innerHTML = "<p>Cargando...</p>";
+    const url = `/api/usuarios/page?page=${page}&per_page=${perPageU}&q=${encodeURIComponent(q)}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      renderTablaUsuarios(data.rows);
+      renderPaginacionUsuarios(data.total_pages, page, q);
+    } catch (e) {
+      tabla.innerHTML = "<p>Error cargando usuarios.</p>";
+      pagin.innerHTML = "";
+    }
+  }
+
+  function renderTablaUsuarios(rows = []) {
+    const cont = document.getElementById("tablaUsuarios");
+    if (!rows.length) {
+      cont.innerHTML = "<p class='empty'>No hay usuarios registrados.</p>";
+      return;
+    }
+
+    let html = `
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>ID</th><th>Email</th><th>Estado</th><th>MFA</th><th>Roles</th><th style="width:220px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    rows.forEach(u => {
+      html += `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.email}</td>
+          <td><span class="badge ${u.estado==='activo' ? 'ok' : 'warn'}">${u.estado}</span></td>
+          <td>${u.mfa ? 'Sí' : 'No'}</td>
+          <td>${u.roles || ''}</td>
+          <td class="actions">
+            <button class="btn btn-sm js-edit" data-id="${u.id}" data-email="${u.email}" data-estado="${u.estado}" data-mfa="${u.mfa ? 1 : 0}">
+              <i class="fas fa-edit"></i> Editar
+            </button>
+            <button class="btn btn-sm js-roles" data-id="${u.id}" data-email="${u.email}">
+              <i class="fas fa-user-shield"></i> Roles
+            </button>
+            <button class="btn btn-sm btn-danger js-borrar" data-id="${u.id}" data-email="${u.email}">
+              <i class="fas fa-trash"></i> Borrar
+            </button>
+          </td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    cont.innerHTML = html;
+
+    // Re-bind de acciones porque la tabla se recrea
+    bindAccionesUsuarios();
+  }
+
+  function renderPaginacionUsuarios(total, actual, q) {
+    const cont = document.getElementById("paginacionUsuarios");
+    if (total <= 1) { cont.innerHTML = ""; return; }
+    let html = "";
+    for (let i = 1; i <= total; i++) {
+      html += `<button class="${i===actual?'active':''}" data-page="${i}">${i}</button>`;
+    }
+    cont.innerHTML = html;
+    cont.querySelectorAll("button").forEach(b => {
+      b.addEventListener("click", () => {
+        currentPageU = parseInt(b.dataset.page);
+        cargarUsuarios(currentPageU, currentQueryU);
+      });
+    });
+  }
+
+  // ====== Select2 (buscar por email) ======
+  $(document).ready(function () {
+    // Configurar el input de búsqueda
+    const buscarInput = document.getElementById('buscarUsuarioInput');
+    const btnClear = document.getElementById('btnClearUsuario');
+    
+    let searchTimeout;
+    
+    buscarInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      
+      if (query.length >= 2) {
+        searchTimeout = setTimeout(() => {
+          cargarUsuarios(1, query);
+        }, 300);
+      } else if (query.length === 0) {
+        cargarUsuarios(1, '');
+      }
+      
+      btnClear.style.visibility = query ? 'visible' : 'hidden';
+    });
+    
+    btnClear.addEventListener('click', function() {
+      buscarInput.value = '';
+      cargarUsuarios(1, '');
+      btnClear.style.visibility = 'hidden';
+      buscarInput.focus();
+    });
+    
+    btnClear.style.visibility = 'hidden';
+  });
+
+  // ====== Util modales ======
+  const openModal  = sel => document.querySelector(sel).classList.add('open');
+  const closeModal = sel => document.querySelector(sel).classList.remove('open');
+  document.querySelectorAll('.js-close-modal').forEach(b => {
+    b.addEventListener('click', () => closeModal(b.dataset.target));
+  });
+
+  // ====== Manejar envío del formulario de borrar ======
+  document.getElementById('formConfirmarBorrarUsuario')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = this;
+    const formData = new FormData(form);
+    
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        // Cerrar el modal
+        closeModal('#modalConfirmarBorrarUsuario');
+        
+        // Mostrar mensaje de éxito
+        Toastify({
+          text: "✅ Usuario borrado correctamente",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#10b981",
+        }).showToast();
+        
+        // Recargar la tabla
+        cargarUsuarios(currentPageU, currentQueryU);
+      } else {
+        const errorText = await response.text();
+        Toastify({
+          text: "❌ Error al borrar el usuario",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#ef4444",
+        }).showToast();
+      }
+    } catch (error) {
+      Toastify({
+        text: "❌ Error de conexión",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#ef4444",
+      }).showToast();
+    }
+  });
+
+  // ====== Nuevo usuario ======
+  document.getElementById('btnNuevoUsuario')?.addEventListener('click', () => {
+    const f = document.getElementById('formUsuario');
+    f.action = "{{ url_for('admin_usuario_nuevo') }}";
+    document.getElementById('modalUsuarioTitulo').innerText = "Nuevo usuario";
+    document.getElementById('u_email').value = "";
+    document.getElementById('u_estado').value = "activo";
+    document.getElementById('u_mfa').checked = true;
+    document.getElementById('u_password').value = "";
+    document.getElementById('u_pwd_help').innerText = "";
+    openModal('#modalUsuario');
+  });
+
+  // ====== Re-bind acciones de la tabla ======
+  function bindAccionesUsuarios() {
+    // Editar
+    document.querySelectorAll('.js-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = btn.dataset.id;
+        const email = btn.dataset.email;
+        const estado = btn.dataset.estado;
+        const mfa = btn.dataset.mfa === "1";
+
+        const f = document.getElementById('formUsuario');
+        f.action = "{{ url_for('admin_usuario_editar', uid=0) }}".replace('/0/', '/' + uid + '/');
+        document.getElementById('modalUsuarioTitulo').innerText = "Editar usuario";
+        document.getElementById('u_email').value = email;
+        document.getElementById('u_estado').value = estado;
+        document.getElementById('u_mfa').checked = mfa;
+        document.getElementById('u_password').value = "";
+        document.getElementById('u_pwd_help').innerText = "Deja vacío para no cambiar la contraseña.";
+        openModal('#modalUsuario');
+      });
+    });
+
+    // Roles
+    document.querySelectorAll('.js-roles').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = btn.dataset.id;
+        const email = btn.dataset.email;
+
+        const f = document.getElementById('formRoles');
+        f.action = "{{ url_for('admin_usuario_roles', uid=0) }}".replace('/0/', '/' + uid + '/');
+
+        // Lee roles de la fila
+        const row = btn.closest('tr');
+        const rolesTexto = row ? (row.children[4].innerText || "") : "";
+        const actuales = rolesTexto.split(',').map(s => s.trim()).filter(Boolean);
+
+        // Desmarcar / marcar
+        document.querySelectorAll('#roles_checks input[type=checkbox]').forEach(chk => {
+          chk.checked = actuales.includes(chk.parentElement.textContent.trim());
+        });
+
+        document.getElementById('roles_email').innerText = email;
+        openModal('#modalRoles');
+      });
+    });
+
+    // Borrar con modal de confirmación
+    document.querySelectorAll('.js-borrar').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = btn.dataset.id;
+        const email = btn.dataset.email;
+        
+        // Configurar el modal
+        document.getElementById('emailUsuarioBorrar').textContent = email;
+        const form = document.getElementById('formConfirmarBorrarUsuario');
+        form.action = `/admin/usuarios/${uid}/borrar`;
+        
+        // Mostrar el modal
+        document.querySelector('#modalConfirmarBorrarUsuario').classList.add('open');
+      });
+    });
+  }
+
+  // ====== Carga inicial ======
+  cargarUsuarios();
+</script>
+{% endblock %}

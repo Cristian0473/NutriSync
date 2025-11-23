@@ -1,0 +1,320 @@
+{% extends "paciente/base_paciente.html" %}
+{% set page_title = "NutriSync · Mi Progreso" %}
+{% set header_title = "Mi Progreso" %}
+{% set active_nav = "progreso" %}
+
+{% block content %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-chart-line"></i> Evolución de Antropometría</h3>
+  </div>
+  <div class="card-body">
+    {% if historial_antropo %}
+    <div class="chart-container">
+      <canvas id="chartAntropo"></canvas>
+    </div>
+    <div class="data-table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Peso (kg)</th>
+            <th>Talla (m)</th>
+            <th>IMC</th>
+            <th>Cintura (cm)</th>
+            <th>% Grasa</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for registro in historial_antropo %}
+          <tr>
+            <td>{{ registro[4]|replace('-', '/') }}</td>
+            <td>{{ registro[0] or '—' }}</td>
+            <td>{{ registro[1] or '—' }}</td>
+            <td>
+              {% if registro[0] and registro[1] %}
+                {{ "%.2f"|format(registro[0] / (registro[1] ** 2)) }}
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ registro[2] or '—' }}</td>
+            <td>{{ registro[3] or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-chart-line"></i>
+      <p>No hay datos de antropometría para mostrar</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-vials"></i> Evolución de Datos Clínicos</h3>
+  </div>
+  <div class="card-body">
+    {% if historial_clinico %}
+    <div class="chart-container">
+      <canvas id="chartClinico"></canvas>
+    </div>
+    <div class="data-table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>HbA1c (%)</th>
+            <th>Glucosa (mg/dL)</th>
+            <th>LDL (mg/dL)</th>
+            <th>Triglicéridos (mg/dL)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for registro in historial_clinico %}
+          <tr>
+            <td>{{ registro[4]|replace('-', '/') }}</td>
+            <td>{{ registro[0] or '—' }}</td>
+            <td>{{ registro[1] or '—' }}</td>
+            <td>{{ registro[2] or '—' }}</td>
+            <td>{{ registro[3] or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-vials"></i>
+      <p>No hay datos clínicos para mostrar</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  {% if historial_antropo %}
+  // Gráfico de Antropometría
+  const ctxAntropo = document.getElementById('chartAntropo');
+  if (ctxAntropo) {
+    const fechasAntropo = [{% for r in historial_antropo|reverse %}'{{ r[4]|replace('-', '/') }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const pesos = [{% for r in historial_antropo|reverse %}{{ r[0] or 'null' }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const imcs = [{% for r in historial_antropo|reverse %}{% if r[0] and r[1] %}{{ "%.2f"|format(r[0] / (r[1] ** 2)) }}{% else %}null{% endif %}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    new Chart(ctxAntropo, {
+      type: 'line',
+      data: {
+        labels: fechasAntropo,
+        datasets: [
+          {
+            label: 'Peso (kg)',
+            data: pesos,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y'
+          },
+          {
+            label: 'IMC',
+            data: imcs,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Peso (kg)'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'IMC'
+            },
+            grid: {
+              drawOnChartArea: false
+            }
+          }
+        }
+      }
+    });
+  }
+  {% endif %}
+  
+  {% if historial_clinico %}
+  // Gráfico de Datos Clínicos
+  const ctxClinico = document.getElementById('chartClinico');
+  if (ctxClinico) {
+    const fechasClinico = [{% for r in historial_clinico|reverse %}'{{ r[4]|replace('-', '/') }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const hba1c = [{% for r in historial_clinico|reverse %}{{ r[0] or 'null' }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const glucosa = [{% for r in historial_clinico|reverse %}{{ r[1] or 'null' }}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    new Chart(ctxClinico, {
+      type: 'line',
+      data: {
+        labels: fechasClinico,
+        datasets: [
+          {
+            label: 'HbA1c (%)',
+            data: hba1c,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Glucosa (mg/dL)',
+            data: glucosa,
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'HbA1c (%)'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Glucosa (mg/dL)'
+            },
+            grid: {
+              drawOnChartArea: false
+            }
+          }
+        }
+      }
+    });
+  }
+  {% endif %}
+});
+</script>
+
+<style>
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin-bottom: 24px;
+}
+
+.data-table-container {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.data-table thead {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.data-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.data-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.empty-state i {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  margin: 0;
+  font-style: italic;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    height: 250px;
+  }
+  
+  .data-table {
+    font-size: 13px;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px;
+  }
+}
+</style>
+{% endblock %}
+

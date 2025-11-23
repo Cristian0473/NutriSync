@@ -1,0 +1,1173 @@
+{
+  "id": "3_1760951147",
+  "paciente_id": 3,
+  "estado": "publicado",
+  "plan": {
+    "dias": 9,
+    "semanas": [
+      {
+        "numero": 1,
+        "dias": [
+          {
+            "numero": 1,
+            "fecha": "2025-10-20",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 36.6,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 202.2,
+                    "nombre": "Frijoles rojos",
+                    "pro": 13.2
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 6,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 100,
+                    "nombre": "Carne de res",
+                    "pro": 10.4
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 28,
+                    "fat": 0.4,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 104,
+                    "nombre": "Manzana",
+                    "pro": 0.6
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "75.0ml",
+                    "cho": 1.5,
+                    "fat": 16.5,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 210,
+                    "nombre": "Queso mozzarella",
+                    "pro": 16.5
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "146.4g",
+                    "cho": 1.6,
+                    "fat": 16.1,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 226.9,
+                    "nombre": "Huevo entero",
+                    "pro": 19
+                  },
+                  {
+                    "cantidad": "73.2g",
+                    "cho": 45.4,
+                    "fat": 0.7,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 249.6,
+                    "nombre": "Frijoles negros",
+                    "pro": 15.4
+                  },
+                  {
+                    "cantidad": "183.0g",
+                    "cho": 36.6,
+                    "fat": 0.2,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 157.4,
+                    "nombre": "Batata",
+                    "pro": 2.9
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "75.0ml",
+                    "cho": 1.5,
+                    "fat": 16.5,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 210,
+                    "nombre": "Queso mozzarella",
+                    "pro": 16.5
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "129.4g",
+                    "cho": 0,
+                    "fat": 19.4,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 323.5,
+                    "nombre": "Carne de res",
+                    "pro": 33.6
+                  },
+                  {
+                    "cantidad": "155.2g",
+                    "cho": 9.3,
+                    "fat": 0.2,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 38.8,
+                    "nombre": "Repollo",
+                    "pro": 1.6
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "numero": 2,
+            "fecha": "2025-10-21",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 36,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 199.8,
+                    "nombre": "Alubias blancas",
+                    "pro": 13.8
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 6.8,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 105.2,
+                    "nombre": "Cerdo",
+                    "pro": 10.8
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 24,
+                    "fat": 0.2,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 94,
+                    "nombre": "Naranja",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 36.8,
+                    "fat": 0.5,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 142.4,
+                    "nombre": "Banana",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "218.0g",
+                    "cho": 0,
+                    "fat": 2.2,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 187.5,
+                    "nombre": "Lenguado",
+                    "pro": 39.2
+                  },
+                  {
+                    "cantidad": "109.0g",
+                    "cho": 83.9,
+                    "fat": 1.1,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 383.7,
+                    "nombre": "Cebada perlada",
+                    "pro": 10.9
+                  },
+                  {
+                    "cantidad": "272.5g",
+                    "cho": 9.8,
+                    "fat": 1.1,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 62.7,
+                    "nombre": "Espinaca",
+                    "pro": 7.9
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 36.8,
+                    "fat": 0.5,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 142.4,
+                    "nombre": "Banana",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "123.6g",
+                    "cho": 0,
+                    "fat": 21,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 325.1,
+                    "nombre": "Cerdo",
+                    "pro": 33.4
+                  },
+                  {
+                    "cantidad": "148.3g",
+                    "cho": 7.4,
+                    "fat": 0.4,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 37.1,
+                    "nombre": "Coliflor",
+                    "pro": 3
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "numero": 3,
+            "fecha": "2025-10-22",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 46.2,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 211.2,
+                    "nombre": "Cebada perlada",
+                    "pro": 6
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 0.4,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 34.4,
+                    "nombre": "Lenguado",
+                    "pro": 7.2
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 46,
+                    "fat": 0.6,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 178,
+                    "nombre": "Banana",
+                    "pro": 2.2
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "184.8ml",
+                    "cho": 5.5,
+                    "fat": 7.4,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 181.1,
+                    "nombre": "Queso cottage",
+                    "pro": 20.3
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "140.9g",
+                    "cho": 0,
+                    "fat": 21.1,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 352.2,
+                    "nombre": "Carne de res",
+                    "pro": 36.6
+                  },
+                  {
+                    "cantidad": "70.5g",
+                    "cho": 43,
+                    "fat": 0.7,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 237.6,
+                    "nombre": "Frijoles rojos",
+                    "pro": 15.5
+                  },
+                  {
+                    "cantidad": "176.2g",
+                    "cho": 10.6,
+                    "fat": 0.2,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 44,
+                    "nombre": "Repollo",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "184.8ml",
+                    "cho": 5.5,
+                    "fat": 7.4,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 181.1,
+                    "nombre": "Queso cottage",
+                    "pro": 20.3
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "100g",
+                    "cho": 0,
+                    "fat": 3.6,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 165,
+                    "nombre": "Pollo entero",
+                    "pro": 31
+                  },
+                  {
+                    "cantidad": "120g",
+                    "cho": 39.6,
+                    "fat": 0.6,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 178.8,
+                    "nombre": "Ajo",
+                    "pro": 7.2
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "numero": 4,
+            "fecha": "2025-10-23",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 36.6,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 202.2,
+                    "nombre": "Frijoles rojos",
+                    "pro": 13.2
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 6,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 100,
+                    "nombre": "Carne de res",
+                    "pro": 10.4
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 28,
+                    "fat": 0.4,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 104,
+                    "nombre": "Manzana",
+                    "pro": 0.6
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 19.2,
+                    "fat": 0.2,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 75.2,
+                    "nombre": "Naranja",
+                    "pro": 1.4
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "137.6g",
+                    "cho": 0,
+                    "fat": 23.4,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 361.9,
+                    "nombre": "Cerdo",
+                    "pro": 37.2
+                  },
+                  {
+                    "cantidad": "68.8g",
+                    "cho": 41.3,
+                    "fat": 0.7,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 229.1,
+                    "nombre": "Alubias blancas",
+                    "pro": 15.8
+                  },
+                  {
+                    "cantidad": "172.0g",
+                    "cho": 8.6,
+                    "fat": 0.5,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 43,
+                    "nombre": "Coliflor",
+                    "pro": 3.4
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 19.2,
+                    "fat": 0.2,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 75.2,
+                    "nombre": "Naranja",
+                    "pro": 1.4
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "147.1g",
+                    "cho": 0,
+                    "fat": 17.7,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 307.4,
+                    "nombre": "Muslo de pollo",
+                    "pro": 38.2
+                  },
+                  {
+                    "cantidad": "176.5g",
+                    "cho": 12.4,
+                    "fat": 0.5,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 54.7,
+                    "nombre": "Pimiento rojo",
+                    "pro": 1.8
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "numero": 5,
+            "fecha": "2025-10-24",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 36,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 199.8,
+                    "nombre": "Alubias blancas",
+                    "pro": 13.8
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 6.8,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 105.2,
+                    "nombre": "Cerdo",
+                    "pro": 10.8
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 24,
+                    "fat": 0.2,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 94,
+                    "nombre": "Naranja",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "300.0ml",
+                    "cho": 15,
+                    "fat": 4.8,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 138,
+                    "nombre": "Leche semidescremada",
+                    "pro": 9.9
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "120g",
+                    "cho": 0,
+                    "fat": 4.3,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 198,
+                    "nombre": "Pollo entero",
+                    "pro": 37.2
+                  },
+                  {
+                    "cantidad": "60g",
+                    "cho": 36,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 199.8,
+                    "nombre": "Frijoles blancos",
+                    "pro": 13.8
+                  },
+                  {
+                    "cantidad": "150g",
+                    "cho": 49.5,
+                    "fat": 0.8,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 223.5,
+                    "nombre": "Ajo",
+                    "pro": 9
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "300.0ml",
+                    "cho": 15,
+                    "fat": 4.8,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 138,
+                    "nombre": "Leche semidescremada",
+                    "pro": 9.9
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "132.2g",
+                    "cho": 0,
+                    "fat": 0.9,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 108.4,
+                    "nombre": "Pescado blanco",
+                    "pro": 23.8
+                  },
+                  {
+                    "cantidad": "158.6g",
+                    "cho": 60.3,
+                    "fat": 0.5,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 253.8,
+                    "nombre": "Yuca",
+                    "pro": 2.2
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "numero": 6,
+            "fecha": "2025-10-25",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 46.2,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 211.2,
+                    "nombre": "Cebada perlada",
+                    "pro": 6
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 0.4,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 34.4,
+                    "nombre": "Lenguado",
+                    "pro": 7.2
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 46,
+                    "fat": 0.6,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 178,
+                    "nombre": "Banana",
+                    "pro": 2.2
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 22.4,
+                    "fat": 0.5,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 91.2,
+                    "nombre": "Arándanos",
+                    "pro": 1.1
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "149.4g",
+                    "cho": 0,
+                    "fat": 17.9,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 312.2,
+                    "nombre": "Muslo de pollo",
+                    "pro": 38.8
+                  },
+                  {
+                    "cantidad": "74.7g",
+                    "cho": 44.8,
+                    "fat": 0.7,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 263.7,
+                    "nombre": "Lentejas",
+                    "pro": 18.7
+                  },
+                  {
+                    "cantidad": "186.8g",
+                    "cho": 13.1,
+                    "fat": 0.6,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 57.9,
+                    "nombre": "Pimiento rojo",
+                    "pro": 1.9
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 22.4,
+                    "fat": 0.5,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 91.2,
+                    "nombre": "Arándanos",
+                    "pro": 1.1
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "179.1g",
+                    "cho": 0,
+                    "fat": 0.5,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 177.3,
+                    "nombre": "Camarones",
+                    "pro": 43
+                  },
+                  {
+                    "cantidad": "215.0g",
+                    "cho": 43,
+                    "fat": 0.2,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 184.9,
+                    "nombre": "Papa cocida",
+                    "pro": 3.7
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "numero": 7,
+            "fecha": "2025-10-26",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 36.6,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 202.2,
+                    "nombre": "Frijoles rojos",
+                    "pro": 13.2
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 6,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 100,
+                    "nombre": "Carne de res",
+                    "pro": 10.4
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 28,
+                    "fat": 0.4,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 104,
+                    "nombre": "Manzana",
+                    "pro": 0.6
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "300.0ml",
+                    "cho": 3,
+                    "fat": 3.3,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 51,
+                    "nombre": "Leche de almendras",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "137.5g",
+                    "cho": 0,
+                    "fat": 1,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 112.8,
+                    "nombre": "Pescado blanco",
+                    "pro": 24.8
+                  },
+                  {
+                    "cantidad": "68.7g",
+                    "cho": 43.3,
+                    "fat": 1.4,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 245.9,
+                    "nombre": "Lentejas rojas",
+                    "pro": 17.2
+                  },
+                  {
+                    "cantidad": "171.9g",
+                    "cho": 65.3,
+                    "fat": 0.5,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 275,
+                    "nombre": "Yuca",
+                    "pro": 2.4
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "300.0ml",
+                    "cho": 3,
+                    "fat": 3.3,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 51,
+                    "nombre": "Leche de almendras",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 0,
+                    "fat": 0.8,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 142,
+                    "nombre": "Merluza",
+                    "pro": 32
+                  },
+                  {
+                    "cantidad": "240.0g",
+                    "cho": 21.6,
+                    "fat": 0.2,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 96,
+                    "nombre": "Cebolla",
+                    "pro": 2.6
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "numero": 2,
+        "dias": [
+          {
+            "numero": 8,
+            "fecha": "2025-10-27",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 36,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 199.8,
+                    "nombre": "Alubias blancas",
+                    "pro": 13.8
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 6.8,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 105.2,
+                    "nombre": "Cerdo",
+                    "pro": 10.8
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 24,
+                    "fat": 0.2,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 94,
+                    "nombre": "Naranja",
+                    "pro": 1.8
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 17.6,
+                    "fat": 0.2,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 67.2,
+                    "nombre": "Toronja",
+                    "pro": 1.6
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "165.5g",
+                    "cho": 0,
+                    "fat": 0.5,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 163.8,
+                    "nombre": "Camarones",
+                    "pro": 39.7
+                  },
+                  {
+                    "cantidad": "82.7g",
+                    "cho": 49.6,
+                    "fat": 0.8,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 291.9,
+                    "nombre": "Lentejas verdes",
+                    "pro": 20.7
+                  },
+                  {
+                    "cantidad": "206.9g",
+                    "cho": 41.4,
+                    "fat": 0.2,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 177.9,
+                    "nombre": "Papa cocida",
+                    "pro": 3.5
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "160.0g",
+                    "cho": 17.6,
+                    "fat": 0.2,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 67.2,
+                    "nombre": "Toronja",
+                    "pro": 1.6
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "178.4g",
+                    "cho": 0,
+                    "fat": 5.4,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 308.6,
+                    "nombre": "Conejo",
+                    "pro": 58.9
+                  },
+                  {
+                    "cantidad": "214.1g",
+                    "cho": 8.6,
+                    "fat": 1.5,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 53.5,
+                    "nombre": "Rúcula",
+                    "pro": 5.6
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "numero": 9,
+            "fecha": "2025-10-28",
+            "comidas": {
+              "desayuno": {
+                "nombre": "Desayuno",
+                "horario": "07:00",
+                "alimentos": [
+                  {
+                    "cantidad": "60.0g",
+                    "cho": 46.2,
+                    "fat": 0.6,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 211.2,
+                    "nombre": "Cebada perlada",
+                    "pro": 6
+                  },
+                  {
+                    "cantidad": "40.0g",
+                    "cho": 0,
+                    "fat": 0.4,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 34.4,
+                    "nombre": "Lenguado",
+                    "pro": 7.2
+                  },
+                  {
+                    "cantidad": "200.0g",
+                    "cho": 46,
+                    "fat": 0.6,
+                    "grupo": "GRUPO3_FRUTAS",
+                    "kcal": 178,
+                    "nombre": "Banana",
+                    "pro": 2.2
+                  }
+                ]
+              },
+              "media_manana": {
+                "nombre": "Media Mañana",
+                "horario": "10:00",
+                "alimentos": [
+                  {
+                    "cantidad": "300.0ml",
+                    "cho": 12,
+                    "fat": 1.2,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 177,
+                    "nombre": "Yogur natural",
+                    "pro": 30
+                  }
+                ]
+              },
+              "almuerzo": {
+                "nombre": "Almuerzo",
+                "horario": "12:00",
+                "alimentos": [
+                  {
+                    "cantidad": "200.9g",
+                    "cho": 0,
+                    "fat": 0.8,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 142.6,
+                    "nombre": "Merluza",
+                    "pro": 32.1
+                  },
+                  {
+                    "cantidad": "100.5g",
+                    "cho": 66.3,
+                    "fat": 7,
+                    "grupo": "GRUPO1_CEREALES",
+                    "kcal": 390.9,
+                    "nombre": "Avena integral",
+                    "pro": 17.1
+                  },
+                  {
+                    "cantidad": "251.1g",
+                    "cho": 22.6,
+                    "fat": 0.3,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 100.4,
+                    "nombre": "Cebolla",
+                    "pro": 2.8
+                  }
+                ]
+              },
+              "media_tarde": {
+                "nombre": "Media Tarde",
+                "horario": "15:00",
+                "alimentos": [
+                  {
+                    "cantidad": "300.0ml",
+                    "cho": 12,
+                    "fat": 1.2,
+                    "grupo": "GRUPO4_LACTEOS",
+                    "kcal": 177,
+                    "nombre": "Yogur natural",
+                    "pro": 30
+                  }
+                ]
+              },
+              "cena": {
+                "nombre": "Cena",
+                "horario": "19:00",
+                "alimentos": [
+                  {
+                    "cantidad": "174.0g",
+                    "cho": 0,
+                    "fat": 12.2,
+                    "grupo": "GRUPO5_CARNES",
+                    "kcal": 328.9,
+                    "nombre": "Pavo",
+                    "pro": 50.5
+                  },
+                  {
+                    "cantidad": "208.8g",
+                    "cho": 6.3,
+                    "fat": 0.4,
+                    "grupo": "GRUPO2_VERDURAS",
+                    "kcal": 33.4,
+                    "nombre": "Apio",
+                    "pro": 1.5
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "configuracion": {
+    "fecha_inicio": "2025-10-20",
+    "fecha_fin": "2025-10-28",
+    "dias_plan": 9,
+    "kcal_objetivo": 1811,
+    "cho_pct": 50,
+    "pro_pct": 18,
+    "fat_pct": 32,
+    "ig_max": 70,
+    "max_repeticiones": 3,
+    "patron_comidas": "des,alm,cena"
+  },
+  "ingredientes": {
+    "incluir": [],
+    "excluir": [],
+    "grupos_excluidos": []
+  },
+  "creado_por": 21,
+  "creado_en": 1760951147
+}

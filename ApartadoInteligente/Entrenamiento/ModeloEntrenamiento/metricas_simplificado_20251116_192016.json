@@ -1,0 +1,36 @@
+{
+  "modelo": "XGBoost_Simplificado",
+  "features": [
+    "peso",
+    "talla",
+    "imc",
+    "cc",
+    "ldl",
+    "trigliceridos",
+    "pa_sis",
+    "pa_dia",
+    "actividad_encoded"
+  ],
+  "n_features": 9,
+  "train": {
+    "accuracy": 0.7355136864557412,
+    "precision": 0.3489197033215092,
+    "recall": 0.8355212355212355,
+    "f1": 0.49226569608735216,
+    "auc_roc": 0.8600022915252478
+  },
+  "val": {
+    "accuracy": 0.6672194582642343,
+    "precision": 0.2366288492706645,
+    "recall": 0.5270758122743683,
+    "f1": 0.32662192393736017,
+    "auc_roc": 0.6730896117484046
+  },
+  "test": {
+    "accuracy": 0.6351575456053068,
+    "precision": 0.21203007518796993,
+    "recall": 0.5090252707581228,
+    "f1": 0.29936305732484075,
+    "auc_roc": 0.650844557973815
+  }
+}

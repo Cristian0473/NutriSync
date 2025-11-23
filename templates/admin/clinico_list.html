@@ -1,0 +1,193 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Datos clínicos" %}
+{% set header_title = "Datos clínicos" %}
+{% set active_nav = "clinico" %}
+
+{% block content %}
+<div class="toolbar">
+  <button id="btnNuevoClinico" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Nuevo registro clínico
+  </button>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-notes-medical"></i> Historial clínico</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="tbl">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Paciente</th>
+          <th>HbA1c</th>
+          <th>Glucosa ayunas</th>
+          <th>LDL</th>
+          <th>Triglicéridos</th>
+          <th>Presión (sis/dia)</th>
+          <th style="width:180px;">Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.fecha }}</td>
+            <td>{{ r.paciente }}</td>
+            <td>{{ "%.2f"|format(r.hba1c) if r.hba1c is not none else "" }}</td>
+            <td>{{ "%.2f"|format(r.glucosa_ayunas) if r.glucosa_ayunas is not none else "" }}</td>
+            <td>{{ "%.2f"|format(r.ldl) if r.ldl is not none else "" }}</td>
+            <td>{{ "%.2f"|format(r.trigliceridos) if r.trigliceridos is not none else "" }}</td>
+            <td>{{ (r.pa_sis ~ '/' ~ r.pa_dia) if r.pa_sis or r.pa_dia else "" }}</td>
+            <td class="actions">
+              <button class="btn btn-sm js-edit"
+                      data-id="{{ r.id }}"
+                      data-paciente="{{ r.paciente_id }}"
+                      data-fecha="{{ r.fecha }}"
+                      data-hba1c="{{ r.hba1c or '' }}"
+                      data-glu="{{ r.glucosa_ayunas or '' }}"
+                      data-ldl="{{ r.ldl or '' }}"
+                      data-trig="{{ r.trigliceridos or '' }}"
+                      data-sis="{{ r.pa_sis or '' }}"
+                      data-dia="{{ r.pa_dia or '' }}">
+                <i class="fas fa-edit"></i> Editar
+              </button>
+
+              <form method="post" action="{{ url_for('admin_clinico_borrar', cid=r.id) }}"
+                    style="display:inline-block"
+                    onsubmit="return confirm('¿Borrar registro clínico del {{ r.fecha }}?');">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  <i class="fas fa-trash"></i> Borrar
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="empty">Sin registros clínicos.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL =================== -->
+<div class="modal" id="modalClinico" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalClinico"></div>
+  <div class="modal-dialog wide">
+    <div class="modal-header">
+      <h3><i class="fas fa-notes-medical"></i> <span id="cli_titulo">Nuevo registro clínico</span></h3>
+      <button class="modal-close js-close-modal" data-target="#modalClinico" aria-label="Cerrar">×</button>
+    </div>
+
+    <form id="formClinico" method="post" action="{{ url_for('admin_clinico_nuevo') }}">
+      <div class="modal-body">
+        <div class="form-grid two-col">
+
+          <div class="form-row">
+            <label for="c_paciente">Paciente</label>
+            <select id="c_paciente" name="paciente_id" required>
+              <option value="">(seleccionar)</option>
+              {% for p in pacientes %}
+                <option value="{{ p.id }}">{{ p.dni }}{% if p.nombre %} — {{ p.nombre }}{% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label for="c_fecha">Fecha</label>
+            <input type="date" id="c_fecha" name="fecha" required value="{{ hoy }}">
+          </div>
+
+          <div class="form-row">
+            <label for="c_hba1c">HbA1c (%)</label>
+            <input type="number" id="c_hba1c" name="hba1c" step="0.01" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="c_glu">Glucosa ayunas (mg/dL)</label>
+            <input type="number" id="c_glu" name="glucosa_ayunas" step="0.01" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="c_ldl">LDL (mg/dL)</label>
+            <input type="number" id="c_ldl" name="ldl" step="0.01" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="c_trig">Triglicéridos (mg/dL)</label>
+            <input type="number" id="c_trig" name="trigliceridos" step="0.01" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="c_sis">PA Sistólica</label>
+            <input type="number" id="c_sis" name="pa_sis" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="c_dia">PA Diastólica</label>
+            <input type="number" id="c_dia" name="pa_dia" min="0">
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalClinico">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+
+      <!-- Para editar -->
+      <input type="hidden" name="id" id="c_id">
+    </form>
+  </div>
+</div>
+
+<style>
+  .modal-dialog.wide { max-width: 800px; }
+  .form-grid.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .form-row { margin-bottom: 10px; }
+  .empty { text-align: center; color: #888; }
+</style>
+
+<script>
+  const openModal  = sel => document.querySelector(sel).classList.add('open');
+  const closeModal = sel => document.querySelector(sel).classList.remove('open');
+  document.querySelectorAll('.js-close-modal').forEach(b => {
+    b.addEventListener('click', () => closeModal(b.dataset.target));
+  });
+
+  document.getElementById('btnNuevoClinico')?.addEventListener('click', ()=> {
+    const f = document.getElementById('formClinico');
+    f.action = "{{ url_for('admin_clinico_nuevo') }}";
+    document.getElementById('cli_titulo').innerText = "Nuevo registro clínico";
+    document.getElementById('c_id').value = "";
+    document.getElementById('c_paciente').value = "";
+    document.getElementById('c_fecha').value = "{{ hoy }}";
+    ['c_hba1c','c_glu','c_ldl','c_trig','c_sis','c_dia'].forEach(id => document.getElementById(id).value = "");
+    openModal('#modalClinico');
+  });
+
+  document.querySelectorAll('.js-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = document.getElementById('formClinico');
+      f.action = "{{ url_for('admin_clinico_editar', cid=0) }}".replace('/0', '/' + btn.dataset.id);
+      document.getElementById('cli_titulo').innerText = "Editar registro clínico";
+      document.getElementById('c_id').value = btn.dataset.id;
+      document.getElementById('c_paciente').value = btn.dataset.paciente || "";
+      document.getElementById('c_fecha').value = btn.dataset.fecha || "";
+      document.getElementById('c_hba1c').value = btn.dataset.hba1c || "";
+      document.getElementById('c_glu').value = btn.dataset.glu || "";
+      document.getElementById('c_ldl').value = btn.dataset.ldl || "";
+      document.getElementById('c_trig').value = btn.dataset.trig || "";
+      document.getElementById('c_sis').value = btn.dataset.sis || "";
+      document.getElementById('c_dia').value = btn.dataset.dia || "";
+      openModal('#modalClinico');
+    });
+  });
+</script>
+{% endblock %}

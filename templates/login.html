@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutriSync · Iniciar sesión</title>
+
+  <!-- Iconos / Fuentes -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap"
+    rel="stylesheet">
+
+  <!-- Nuestro CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='/css/style_login.css') }}">
+</head>
+
+<body>
+  <div class="container">
+    <!-- Panel izquierdo (branding y mensaje) -->
+    <div class="left-panel">
+      <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+      </div>
+
+      <div class="content">
+        <div class="logo">
+          <div class="logo-icon"><i class="fas fa-apple-alt"></i></div>
+          <div class="logo-text">Nutri<span>Sync</span></div>
+        </div>
+
+        <h1>Sistema Inteligente de Recomendación Nutricional</h1>
+        <p>Accede a tu plan personalizado y a recomendaciones para pacientes con diabetes tipo 2.</p>
+
+        <div class="features">
+          <div class="feature">
+            <div class="feature-icon"><i class="fas fa-heart"></i></div>
+            <div class="feature-text">Comidas ajustadas a tu perfil glucémico</div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="feature-text">Seguimiento de progreso clínico</div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon"><i class="fas fa-user"></i></div>
+            <div class="feature-text">Preferencias y sustituciones inteligentes</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="graphic"><i class="fas fa-stethoscope"></i></div>
+    </div>
+
+    <!-- Panel derecho (formulario) -->
+    <div class="right-panel">
+      <div class="login-form-container">
+        <div class="login-header">
+          <h2>Bienvenido</h2>
+          <p>Ingresa a tu cuenta para continuar</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <ul class="flash">
+          {% for category, msg in messages %}
+          <li class="{{ category }}">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+
+        <form method="post" id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="usuario">DNI o correo</label>
+            <div class="input-with-icon">
+              <i class="input-icon fas fa-user"></i>
+              <input type="text" class="form-control" id="usuario" name="usuario" placeholder="DNI o nombre@ejemplo.com"
+                required>
+            </div>
+
+          </div>
+
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <div class="input-with-icon password-container">
+              <i class="input-icon fas fa-lock"></i>
+              <input type="password" class="form-control" id="password" name="password"
+                placeholder="Ingresa tu contraseña" required>
+              <button type="button" class="toggle-password" id="togglePassword"
+                aria-label="Mostrar u ocultar contraseña">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login">Iniciar sesión</button>
+        </form>
+
+        <!-- Registro cerrado por DNI -->
+        <div class="register-link">
+          ¿No tienes cuenta?
+          <a href="{{ url_for('login') if not url_for else '#' }}">Solicita activación</a>
+          <span class="muted">(solo pacientes pre-registrados con DNI)</span>
+        </div>
+
+        <div class="diabetes-notice">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            <strong>Diseñado para DT2</strong><br>
+            Considera tus métricas clínicas y preferencias para planes seguros y personalizados.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Mostrar / ocultar contraseña
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('togglePassword');
+      const input = document.getElementById('password');
+      if (btn && input) {
+        btn.addEventListener('click', () => {
+          const isPwd = input.type === 'password';
+          input.type = isPwd ? 'text' : 'password';
+          btn.innerHTML = isPwd ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+        });
+      }
+      
+      // Ocultar automáticamente los mensajes flash después de 3 segundos
+      const flashMessages = document.querySelectorAll('.flash li');
+      flashMessages.forEach(function(msg) {
+        setTimeout(function() {
+          msg.style.transition = 'opacity 0.5s ease-out';
+          msg.style.opacity = '0';
+          setTimeout(function() {
+            msg.remove();
+            // Si no quedan más mensajes, ocultar el contenedor
+            const flashContainer = document.querySelector('.flash');
+            if (flashContainer && flashContainer.children.length === 0) {
+              flashContainer.remove();
+            }
+          }, 500);
+        }, 3000);
+      });
+    });
+  </script>
+</body>
+
+</html>

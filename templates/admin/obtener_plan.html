@@ -1,0 +1,1100 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Obtener plan" %}
+{% set header_title = "Obtener plan de alimentación" %}
+{% set active_nav = "obtener_plan" %}
+
+{% block content %}
+
+<div class="fixed-top-section">
+<div class="toolbar" style="justify-content: space-between; gap:10px;">
+    <div style="display:flex; gap:10px; align-items:center;">
+        <div class="searchbox" style="min-width:360px; position: relative;">
+            <i class="fas fa-user"></i>
+            <input id="qPac" type="text" placeholder="Buscar paciente (DNI, nombre o apellido)…">
+            <button id="btnClearPac" class="clear" title="Limpiar">×</button>
+                <div id="sugerenciasPacientes" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1002; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+        <a class="btn btn-primary" href="{{ url_for('admin_pacientes') }}" target="_blank">
+                <i class="fas fa-user-plus"></i> Registrar paciente
+        </a>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+        <button class="btn" id="btnLimpiar">Limpiar</button>
+        <button class="btn" id="btnGuardarBorrador" disabled>Guardar borrador</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ PACIENTE: FICHA + EDICIÓN ============ -->
+<div class="content-card content-spacing">
+    <div class="card-header">
+        <h3><i class="fas fa-id-card"></i> Paciente</h3>
+    </div>
+    <div class="card-body">
+        <form id="formPaciente" method="post">
+            <input type="hidden" id="paciente_id" value="">
+            <div class="form-grid three-cols">
+                <div class="form-col">
+                    <div class="form-row">
+                        <label>DNI</label>
+                        <input class="input" id="p_dni" name="dni" readonly>
+                    </div>
+                    <div class="form-row">
+                        <label>Nombres</label>
+                        <input class="input" id="p_nombres" name="nombres" readonly>
+                    </div>
+                    <div class="form-row">
+                        <label>Apellidos</label>
+                        <input class="input" id="p_apellidos" name="apellidos" readonly>
+                    </div>
+                </div>
+
+                <div class="form-col">
+                    <div class="form-row">
+                        <label>Sexo</label>
+                        <select class="input" id="p_sexo" name="sexo" disabled style="min-width: 80px;">
+                            <option value="">—</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                            <option value="O">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Fecha nac.</label>
+                        <input class="input" id="p_fnac" name="fecha_nac" type="date" readonly>
+                    </div>
+                    <div class="form-row">
+                        <label>Teléfono</label>
+                        <input class="input" id="p_tel" name="telefono" readonly>
+                    </div>
+                </div>
+
+                <div class="form-col">
+                    <div class="form-row">
+                        <label>Email</label>
+                        <input class="input" id="p_email" name="email" type="email" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección de Antropometría -->
+            <div class="form-section">
+                <h4 style="margin: 16px 0 8px 0; color: #2563eb; font-weight: 600;">
+                    <i class="fas fa-weight"></i> Antropometría (Última)
+                </h4>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Peso (kg)</label>
+                            <input class="input" id="p_peso" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Talla (m)</label>
+                            <input class="input" id="p_talla" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Circunferencia Cintura (cm)</label>
+                            <input class="input" id="p_cintura" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>% Grasa Corporal</label>
+                            <input class="input" id="p_grasa" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Nivel de Actividad</label>
+                            <input class="input" id="p_actividad" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Fecha Medición</label>
+                            <input class="input" id="p_fecha_antropo" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Datos Clínicos -->
+            <div class="form-section">
+                <h4 style="margin: 16px 0 8px 0; color: #2563eb; font-weight: 600;">
+                    <i class="fas fa-heartbeat"></i> Datos Clínicos (Últimos)
+                </h4>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>HbA1c (%)</label>
+                            <input class="input" id="p_hba1c" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Glucosa en ayunas (mg/dL)</label>
+                            <input class="input" id="p_glucosa" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Colesterol LDL (mg/dL)</label>
+                            <input class="input" id="p_ldl" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Triglicéridos (mg/dL)</label>
+                            <input class="input" id="p_trigliceridos" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>PA Sistólica (mmHg)</label>
+                            <input class="input" id="p_pa_sis" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>PA Diastólica (mmHg)</label>
+                            <input class="input" id="p_pa_dia" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Fecha Medición</label>
+                            <input class="input" id="p_fecha_clinico" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============ CONFIGURACIÓN RECOMENDADA DEL MOTOR ============ -->
+<div class="content-card" id="configRecomendadaCard" style="display: none;">
+    <div class="card-header">
+        <h3><i class="fas fa-brain"></i> Configuración Recomendada por el Motor</h3>
+    </div>
+    <div class="card-body">
+        <div id="configRecomendadaContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+            <!-- Se llenará dinámicamente con JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- ============ CONFIGURACIÓN DEL PLAN ============ -->
+<div class="content-card" id="formConfiguracionPlan">
+    <div class="card-header">
+        <h3><i class="fas fa-cogs"></i> Configuración del Plan</h3>
+        <button id="btnMotorRecomendacion" class="btn btn-secondary" disabled>
+            <i class="fas fa-robot"></i> Recomendación inteligente
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="form-grid three-cols">
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Fecha de inicio</label>
+                    <input class="input" id="fecha_inicio" type="date">
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Fecha de fin</label>
+                    <input class="input" id="fecha_fin" type="date">
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Días del plan</label>
+                    <input class="input" id="dias_plan" type="number" min="1" max="365" readonly>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-grid three-cols">
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Calorías objetivo</label>
+                    <input class="input" id="kcal_objetivo" type="number" min="800" max="4000" placeholder="Generar recomendación">
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Carbohidratos (%)</label>
+                    <input class="input" id="cho_pct" type="number" min="30" max="70" placeholder="Generar recomendación">
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Proteínas (%)</label>
+                    <input class="input" id="pro_pct" type="number" min="10" max="30" placeholder="Generar recomendación">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-grid three-cols">
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Grasas (%)</label>
+                    <input class="input" id="fat_pct" type="number" min="20" max="40" placeholder="Generar recomendación">
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Índice Glucémico máx.</label>
+                    <input class="input" id="ig_max" type="number" min="30" max="100" placeholder="Generar recomendación">
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Repeticiones máx./semana</label>
+                    <input class="input" id="max_repeticiones" type="number" min="1" max="5" placeholder="Generar recomendación">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-grid three-cols">
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Patrón de comidas</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="comida_des" value="des" checked>
+                            <span>Desayuno</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="comida_mm" value="mm">
+                            <span>Media mañana</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="comida_alm" value="alm" checked>
+                            <span>Almuerzo</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="comida_mt" value="mt">
+                            <span>Media tarde</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="comida_cena" value="cena" checked>
+                            <span>Cena</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+</div>
+
+<!-- ============ EXCLUSIÓN DE GRUPOS E INGREDIENTES ESPECÍFICOS ============ -->
+<div class="content-row">
+    <!-- ============ EXCLUSIÓN DE GRUPOS ============ -->
+    <div class="content-card half-width">
+        <div class="card-header">
+            <h3><i class="fas fa-ban"></i> Exclusión de Grupos</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-row">
+                <label>Selecciona los grupos de alimentos a excluir:</label>
+                <div class="grupos-exclusion-grid">
+                    <div class="grupos-exclusion-row">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="excluir_grupo1" value="GRUPO1_CEREALES">
+                            <span>Grupo 1 - Cereales, tubérculos y menestras</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="excluir_grupo2" value="GRUPO2_VERDURAS">
+                            <span>Grupo 2 - Verduras</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="excluir_grupo3" value="GRUPO3_FRUTAS">
+                            <span>Grupo 3 - Frutas</span>
+                        </label>
+                    </div>
+                    <div class="grupos-exclusion-row">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="excluir_grupo4" value="GRUPO4_LACTEOS">
+                            <span>Grupo 4 - Lácteos y derivados</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="excluir_grupo5" value="GRUPO5_CARNES">
+                            <span>Grupo 5 - Carnes, pescados y huevos</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="excluir_grupo6" value="GRUPO6_AZUCARES">
+                            <span>Grupo 6 - Azúcares y derivados</span>
+                        </label>
+                    </div>
+                    <div class="grupos-exclusion-row">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="excluir_grupo7" value="GRUPO7_GRASAS">
+                            <span>Grupo 7 - Grasas</span>
+                        </label>
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ INGREDIENTES ESPECÍFICOS ============ -->
+    <div class="content-card half-width">
+    <div class="card-header">
+        <h3><i class="fas fa-apple-alt"></i> Alimentos Específicos</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-grid two-cols">
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Alimentos a Incluir (Priorizar)</label>
+                    <div class="searchbox" style="position: relative;">
+                        <i class="fas fa-plus-circle"></i>
+                        <input id="qIngredienteIncluir" type="text" placeholder="Buscar Alimentos para incluir...">
+                        <button id="btnClearIngredienteIncluir" class="clear" title="Limpiar">×</button>
+                        <div id="sugerencias-ingredientes-incluir" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    <div id="lista-ingredientes-incluir" class="ingredientes-lista">
+                        <!-- Los ingredientes incluidos aparecerán aquí -->
+                    </div>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Alimentos a Excluir</label>
+                    <div class="searchbox" style="position: relative;">
+                        <i class="fas fa-minus-circle"></i>
+                        <input id="qIngredienteExcluir" type="text" placeholder="Buscar Alimentos para excluir...">
+                        <button id="btnClearIngredienteExcluir" class="clear" title="Limpiar">×</button>
+                        <div id="sugerencias-ingredientes-excluir" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    <div id="lista-ingredientes-excluir" class="ingredientes-lista">
+                        <!-- Los ingredientes excluidos aparecerán aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Botón de generar después de Ingredientes Específicos -->
+        <div style="padding: 0 16px 16px 16px;">
+            <button class="btn btn-primary btn-large" id="btnGenerar" disabled style="width:100%; padding:16px 20px; font-size:16px; font-weight:700; border-radius:10px; box-shadow: 0 6px 18px rgba(59,130,246,0.25);">
+                <i class="fas fa-magic"></i> Generar Plan Nutricional
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ OVERLAY DE LOADING ============ -->
+<div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); z-index: 99999; align-items: center; justify-content: center; flex-direction: column; gap: 20px;">
+    <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center; max-width: 400px;">
+        <div style="font-size: 64px; margin-bottom: 20px;">
+            <i class="fas fa-spinner fa-spin" style="color: #3b82f6;"></i>
+        </div>
+        <h3 style="margin: 0 0 10px 0; color: #1f2937; font-size: 24px; font-weight: 600;">Generando Plan Nutricional</h3>
+        <p style="margin: 0; color: #6b7280; font-size: 16px;">Estamos creando un plan personalizado para el paciente...</p>
+        <div style="margin-top: 20px; width: 100%; height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden;">
+            <div id="loading-progress" style="height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); width: 0%; transition: width 0.3s ease; animation: loading-pulse 1.5s ease-in-out infinite;"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes loading-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+</style>
+
+<!-- ============ PREVIEW DEL PLAN (OCULTO - NO SE USA) ============ -->
+<div class="content-card" id="seccion-preview" style="display: none;">
+    <div class="card-header">
+        <h3><i class="fas fa-eye"></i> Plan de Alimentación Generado</h3>
+    </div>
+    <div class="card-body">
+        <!-- Controles de visualización -->
+        <div id="controles-visualizacion"></div>
+        
+        <!-- Contenido del plan -->
+        <div id="plan-content"></div>
+
+        <!-- Acciones del plan generado -->
+        <div class="plan-actions" style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+            <button id="btnGuardarBorradorPlan" class="btn btn-secondary" disabled style="width:100%; padding:12px 16px; font-weight:700;">
+                <i class="fas fa-save"></i> Guardar borrador
+            </button>
+            <button id="btnPublicarPlan" class="btn btn-success" disabled style="width:100%; padding:12px 16px; font-weight:700;">
+                <i class="fas fa-check-circle"></i> Guardar y publicar
+            </button>
+            <button id="btnDescargarPDF" class="btn no-print" disabled style="width:100%; padding:12px 16px; font-weight:700; background:#111827; color:white;" onclick="descargarPDFDesdePreview()">
+                <i class="fas fa-file-pdf"></i> Imprimir Plan
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ VALIDACIONES ============ -->
+<div class="content-card" id="validacionesCard" style="display:none;">
+    <div class="card-header">
+        <h3><i class="fas fa-check-circle"></i> Validaciones del Plan</h3>
+    </div>
+    <div class="card-body" id="validacionesContent">
+        <!-- Contenido de validaciones -->
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/obtener_plan.css') }}">
+<style>
+.ingredientes-lista {
+    margin-top: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* Mejorar el scrollbar para webkit browsers */
+.ingredientes-lista::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ingredientes-lista::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.ingredientes-lista::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.ingredientes-lista::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.ingrediente-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    margin: 8px 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.ingrediente-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.ingrediente-item.incluir {
+    border-left: 4px solid #10b981;
+    background: linear-gradient(135deg, #f0fdf4 0%, white 100%);
+}
+
+.ingrediente-item.excluir {
+    border-left: 4px solid #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, white 100%);
+}
+
+.ingrediente-nombre {
+    flex: 1;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.ingrediente-grupo {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: 8px;
+}
+
+.btn-remover-ingrediente {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.btn-remover-ingrediente:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+}
+
+.ingrediente-vacio {
+    text-align: center;
+    color: #9ca3af;
+    font-style: italic;
+    padding: 32px 20px;
+    background: white;
+    border-radius: 8px;
+    border: 2px dashed #d1d5db;
+}
+
+/* Mejorar el estado vacío con iconos */
+.ingrediente-vacio i {
+    font-size: 24px;
+    color: #d1d5db;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Estilos responsivos para dispositivos móviles */
+@media (max-width: 768px) {
+    .ingredientes-lista {
+        max-height: 200px;
+        padding: 8px;
+        margin-top: 8px;
+    }
+    
+    .ingrediente-item {
+        padding: 10px 12px;
+        margin: 6px 0;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .ingrediente-item .btn-remover-ingrediente {
+        align-self: flex-end;
+        margin-left: 0;
+        margin-top: 8px;
+    }
+    
+    .ingrediente-nombre {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    
+    .ingrediente-grupo {
+        font-size: 11px;
+        margin-left: 0;
+    }
+    
+    /* Ajustar el dropdown de sugerencias en móviles */
+    #sugerencias-ingredientes-incluir,
+    #sugerencias-ingredientes-excluir {
+        max-height: 250px !important;
+        font-size: 14px;
+        z-index: 9999 !important;
+    }
+    
+    /* Mejorar la visibilidad del texto en móviles */
+    .ingrediente-item div {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+}
+
+@media (max-width: 480px) {
+    .ingredientes-lista {
+        max-height: 180px;
+        padding: 6px;
+    }
+    
+    .ingrediente-item {
+        padding: 8px 10px;
+        margin: 4px 0;
+    }
+    
+    .ingrediente-vacio {
+        padding: 20px 16px;
+        font-size: 13px;
+    }
+    
+    .ingrediente-vacio i {
+        font-size: 20px;
+    }
+}
+
+/* Estilos para el indicador de carga */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Animaciones suaves para las transiciones */
+.ingrediente-item {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mejorar el estado de hover en el dropdown */
+#sugerencias-ingredientes-incluir div:hover,
+#sugerencias-ingredientes-excluir div:hover {
+    transform: translateX(4px) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Asegurar que el dropdown aparezca por encima de todos los elementos */
+#sugerencias-ingredientes-incluir,
+#sugerencias-ingredientes-excluir {
+    z-index: 99999 !important;
+    position: absolute !important;
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+/* Asegurar que el contenedor padre no corte el dropdown */
+.ingredientes-lista {
+    overflow: visible !important;
+}
+
+/* Ajustar el contenedor de ingredientes específicos para no cortar el dropdown */
+.card-body {
+    overflow: visible !important;
+}
+
+/* Específico para el contenedor de ingredientes específicos */
+.ingredientes-especificos-container {
+    overflow: visible !important;
+    position: relative;
+}
+
+/* Asegurar que los contenedores padre no corten el dropdown */
+.searchbox,
+.input-group,
+.form-group {
+    overflow: visible !important;
+    position: relative;
+}
+
+/* Mejorar la visibilidad del dropdown - igual que pacientes */
+#sugerencias-ingredientes-incluir,
+#sugerencias-ingredientes-excluir {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-radius: 0 0 8px 8px !important;
+    border: 1px solid #ddd !important;
+    background: white !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+}
+
+/* Asegurar que el contenedor de ingredientes específicos no tenga overflow hidden */
+.card {
+    overflow: visible !important;
+}
+
+/* Específico para la sección de ingredientes específicos */
+.ingredientes-especificos {
+    overflow: visible !important;
+}
+
+/* Asegurar que todos los contenedores padre permitan que el dropdown se muestre */
+.container,
+.row,
+.col {
+    overflow: visible !important;
+}
+
+/* Específico para la estructura de ingredientes específicos */
+.content-card .card-body {
+    overflow: visible !important;
+}
+
+.form-grid {
+    overflow: visible !important;
+}
+
+.form-col {
+    overflow: visible !important;
+}
+
+.form-row {
+    overflow: visible !important;
+}
+
+/* Asegurar que el searchbox no corte el contenido */
+.searchbox {
+    overflow: visible !important;
+    position: relative !important;
+}
+
+/* Permitir que el dropdown se muestre correctamente */
+.searchbox {
+    overflow: visible !important;
+    position: relative !important;
+}
+
+/* Asegurar que el dropdown tenga z-index alto */
+#sugerencias-ingredientes-incluir,
+#sugerencias-ingredientes-excluir {
+    z-index: 1003 !important;
+}
+
+/* Estilos para checkboxes */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 8px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.checkbox-item:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+}
+
+.checkbox-item input[type="checkbox"]:checked + span {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.checkbox-item input[type="checkbox"]:checked {
+    background: #3b82f6;
+}
+
+/* Estilos específicos para grupos de exclusión */
+.grupos-exclusion-grid {
+    margin-top: 12px;
+}
+
+.grupos-exclusion-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.grupos-exclusion-row .checkbox-item {
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+/* Estilos para el header con botón */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+}
+
+/* Estilos para la sección fija superior */
+.fixed-top-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+}
+
+/* Espaciado para compensar la sección fija */
+.content-spacing {
+    margin-top: 120px; /* Ajusta según la altura de la sección fija */
+}
+
+/* Estilos para fila de contenido */
+.content-row {
+    display: flex !important;
+    gap: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+.content-card.half-width {
+    flex: 1 !important;
+    width: 50% !important;
+    max-width: 50% !important;
+}
+
+
+.grupos-exclusion .checkbox-item {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.grupos-exclusion .checkbox-item:hover {
+    background: #fee2e2;
+}
+
+.grupos-exclusion .checkbox-item input[type="checkbox"]:checked {
+    background: #ef4444;
+    accent-color: #ef4444;
+}
+
+.grupos-exclusion .checkbox-item input[type="checkbox"]:checked + span {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/obtener_plan.js') }}"></script>
+
+<style>
+/* Estilos para impresión - Solo mostrar el plan generado */
+@media print {
+  /* Configuración de página */
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+  
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    background: white;
+    font-size: 10pt;
+  }
+  
+  /* Ocultar todo excepto el plan generado */
+  .fixed-top-section,
+  .toolbar,
+  .content-card:not(#seccion-preview),
+  #validacionesCard,
+  .sidebar,
+  .header,
+  nav,
+  aside,
+  header,
+  .no-print,
+  button,
+  .btn,
+  .plan-actions,
+  #controles-visualizacion {
+    display: none !important;
+  }
+  
+  /* Asegurar que main se muestre */
+  .main {
+    display: block !important;
+  }
+  
+  /* Ocultar sidebar y header */
+  aside,
+  .sidebar {
+    display: none !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  .main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+  }
+  
+  /* Mostrar solo la sección del plan */
+  #seccion-preview {
+    display: block !important;
+    position: relative;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+    page-break-inside: avoid;
+  }
+  
+  #seccion-preview .card-header {
+    display: none !important;
+  }
+  
+  #seccion-preview .card-body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+  
+  /* Estilos para el contenido del plan */
+  #plan-content {
+    width: 100%;
+    display: block !important;
+  }
+  
+  /* Estilos para el schedule grid */
+  .plan-schedule {
+    width: 100%;
+  }
+  
+  .schedule-grid {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 3px;
+    border: 2px solid #1f2937;
+    page-break-inside: avoid;
+  }
+  
+  .schedule-header {
+    display: grid !important;
+    grid-template-columns: 50px repeat(7, 1fr) !important;
+    width: 100% !important;
+    gap: 0 !important;
+    border-bottom: 2px solid #1f2937 !important;
+  }
+  
+  .schedule-row {
+    display: grid !important;
+    grid-template-columns: 50px repeat(7, 1fr) !important;
+    width: 100% !important;
+    gap: 0 !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .time-header,
+  .day-header {
+    padding: 6px 4px;
+    background: #1f2937 !important;
+    color: white !important;
+    font-weight: 700;
+    text-align: center;
+    font-size: 8pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border-right: 1px solid #374151;
+  }
+  
+  .day-header {
+    background: #374151 !important;
+  }
+  
+  .time-cell {
+    padding: 6px 4px;
+    background: #f3f4f6 !important;
+    font-weight: 600;
+    text-align: center;
+    font-size: 8pt;
+    border-right: 1px solid #d1d5db;
+  }
+  
+  .meal-cell {
+    padding: 4px;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    font-size: 7pt;
+    page-break-inside: avoid;
+  }
+  
+  .meal-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  
+  .meal-info strong {
+    font-size: 8pt;
+    font-weight: 600;
+    color: #1f2937;
+  }
+  
+  .meal-foods > div {
+    font-size: 7pt !important;
+    padding: 2px 4px !important;
+    margin: 1px 0 !important;
+    border: 1px solid !important;
+    background: white !important;
+    color: #1f2937 !important;
+  }
+  
+  .no-meal {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 9pt;
+    padding: 10px;
+  }
+  
+  .leyenda-grupos {
+    display: none !important;
+  }
+  
+  /* Ocultar todas las notificaciones Toastify en impresión */
+  .toastify,
+  .toastify-top,
+  .toastify-right,
+  .toastify-left,
+  .toastify-bottom {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}
+</style>
+{% endblock %}

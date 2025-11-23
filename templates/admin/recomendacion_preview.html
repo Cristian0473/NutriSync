@@ -1,0 +1,262 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Vista Previa de Recomendación{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-eye text-info"></i>
+                    Vista Previa de Recomendación Nutricional
+                </h2>
+                <div>
+                    <a href="{{ url_for('admin_pacientes') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver a Pacientes
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_generar_recomendacion', paciente_id=recomendacion.paciente_id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Guardar Recomendación
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Información del Paciente -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i>
+                        Paciente: {{ paciente_data[1] }} {{ paciente_data[2] }} (DNI: {{ paciente_data[0] }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Edad:</strong> {{ recomendacion.perfil.edad }} años<br>
+                            <strong>Sexo:</strong> {{ recomendacion.perfil.sexo }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Peso:</strong> {{ recomendacion.perfil.peso }} kg<br>
+                            <strong>Talla:</strong> {{ recomendacion.perfil.talla }} m
+                        </div>
+                        <div class="col-md-3">
+                            <strong>IMC:</strong> {{ recomendacion.perfil.imc }}<br>
+                            <strong>Actividad:</strong> {{ recomendacion.perfil.actividad }}
+                        </div>
+                        <div class="col-md-3">
+                            {% if recomendacion.perfil.hba1c %}
+                            <strong>HbA1c:</strong> {{ recomendacion.perfil.hba1c }}%<br>
+                            {% endif %}
+                            {% if recomendacion.perfil.glucosa_ayunas %}
+                            <strong>Glucosa:</strong> {{ recomendacion.perfil.glucosa_ayunas }} mg/dL
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metas Nutricionales -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-target"></i>
+                        Metas Nutricionales Calculadas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-primary">{{ recomendacion.metas_nutricionales.calorias_diarias }}</h3>
+                                <p class="text-muted">Calorías</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-warning">{{ recomendacion.metas_nutricionales.carbohidratos_g }}g</h3>
+                                <p class="text-muted">CHO ({{ recomendacion.metas_nutricionales.carbohidratos_porcentaje }}%)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-info">{{ recomendacion.metas_nutricionales.proteinas_g }}g</h3>
+                                <p class="text-muted">Proteínas ({{ recomendacion.metas_nutricionales.proteinas_porcentaje }}%)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-danger">{{ recomendacion.metas_nutricionales.grasas_g }}g</h3>
+                                <p class="text-muted">Grasas ({{ recomendacion.metas_nutricionales.grasas_porcentaje }}%)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-success">{{ recomendacion.metas_nutricionales.fibra_g }}g</h3>
+                                <p class="text-muted">Fibra</p>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="metric-card">
+                                <h3 class="text-secondary">{{ recomendacion.metas_nutricionales.sodio_mg }}mg</h3>
+                                <p class="text-muted">Sodio máx</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recomendaciones Especiales -->
+            {% if recomendacion.recomendaciones_especiales %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Recomendaciones Especiales Generadas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for recomendacion_esp in recomendacion.recomendaciones_especiales %}
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            {{ recomendacion_esp }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Plan de Comidas Detallado -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-day"></i>
+                        Distribución de Comidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for tiempo, comida in recomendacion.comidas.items() %}
+                    <div class="meal-section mb-4">
+                        <h6 class="meal-title">
+                            {% if tiempo == 'des' %}
+                                <i class="fas fa-sun text-warning"></i> Desayuno
+                            {% elif tiempo == 'mm' %}
+                                <i class="fas fa-coffee text-secondary"></i> Media Mañana
+                            {% elif tiempo == 'alm' %}
+                                <i class="fas fa-sun text-warning"></i> Almuerzo
+                            {% elif tiempo == 'mt' %}
+                                <i class="fas fa-coffee text-secondary"></i> Media Tarde
+                            {% elif tiempo == 'cena' %}
+                                <i class="fas fa-moon text-primary"></i> Cena
+                            {% endif %}
+                            <span class="badge badge-primary ml-2">{{ comida.carbohidratos_meta }}g CHO objetivo</span>
+                        </h6>
+                        
+                        {% if comida.alimentos_sugeridos %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Alimento</th>
+                                        <th>Cantidad</th>
+                                        <th>Grupo</th>
+                                        <th>CHO (g)</th>
+                                        <th>Pro (g)</th>
+                                        <th>Grasa (g)</th>
+                                        <th>Fibra (g)</th>
+                                        <th>IG</th>
+                                        <th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for alimento in comida.alimentos_sugeridos %}
+                                    <tr>
+                                        <td><strong>{{ alimento.ingrediente.nombre }}</strong></td>
+                                        <td>{{ alimento.cantidad_sugerida }}{{ alimento.unidad }}</td>
+                                        <td>
+                                            <span class="badge badge-secondary">{{ alimento.ingrediente.grupo }}</span>
+                                        </td>
+                                        <td>{{ "%.1f"|format(alimento.ingrediente.cho * alimento.cantidad_sugerida / 100) }}</td>
+                                        <td>{{ "%.1f"|format(alimento.ingrediente.pro * alimento.cantidad_sugerida / 100) }}</td>
+                                        <td>{{ "%.1f"|format(alimento.ingrediente.fat * alimento.cantidad_sugerida / 100) }}</td>
+                                        <td>{{ "%.1f"|format(alimento.ingrediente.fibra * alimento.cantidad_sugerida / 100) }}</td>
+                                        <td>
+                                            {% if alimento.ingrediente.ig %}
+                                                <span class="badge {% if alimento.ingrediente.ig <= 55 %}badge-success{% elif alimento.ingrediente.ig <= 70 %}badge-warning{% else %}badge-danger{% endif %}">
+                                                    {{ alimento.ingrediente.ig }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><small class="text-muted">{{ alimento.motivo }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No hay alimentos sugeridos para esta comida.</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Información Técnica -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs"></i>
+                        Información Técnica
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Fecha de generación:</strong> {{ recomendacion.fecha }}</p>
+                            <p><strong>Ingredientes disponibles:</strong> {{ recomendacion.ingredientes_disponibles }}</p>
+                            <p><strong>Motor de recomendación:</strong> NutriSync v1.0</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Algoritmo:</strong> Personalizado para Diabetes Tipo 2</p>
+                            <p><strong>Filtros aplicados:</strong> Alergias, preferencias, IG máximo</p>
+                            <p><strong>Estado:</strong> <span class="badge badge-warning">Vista Previa</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.metric-card {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+.meal-section {
+    border-left: 4px solid #007bff;
+    padding-left: 1rem;
+}
+
+.meal-title {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.table th {
+    font-size: 0.875rem;
+}
+
+.table td {
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,2232 @@
+{
+  "paciente_id": 1,
+  "fecha": "2025-10-18",
+  "perfil": {
+    "edad": 35,
+    "sexo": "M",
+    "peso": 70.0,
+    "talla": 1.7,
+    "imc": 24.2,
+    "actividad": "moderada",
+    "hba1c": 7.0,
+    "glucosa_ayunas": 110,
+    "alergias": [],
+    "medicamentos": [
+      "Metformina"
+    ]
+  },
+  "metas_nutricionales": {
+    "calorias_diarias": 2229,
+    "carbohidratos_g": 278,
+    "carbohidratos_porcentaje": 50,
+    "proteinas_g": 100,
+    "proteinas_porcentaje": 18,
+    "grasas_g": 79,
+    "grasas_porcentaje": 32,
+    "fibra_g": 28,
+    "sodio_mg": 2300,
+    "ig_maximo": 70,
+    "max_repeticiones_semana": 2
+  },
+  "plan_semanal": {
+    "lunes": {
+      "des": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Avena integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 60,
+            "unidad": "g",
+            "calorias": 210.0,
+            "carbohidratos": 42.0,
+            "proteinas": 7.2,
+            "grasas": 1.8,
+            "fibra": 4.8,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Manzana",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Leche descremada",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 200,
+            "unidad": "g",
+            "calorias": 100.0,
+            "carbohidratos": 10.0,
+            "proteinas": 16.0,
+            "grasas": 4.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 370.0,
+        "carbohidratos_estimados": 66.4,
+        "proteinas_estimadas": 23.8,
+        "grasas_estimadas": 6.04
+      },
+      "mm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Manzana",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "alm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Pechuga de pollo",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 180.0,
+            "carbohidratos": 0.0,
+            "proteinas": 30.0,
+            "grasas": 6.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Arroz integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 80,
+            "unidad": "g",
+            "calorias": 280.0,
+            "carbohidratos": 56.0,
+            "proteinas": 9.6,
+            "grasas": 2.4,
+            "fibra": 6.4,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Brócoli",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Espinaca",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aceite de oliva",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 15,
+            "unidad": "g",
+            "calorias": 90.0,
+            "carbohidratos": 0.75,
+            "proteinas": 0.75,
+            "grasas": 9.75,
+            "fibra": 0.45,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 625.0,
+        "carbohidratos_estimados": 71.75,
+        "proteinas_estimadas": 45.35,
+        "grasas_estimadas": 19.4
+      },
+      "mt": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Manzana",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "cena": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Salmón",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 150.0,
+            "carbohidratos": 0.0,
+            "proteinas": 25.0,
+            "grasas": 5.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Zanahoria",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Tomate",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aguacate",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 10,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 0.5,
+            "proteinas": 0.5,
+            "grasas": 6.5,
+            "fibra": 0.3,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 285.0,
+        "carbohidratos_estimados": 15.5,
+        "proteinas_estimadas": 30.5,
+        "grasas_estimadas": 12.75
+      }
+    },
+    "martes": {
+      "des": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Arroz integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 60,
+            "unidad": "g",
+            "calorias": 210.0,
+            "carbohidratos": 42.0,
+            "proteinas": 7.2,
+            "grasas": 1.8,
+            "fibra": 4.8,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Plátano",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Yogur natural",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 200,
+            "unidad": "g",
+            "calorias": 100.0,
+            "carbohidratos": 10.0,
+            "proteinas": 16.0,
+            "grasas": 4.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 370.0,
+        "carbohidratos_estimados": 66.4,
+        "proteinas_estimadas": 23.8,
+        "grasas_estimadas": 6.04
+      },
+      "mm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Yogur natural",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 75.0,
+            "carbohidratos": 7.5,
+            "proteinas": 12.0,
+            "grasas": 3.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 75.0,
+        "carbohidratos_estimados": 7.5,
+        "proteinas_estimadas": 12.0,
+        "grasas_estimadas": 3.0
+      },
+      "alm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Salmón",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 180.0,
+            "carbohidratos": 0.0,
+            "proteinas": 30.0,
+            "grasas": 6.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Quinoa",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 80,
+            "unidad": "g",
+            "calorias": 280.0,
+            "carbohidratos": 56.0,
+            "proteinas": 9.6,
+            "grasas": 2.4,
+            "fibra": 6.4,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Espinaca",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Zanahoria",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aguacate",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 15,
+            "unidad": "g",
+            "calorias": 90.0,
+            "carbohidratos": 0.75,
+            "proteinas": 0.75,
+            "grasas": 9.75,
+            "fibra": 0.45,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 625.0,
+        "carbohidratos_estimados": 71.75,
+        "proteinas_estimadas": 45.35,
+        "grasas_estimadas": 19.4
+      },
+      "mt": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Yogur natural",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 75.0,
+            "carbohidratos": 7.5,
+            "proteinas": 12.0,
+            "grasas": 3.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 75.0,
+        "carbohidratos_estimados": 7.5,
+        "proteinas_estimadas": 12.0,
+        "grasas_estimadas": 3.0
+      },
+      "cena": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Huevo entero",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 150.0,
+            "carbohidratos": 0.0,
+            "proteinas": 25.0,
+            "grasas": 5.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Tomate",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Brócoli",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Nueces",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 10,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 0.5,
+            "proteinas": 0.5,
+            "grasas": 6.5,
+            "fibra": 0.3,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 285.0,
+        "carbohidratos_estimados": 15.5,
+        "proteinas_estimadas": 30.5,
+        "grasas_estimadas": 12.75
+      }
+    },
+    "miercoles": {
+      "des": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Quinoa",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 60,
+            "unidad": "g",
+            "calorias": 210.0,
+            "carbohidratos": 42.0,
+            "proteinas": 7.2,
+            "grasas": 1.8,
+            "fibra": 4.8,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Fresas",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Queso cottage",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 200,
+            "unidad": "g",
+            "calorias": 100.0,
+            "carbohidratos": 10.0,
+            "proteinas": 16.0,
+            "grasas": 4.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 370.0,
+        "carbohidratos_estimados": 66.4,
+        "proteinas_estimadas": 23.8,
+        "grasas_estimadas": 6.04
+      },
+      "mm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Fresas",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "alm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Huevo entero",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 180.0,
+            "carbohidratos": 0.0,
+            "proteinas": 30.0,
+            "grasas": 6.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Pan integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 80,
+            "unidad": "g",
+            "calorias": 280.0,
+            "carbohidratos": 56.0,
+            "proteinas": 9.6,
+            "grasas": 2.4,
+            "fibra": 6.4,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Zanahoria",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Tomate",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Nueces",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 15,
+            "unidad": "g",
+            "calorias": 90.0,
+            "carbohidratos": 0.75,
+            "proteinas": 0.75,
+            "grasas": 9.75,
+            "fibra": 0.45,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 625.0,
+        "carbohidratos_estimados": 71.75,
+        "proteinas_estimadas": 45.35,
+        "grasas_estimadas": 19.4
+      },
+      "mt": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Fresas",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "cena": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Pechuga de pollo",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 150.0,
+            "carbohidratos": 0.0,
+            "proteinas": 25.0,
+            "grasas": 5.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Brócoli",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Espinaca",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aceite de oliva",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 10,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 0.5,
+            "proteinas": 0.5,
+            "grasas": 6.5,
+            "fibra": 0.3,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 285.0,
+        "carbohidratos_estimados": 15.5,
+        "proteinas_estimadas": 30.5,
+        "grasas_estimadas": 12.75
+      }
+    },
+    "jueves": {
+      "des": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Pan integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 60,
+            "unidad": "g",
+            "calorias": 210.0,
+            "carbohidratos": 42.0,
+            "proteinas": 7.2,
+            "grasas": 1.8,
+            "fibra": 4.8,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Naranja",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Leche descremada",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 200,
+            "unidad": "g",
+            "calorias": 100.0,
+            "carbohidratos": 10.0,
+            "proteinas": 16.0,
+            "grasas": 4.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 370.0,
+        "carbohidratos_estimados": 66.4,
+        "proteinas_estimadas": 23.8,
+        "grasas_estimadas": 6.04
+      },
+      "mm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Leche descremada",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 75.0,
+            "carbohidratos": 7.5,
+            "proteinas": 12.0,
+            "grasas": 3.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 75.0,
+        "carbohidratos_estimados": 7.5,
+        "proteinas_estimadas": 12.0,
+        "grasas_estimadas": 3.0
+      },
+      "alm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Pechuga de pollo",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 180.0,
+            "carbohidratos": 0.0,
+            "proteinas": 30.0,
+            "grasas": 6.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Avena integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 80,
+            "unidad": "g",
+            "calorias": 280.0,
+            "carbohidratos": 56.0,
+            "proteinas": 9.6,
+            "grasas": 2.4,
+            "fibra": 6.4,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Tomate",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Brócoli",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aceite de oliva",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 15,
+            "unidad": "g",
+            "calorias": 90.0,
+            "carbohidratos": 0.75,
+            "proteinas": 0.75,
+            "grasas": 9.75,
+            "fibra": 0.45,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 625.0,
+        "carbohidratos_estimados": 71.75,
+        "proteinas_estimadas": 45.35,
+        "grasas_estimadas": 19.4
+      },
+      "mt": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Leche descremada",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 75.0,
+            "carbohidratos": 7.5,
+            "proteinas": 12.0,
+            "grasas": 3.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 75.0,
+        "carbohidratos_estimados": 7.5,
+        "proteinas_estimadas": 12.0,
+        "grasas_estimadas": 3.0
+      },
+      "cena": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Salmón",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 150.0,
+            "carbohidratos": 0.0,
+            "proteinas": 25.0,
+            "grasas": 5.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Espinaca",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Zanahoria",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aguacate",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 10,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 0.5,
+            "proteinas": 0.5,
+            "grasas": 6.5,
+            "fibra": 0.3,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 285.0,
+        "carbohidratos_estimados": 15.5,
+        "proteinas_estimadas": 30.5,
+        "grasas_estimadas": 12.75
+      }
+    },
+    "viernes": {
+      "des": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Avena integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 60,
+            "unidad": "g",
+            "calorias": 210.0,
+            "carbohidratos": 42.0,
+            "proteinas": 7.2,
+            "grasas": 1.8,
+            "fibra": 4.8,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Manzana",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Yogur natural",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 200,
+            "unidad": "g",
+            "calorias": 100.0,
+            "carbohidratos": 10.0,
+            "proteinas": 16.0,
+            "grasas": 4.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 370.0,
+        "carbohidratos_estimados": 66.4,
+        "proteinas_estimadas": 23.8,
+        "grasas_estimadas": 6.04
+      },
+      "mm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Manzana",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "alm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Salmón",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 180.0,
+            "carbohidratos": 0.0,
+            "proteinas": 30.0,
+            "grasas": 6.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Arroz integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 80,
+            "unidad": "g",
+            "calorias": 280.0,
+            "carbohidratos": 56.0,
+            "proteinas": 9.6,
+            "grasas": 2.4,
+            "fibra": 6.4,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Brócoli",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Espinaca",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aguacate",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 15,
+            "unidad": "g",
+            "calorias": 90.0,
+            "carbohidratos": 0.75,
+            "proteinas": 0.75,
+            "grasas": 9.75,
+            "fibra": 0.45,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 625.0,
+        "carbohidratos_estimados": 71.75,
+        "proteinas_estimadas": 45.35,
+        "grasas_estimadas": 19.4
+      },
+      "mt": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Manzana",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "cena": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Huevo entero",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 150.0,
+            "carbohidratos": 0.0,
+            "proteinas": 25.0,
+            "grasas": 5.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Zanahoria",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Tomate",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Nueces",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 10,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 0.5,
+            "proteinas": 0.5,
+            "grasas": 6.5,
+            "fibra": 0.3,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 285.0,
+        "carbohidratos_estimados": 15.5,
+        "proteinas_estimadas": 30.5,
+        "grasas_estimadas": 12.75
+      }
+    },
+    "sabado": {
+      "des": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Arroz integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 60,
+            "unidad": "g",
+            "calorias": 210.0,
+            "carbohidratos": 42.0,
+            "proteinas": 7.2,
+            "grasas": 1.8,
+            "fibra": 4.8,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Plátano",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Queso cottage",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 200,
+            "unidad": "g",
+            "calorias": 100.0,
+            "carbohidratos": 10.0,
+            "proteinas": 16.0,
+            "grasas": 4.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 370.0,
+        "carbohidratos_estimados": 66.4,
+        "proteinas_estimadas": 23.8,
+        "grasas_estimadas": 6.04
+      },
+      "mm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Queso cottage",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 75.0,
+            "carbohidratos": 7.5,
+            "proteinas": 12.0,
+            "grasas": 3.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 75.0,
+        "carbohidratos_estimados": 7.5,
+        "proteinas_estimadas": 12.0,
+        "grasas_estimadas": 3.0
+      },
+      "alm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Huevo entero",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 180.0,
+            "carbohidratos": 0.0,
+            "proteinas": 30.0,
+            "grasas": 6.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Quinoa",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 80,
+            "unidad": "g",
+            "calorias": 280.0,
+            "carbohidratos": 56.0,
+            "proteinas": 9.6,
+            "grasas": 2.4,
+            "fibra": 6.4,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Espinaca",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Zanahoria",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Nueces",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 15,
+            "unidad": "g",
+            "calorias": 90.0,
+            "carbohidratos": 0.75,
+            "proteinas": 0.75,
+            "grasas": 9.75,
+            "fibra": 0.45,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 625.0,
+        "carbohidratos_estimados": 71.75,
+        "proteinas_estimadas": 45.35,
+        "grasas_estimadas": 19.4
+      },
+      "mt": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Queso cottage",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 75.0,
+            "carbohidratos": 7.5,
+            "proteinas": 12.0,
+            "grasas": 3.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 75.0,
+        "carbohidratos_estimados": 7.5,
+        "proteinas_estimadas": 12.0,
+        "grasas_estimadas": 3.0
+      },
+      "cena": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Pechuga de pollo",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 150.0,
+            "carbohidratos": 0.0,
+            "proteinas": 25.0,
+            "grasas": 5.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Tomate",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Brócoli",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aceite de oliva",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 10,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 0.5,
+            "proteinas": 0.5,
+            "grasas": 6.5,
+            "fibra": 0.3,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 285.0,
+        "carbohidratos_estimados": 15.5,
+        "proteinas_estimadas": 30.5,
+        "grasas_estimadas": 12.75
+      }
+    },
+    "domingo": {
+      "des": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Quinoa",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 60,
+            "unidad": "g",
+            "calorias": 210.0,
+            "carbohidratos": 42.0,
+            "proteinas": 7.2,
+            "grasas": 1.8,
+            "fibra": 4.8,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Fresas",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Leche descremada",
+              "grupo": "GRUPO4_LACTEOS",
+              "kcal": 50,
+              "cho": 5,
+              "pro": 8,
+              "fat": 2,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 200,
+            "unidad": "g",
+            "calorias": 100.0,
+            "carbohidratos": 10.0,
+            "proteinas": 16.0,
+            "grasas": 4.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO4_LACTEOS"
+          }
+        ],
+        "calorias_estimadas": 370.0,
+        "carbohidratos_estimados": 66.4,
+        "proteinas_estimadas": 23.8,
+        "grasas_estimadas": 6.04
+      },
+      "mm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Fresas",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "alm": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Pechuga de pollo",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 180.0,
+            "carbohidratos": 0.0,
+            "proteinas": 30.0,
+            "grasas": 6.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Pan integral",
+              "grupo": "GRUPO1_CEREALES",
+              "kcal": 350,
+              "cho": 70,
+              "pro": 12,
+              "fat": 3,
+              "fibra": 8
+            },
+            "cantidad_sugerida": 80,
+            "unidad": "g",
+            "calorias": 280.0,
+            "carbohidratos": 56.0,
+            "proteinas": 9.6,
+            "grasas": 2.4,
+            "fibra": 6.4,
+            "motivo": "Selección automática - grupo GRUPO1_CEREALES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Zanahoria",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Tomate",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aceite de oliva",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 15,
+            "unidad": "g",
+            "calorias": 90.0,
+            "carbohidratos": 0.75,
+            "proteinas": 0.75,
+            "grasas": 9.75,
+            "fibra": 0.45,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 625.0,
+        "carbohidratos_estimados": 71.75,
+        "proteinas_estimadas": 45.35,
+        "grasas_estimadas": 19.4
+      },
+      "mt": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Fresas",
+              "grupo": "GRUPO3_FRUTAS",
+              "kcal": 50,
+              "cho": 12,
+              "pro": 0.5,
+              "fat": 0.2,
+              "fibra": 2
+            },
+            "cantidad_sugerida": 120,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 14.4,
+            "proteinas": 0.6,
+            "grasas": 0.24,
+            "fibra": 2.4,
+            "motivo": "Selección automática - grupo GRUPO3_FRUTAS"
+          }
+        ],
+        "calorias_estimadas": 60.0,
+        "carbohidratos_estimados": 14.4,
+        "proteinas_estimadas": 0.6,
+        "grasas_estimadas": 0.24
+      },
+      "cena": {
+        "alimentos": [
+          {
+            "ingrediente": {
+              "nombre": "Salmón",
+              "grupo": "GRUPO5_CARNES",
+              "kcal": 150,
+              "cho": 0,
+              "pro": 25,
+              "fat": 5,
+              "fibra": 0
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 150.0,
+            "carbohidratos": 0.0,
+            "proteinas": 25.0,
+            "grasas": 5.0,
+            "fibra": 0.0,
+            "motivo": "Selección automática - grupo GRUPO5_CARNES"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Brócoli",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 150,
+            "unidad": "g",
+            "calorias": 45.0,
+            "carbohidratos": 9.0,
+            "proteinas": 3.0,
+            "grasas": 0.75,
+            "fibra": 4.5,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Espinaca",
+              "grupo": "GRUPO2_VERDURAS",
+              "kcal": 30,
+              "cho": 6,
+              "pro": 2,
+              "fat": 0.5,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 100,
+            "unidad": "g",
+            "calorias": 30.0,
+            "carbohidratos": 6.0,
+            "proteinas": 2.0,
+            "grasas": 0.5,
+            "fibra": 3.0,
+            "motivo": "Selección automática - grupo GRUPO2_VERDURAS"
+          },
+          {
+            "ingrediente": {
+              "nombre": "Aguacate",
+              "grupo": "GRUPO7_GRASAS",
+              "kcal": 600,
+              "cho": 5,
+              "pro": 5,
+              "fat": 65,
+              "fibra": 3
+            },
+            "cantidad_sugerida": 10,
+            "unidad": "g",
+            "calorias": 60.0,
+            "carbohidratos": 0.5,
+            "proteinas": 0.5,
+            "grasas": 6.5,
+            "fibra": 0.3,
+            "motivo": "Selección automática - grupo GRUPO7_GRASAS"
+          }
+        ],
+        "calorias_estimadas": 285.0,
+        "carbohidratos_estimados": 15.5,
+        "proteinas_estimadas": 30.5,
+        "grasas_estimadas": 12.75
+      }
+    }
+  },
+  "validaciones": {
+    "calorias": {
+      "objetivo": 2229,
+      "actual": 1413,
+      "cumple": false
+    },
+    "carbohidratos": {
+      "objetivo": 278,
+      "actual": 177,
+      "cumple": false
+    },
+    "proteinas": {
+      "objetivo": 100,
+      "actual": 111,
+      "cumple": true
+    },
+    "grasas": {
+      "objetivo": 79,
+      "actual": 41,
+      "cumple": false
+    },
+    "fibra": {
+      "objetivo": 28,
+      "actual": 32,
+      "cumple": true
+    },
+    "sodio": {
+      "objetivo": 2300,
+      "actual": 0,
+      "cumple": true
+    },
+    "diversidad": {
+      "ingredientes_unicos": 21,
+      "max_repeticiones": 2,
+      "cumple": false
+    },
+    "ig_maximo": {
+      "objetivo": 70,
+      "cumple": true
+    }
+  },
+  "ingredientes_disponibles": 50,
+  "filtros_aplicados": {}
+}

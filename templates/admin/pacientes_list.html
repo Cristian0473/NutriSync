@@ -1,0 +1,1832 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Pacientes" %}
+{% set header_title = "Registro integral de pacientes" %}
+{% set active_nav = "pacientes" %}
+
+{% block content %}
+<div class="toolbar" style="justify-content: space-between; gap:10px;">
+  <button id="btnNuevoPaciente" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Nuevo registro completo
+  </button>
+
+  <!-- 🔎 Buscador de pacientes -->
+  <div class="searchbox" style="min-width:360px;">
+    <i class="fas fa-user"></i>
+    <input id="buscarPacienteInput" type="text" placeholder="Buscar paciente (DNI, nombre o apellido)...">
+    <button id="btnClearPaciente" class="clear" title="Limpiar">×</button>
+  </div>
+</div>
+
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-users"></i> Lista de pacientes</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <div id="tablaPacientes" class="table-responsive"></div>
+      <div id="paginacion" class="pagination"></div>
+
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CONFIRMACIÓN ELIMINAR ===== -->
+<div class="modal" id="modalConfirmarBorrarPaciente" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalConfirmarBorrarPaciente"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h3>
+      <button class="modal-close js-close-modal" data-target="#modalConfirmarBorrarPaciente" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de eliminar al paciente <strong id="dniPacienteBorrar"></strong>?</p>
+      <p class="muted" style="margin-top: 10px; color: #6b7280;">Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn js-close-modal" data-target="#modalConfirmarBorrarPaciente">Cancelar</button>
+      <form id="formConfirmarBorrarPaciente" method="post" style="display:inline-block">
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash"></i> Sí, eliminar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL REGISTRO INTEGRAL ===== -->
+<div class="modal" id="modalPaciente" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalPaciente"></div>
+  <div class="modal-dialog wide">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-injured"></i> <span id="pac_titulo">Nuevo registro completo</span></h3>
+      <button class="modal-close js-close-modal" data-target="#modalPaciente">×</button>
+    </div>
+
+    <form id="formPacienteFull" method="post" action="{{ url_for('admin_paciente_guardar') }}">
+      <div class="modal-body">
+        <!-- Selector de paciente (para nuevo registro) -->
+        <div id="selector-paciente-container" style="margin-bottom: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
+            <i class="fas fa-search"></i> Buscar paciente existente (opcional)
+          </label>
+          <select id="selectPacienteExistente" style="width: 100%;" class="form-select">
+            <option value="">-- Nuevo paciente --</option>
+          </select>
+          <small style="display: block; margin-top: 8px; color: #6b7280;">
+            Si seleccionas un paciente, se cargarán sus datos del preregistro. Si dejas "Nuevo paciente", podrás crear uno nuevo.
+          </small>
+        </div>
+
+        <!-- Selector de fecha (para ver/editar) -->
+        <div id="selector-fecha-container" style="display: none; margin-bottom: 20px; padding: 16px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1e40af;">
+            <i class="fas fa-calendar-alt"></i> Seleccionar fecha de registro
+          </label>
+          <select id="selectFechaRegistro" style="width: 100%;" class="form-select">
+            <option value="">Cargando fechas...</option>
+          </select>
+          <small style="display: block; margin-top: 8px; color: #3b82f6;">
+            Selecciona la fecha del registro que deseas ver o editar. Por defecto se muestra el más reciente.
+          </small>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="datos">Datos personales</button>
+          <button type="button" class="tab" data-tab="antro">Antropometría</button>
+          <button type="button" class="tab" data-tab="clinico">Datos clínicos</button>
+        </div>
+
+        <!-- TAB: Datos personales -->
+        <div class="tab-content active" id="tab-datos">
+          <div class="form-grid two-cols">
+            <div class="form-row"><label>DNI</label><input type="text" id="dni" name="dni" maxlength="8" required></div>
+            <div class="form-row"><label>Nombres</label><input type="text" id="nombres" name="nombres"></div>
+            <div class="form-row"><label>Apellidos</label><input type="text" id="apellidos" name="apellidos"></div>
+            <div class="form-row">
+              <label>Sexo</label>
+              <select id="sexo" name="sexo">
+                <option value="">(sin especificar)</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
+            <div class="form-row"><label>Fecha de nacimiento</label><input type="date" id="fecha_nac" name="fecha_nac">
+            </div>
+            <div class="form-row"><label>Teléfono</label><input type="text" id="telefono" name="telefono"></div>
+            <div class="form-row full"><label>Email (usuario)</label><input type="email" id="email" name="email"
+                placeholder="email@ejemplo.com"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Antropometría -->
+        <div class="tab-content" id="tab-antro">
+          <div class="form-row full" style="margin-bottom: 16px; padding: 12px; background: #f0f9ff; border-radius: 6px;">
+            <label style="font-weight: 600; color: #0369a1;">
+              <i class="fas fa-calendar"></i> Fecha de medición
+            </label>
+            <input type="date" id="fecha_medicion" name="fecha_medicion" style="margin-top: 8px;">
+            <small style="display: block; margin-top: 6px; color: #0284c7;">
+              Fecha en que se tomaron estas mediciones. Si no se especifica, se usará la fecha actual.
+            </small>
+          </div>
+          <div class="form-grid two-cols">
+            <div class="form-row"><label>Peso (kg)</label><input type="number" step="0.01" id="peso" name="peso"></div>
+            <div class="form-row"><label>Talla (m)</label><input type="number" step="0.01" id="talla" name="talla">
+            </div>
+            <div class="form-row"><label>Cintura (cm)</label><input type="number" step="0.01" id="cc" name="cc"></div>
+            <div class="form-row"><label>Grasa corporal (%)</label><input type="number" step="0.01" id="bf_pct"
+                name="bf_pct"></div>
+            <div class="form-row">
+              <label>Actividad</label>
+              <select id="actividad" name="actividad">
+                <option value="">(opcional)</option>
+                <option value="baja">Baja</option>
+                <option value="moderada">Moderada</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Datos clínicos -->
+        <div class="tab-content" id="tab-clinico">
+          <div class="form-grid two-cols">
+            <div class="form-row"><label>HbA1c (%)</label><input type="number" step="0.01" id="hba1c" name="hba1c">
+            </div>
+            <div class="form-row"><label>Glucosa ayunas (mg/dL)</label><input type="number" step="0.01"
+                id="glucosa_ayunas" name="glucosa_ayunas"></div>
+            <div class="form-row"><label>LDL (mg/dL)</label><input type="number" step="0.01" id="ldl" name="ldl"></div>
+            <div class="form-row"><label>Triglicéridos (mg/dL)</label><input type="number" step="0.01" id="trigliceridos" name="trigliceridos"></div>
+            <div class="form-row"><label>PA Sistólica</label><input type="number" id="pa_sis" name="pa_sis"></div>
+            <div class="form-row"><label>PA Diastólica</label><input type="number" id="pa_dia" name="pa_dia"></div>
+          </div>
+
+          <!-- Tabla medicamentos -->
+          <div class="form-row full">
+            <label>Medicamentos</label>
+            <table class="mini-table" id="tblMeds">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Dosis</th>
+                  <th>Frecuencia</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <button type="button" class="btn btn-sm" id="btnAddMed"><i class="fas fa-plus"></i> Agregar</button>
+          </div>
+
+          <!-- Tabla alergias -->
+          <!-- === Alergias / Otros === -->
+          <h6 class="mt-4 mb-2">Alergias / Otros</h6>
+          <table class="table table-bordered align-middle" id="tablaAlergias">
+            <thead>
+              <tr>
+                <th style="width:40%">Ingrediente</th>
+                <th>Descripción</th>
+                <th style="width:40px"></th>
+              </tr>
+            </thead>
+            <tbody id="alergiasBody"></tbody>
+          </table>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarAlergia">+ Agregar</button>
+
+          <!-- === Cargar librería Select2 === -->
+          <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+          <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+          <script>
+            // ---- Crea una nueva fila de alergia con autocompletado ----
+            function crearFilaAlergia(ingrediente_id = null, descripcion = '', ingrediente_nombre = '') {
+              const tr = document.createElement('tr');
+
+              const td1 = document.createElement('td');
+              const select = document.createElement('select');
+              select.classList.add('form-select', 'ingrediente-select');
+              td1.appendChild(select);
+
+              const td2 = document.createElement('td');
+              const inputDesc = document.createElement('input');
+              inputDesc.type = 'text';
+              inputDesc.classList.add('form-control', 'descripcion');
+              inputDesc.value = descripcion || '';
+              td2.appendChild(inputDesc);
+
+              const td3 = document.createElement('td');
+              const btnDel = document.createElement('button');
+              btnDel.type = 'button';
+              btnDel.classList.add('btn', 'btn-danger', 'btn-sm');
+              btnDel.innerHTML = '×';
+              btnDel.onclick = () => tr.remove();
+              td3.appendChild(btnDel);
+
+              tr.append(td1, td2, td3);
+              document.getElementById('alergiasBody').appendChild(tr);
+
+              // Activar Select2 AJAX
+              $(select).select2({
+                placeholder: 'Buscar ingrediente...',
+                allowClear: true,
+                ajax: {
+                  url: '/api/ingredientes/activos',
+                  dataType: 'json',
+                  delay: 250,
+                  data: params => ({ q: params.term }),
+                  processResults: data => ({ results: data.results })
+                },
+                width: '100%'
+              });
+
+              // ✅ Preseleccionar si viene de BD
+              if (ingrediente_id) {
+                preseleccionarIngrediente(select, ingrediente_id, ingrediente_nombre);
+              }
+            }
+
+
+
+
+            // ✅ Preseleccionar correctamente el ingrediente si viene del backend
+            function preseleccionarIngrediente(select, ingrediente_id, ingrediente_nombre) {
+              if (!ingrediente_id) return;
+              const option = new Option(ingrediente_nombre || `Ingrediente #${ingrediente_id}`, ingrediente_id, true, true);
+              $(select).append(option).trigger('change');
+            }
+
+
+
+
+            // ---- Recolectar alergias para enviar en el POST ----
+            function recolectarAlergias() {
+              const filas = document.querySelectorAll('#alergiasBody tr');
+              const data = [];
+              filas.forEach(tr => {
+                const ingrediente_id = tr.querySelector('.ingrediente-select').value || null;
+                const descripcion = tr.querySelector('.descripcion').value.trim();
+                if (ingrediente_id || descripcion) {
+                  data.push({ ingrediente_id, descripcion });
+                }
+              });
+              return JSON.stringify(data);
+            }
+          </script>
+
+        </div>
+      </div>
+
+      <input type="hidden" name="meds_json" id="meds_json">
+      <input type="hidden" name="alergias_json" id="alergias_json">
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalPaciente">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar todo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
+
+<style>
+  /* ===== ESTILOS MODERNOS PARA PACIENTES ===== */
+  
+  /* Tabla compacta y moderna */
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+  }
+  
+  .tbl th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .tbl td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  
+  .tbl tbody tr:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  /* Badges para estado */
+  .estado-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .estado-badge.activo {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+  
+  .estado-badge.inactivo {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+  }
+  
+  /* Botones de acción modernos */
+  .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .actions .btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .actions .btn-sm {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .actions .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  .actions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  }
+  
+  .actions .btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  }
+  
+  .actions .btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  }
+  
+  .actions .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+  
+  .actions .btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  }
+  
+  /* Paginación moderna */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 16px;
+  }
+  
+  .pagination button {
+    padding: 10px 16px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: #64748b;
+  }
+  
+  .pagination button:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+  }
+  
+  .pagination button.active {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Modal mejorado */
+  .modal-dialog {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .modal-dialog.wide {
+    max-width: 90vw;
+    width: 1200px;
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .modal-body {
+    padding: 24px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  
+  /* Tabs modernos */
+  .tabs {
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 24px;
+  }
+  
+  .tab {
+    padding: 12px 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: 500;
+    color: #64748b;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+  }
+  
+  .tab:hover {
+    color: #3b82f6;
+    background: #f8fafc;
+  }
+  
+  .tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    background: #f8fafc;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  /* Formulario mejorado */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .form-row {
+    margin-bottom: 20px;
+  }
+  
+  .form-row label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .form-row input,
+  .form-row select,
+  .form-row textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+  }
+  
+  .form-row select {
+    min-height: 48px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+  
+  .form-row input:focus,
+  .form-row select:focus,
+  .form-row textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  
+  .modal-footer .btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .modal-footer .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+  
+  .modal-footer .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Mini tabla para detalles */
+  .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .mini-table th,
+  .mini-table td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 13px;
+  }
+  
+  .mini-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .mini-table input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  
+  /* ===== ESTILOS PARA DETALLE DEL PACIENTE ===== */
+  .detalle-paciente {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .detalle-header-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 24px;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .detalle-header-card h2 {
+    margin: 0 0 16px 0;
+    font-size: 28px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .badge-id, .badge-edad, .badge-sexo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+  }
+
+  .detalle-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+  }
+
+  .detalle-section h3 {
+    margin: 0 0 20px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .detalle-section h3 small {
+    font-size: 14px;
+    font-weight: 400;
+    color: #6b7280;
+    margin-left: auto;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .info-item label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-item label i {
+    color: #3b82f6;
+    width: 16px;
+  }
+
+  .info-item span {
+    font-size: 16px;
+    color: #1f2937;
+    font-weight: 500;
+  }
+
+  .value-large {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  .value-clinico {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  /* IMC con colores */
+  .imc-bajo-peso { color: #3b82f6; }
+  .imc-normal { color: #10b981; }
+  .imc-sobrepeso { color: #f59e0b; }
+  .imc-obesidad { color: #ef4444; }
+
+  /* Badges de actividad */
+  .badge-actividad {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .actividad-baja { background: #fef3c7; color: #92400e; }
+  .actividad-moderada { background: #dbeafe; color: #1e40af; }
+  .actividad-alta { background: #d1fae5; color: #065f46; }
+
+  /* Medicamentos y alergias */
+  .medicamentos-list, .alergias-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .medicamento-item, .alergia-item {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    border-left: 4px solid #3b82f6;
+  }
+
+  .med-nombre, .alergia-nombre {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .med-nombre i, .alergia-nombre i {
+    color: #3b82f6;
+  }
+
+  .med-detalle {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .med-detalle span {
+    font-size: 13px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .alergia-desc {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .sin-datos {
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .badge-count {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+
+  .detalle-body {
+    padding: 0 !important;
+  }
+
+  .modal-dialog.wide {
+    max-width: 1000px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .tbl {
+      font-size: 12px;
+    }
+    
+    .tbl th, .tbl td {
+      padding: 8px 6px;
+    }
+    
+    .actions {
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .modal-dialog {
+      margin: 20px;
+      width: calc(100% - 40px);
+    }
+    
+    .modal-dialog.wide {
+      max-width: calc(100vw - 40px);
+      width: calc(100vw - 40px);
+    }
+    
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .tabs {
+      flex-wrap: wrap;
+    }
+    
+    .tab {
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .header-meta {
+      flex-direction: column;
+    }
+    
+    .detalle-header-card h2 {
+      font-size: 22px;
+    }
+  }
+</style>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  // ===================== PAGINACIÓN + LISTADO AJAX =====================
+  const perPage = 10;
+  let currentPage = 1;
+
+  // ==== CARGA GENERAL ====
+  async function cargarPacientes(page = 1, filtro = "") {
+  const tabla = document.querySelector("#tablaPacientes");
+  tabla.innerHTML = "<p>Cargando...</p>";
+
+  // Si hay filtro, buscar pacientes que coincidan
+  if (filtro) {
+    try {
+      const res = await fetch(`/api/pacientes/buscar?q=${encodeURIComponent(filtro)}`);
+      const data = await res.json();
+      
+      // La API devuelve {"results": [...]} sin campo "ok", verificar results directamente
+      if (data.results && data.results.length > 0) {
+        // Convertir resultados de búsqueda al formato esperado
+        // Necesitamos obtener las fechas de último registro para cada paciente
+        const pacientesConFechas = await Promise.all(
+          data.results.map(async (p) => {
+            try {
+              const fechaRes = await fetch(`/api/pacientes/${p.id}/fechas`);
+              const fechaData = await fechaRes.json();
+              return {
+                id: p.id,
+                dni: p.dni,
+                nombres: p.nombres || "",
+                apellidos: p.apellidos || "",
+                sexo: p.sexo || "",
+                fecha_nac: p.fecha_nac || "",
+                telefono: p.telefono || "",
+                usuario_email: p.usuario_email || "",
+                ultima_fecha_registro: fechaData.fecha_mas_reciente || null
+              };
+            } catch (e) {
+              return {
+                id: p.id,
+                dni: p.dni,
+                nombres: p.nombres || "",
+                apellidos: p.apellidos || "",
+                sexo: p.sexo || "",
+                fecha_nac: p.fecha_nac || "",
+                telefono: p.telefono || "",
+                usuario_email: p.usuario_email || "",
+                ultima_fecha_registro: null
+              };
+            }
+          })
+        );
+        renderTabla(pacientesConFechas);
+        renderPaginacion(1, 1); // oculta la paginación
+      } else {
+        tabla.innerHTML = "<p class='empty'>No se encontraron pacientes que coincidan con la búsqueda.</p>";
+        document.querySelector("#paginacion").innerHTML = "";
+      }
+      return;
+    } catch (e) {
+      tabla.innerHTML = "<p class='empty'>Error al buscar pacientes.</p>";
+      document.querySelector("#paginacion").innerHTML = "";
+      return;
+    }
+  }
+
+  // Listado normal paginado
+  const res = await fetch(`/api/pacientes/page?page=${page}&per_page=${perPage}`);
+  const data = await res.json();
+  if (!data.ok) {
+    tabla.innerHTML = "<p>Error cargando pacientes.</p>";
+    return;
+  }
+  renderTabla(data.rows);
+  renderPaginacion(data.total_pages, page);
+}
+
+
+  function renderTabla(rows) {
+    const tabla = document.querySelector("#tablaPacientes");
+    if (!rows.length) {
+      tabla.innerHTML = "<p class='empty'>No hay pacientes registrados.</p>";
+      return;
+    }
+
+    let html = `
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>ID</th><th>DNI</th><th>Paciente</th><th>Sexo</th>
+            <th>Fecha nac.</th><th>Teléfono</th><th>Email</th>
+            <th>Último registro</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    rows.forEach(p => {
+      const fechaUltimo = p.ultima_fecha_registro 
+        ? new Date(p.ultima_fecha_registro + 'T00:00:00').toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          })
+        : '—';
+      
+      html += `
+        <tr data-id="${p.id}">
+          <td>${p.id}</td>
+          <td>${p.dni}</td>
+          <td>${p.nombres || ""} ${p.apellidos || ""}</td>
+          <td>${p.sexo || ""}</td>
+          <td>${p.fecha_nac || ""}</td>
+          <td>${p.telefono || ""}</td>
+          <td>${p.usuario_email || ""}</td>
+          <td style="white-space: nowrap;">
+            <span style="color: #6b7280; font-size: 12px;">
+              <i class="fas fa-calendar-alt" style="margin-right: 4px;"></i>${fechaUltimo}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-info js-ver" data-id="${p.id}">
+              <i class="fas fa-eye"></i> Ver
+            </button>
+            <button class="btn btn-sm btn-primary js-edit" data-id="${p.id}">
+              <i class="fas fa-edit"></i> Editar
+            </button>
+            <button type="button" class="btn btn-sm btn-danger js-borrar-paciente" data-id="${p.id}" data-dni="${p.dni}">
+              <i class="fas fa-trash"></i> Eliminar
+            </button>
+          </td>
+        </tr>`;
+    });
+
+
+    html += "</tbody></table>";
+    tabla.innerHTML = html;
+
+    document.querySelectorAll(".js-ver").forEach(b => b.onclick = () => verDetalle(b.dataset.id));
+    document.querySelectorAll(".js-edit").forEach(b => b.onclick = () => editarPaciente(b.dataset.id));
+  }
+
+
+  function renderPaginacion(total, actual) {
+    const cont = document.querySelector("#paginacion");
+    if (total <= 1) {
+      cont.innerHTML = "";
+      return;
+    }
+    let html = "";
+    for (let i = 1; i <= total; i++) {
+      html += `<button class="${i === actual ? "active" : ""}" data-page="${i}">${i}</button>`;
+    }
+    cont.innerHTML = html;
+    cont.querySelectorAll("button").forEach(b => {
+      b.addEventListener("click", () => {
+        currentPage = parseInt(b.dataset.page);
+        cargarPacientes(currentPage);
+      });
+    });
+  }
+
+
+
+  // ==== DETALLE VISUAL (Mejorado y Profesional) ====
+  async function verDetalle(id) {
+    // Cargar fechas disponibles del paciente
+    const fechasRes = await fetch(`/api/pacientes/${id}/fechas`);
+    const fechasData = await fechasRes.json();
+    
+    let fechaSeleccionada = fechasData.fecha_mas_reciente || null;
+    
+    // Cargar datos de la fecha más reciente por defecto
+    const url = fechaSeleccionada 
+      ? `/api/pacientes/${id}/detalle?fecha=${fechaSeleccionada}`
+      : `/api/pacientes/${id}/detalle`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.ok) {
+      mostrarAlerta("Error cargando detalle.", "Error");
+      return;
+    }
+
+    const p = data.paciente;
+    
+    // Cargar medicamentos y alergias
+    const [medsRes, alergiasRes] = await Promise.all([
+      fetch(`/api/paciente/${id}/medicamentos`).then(r => r.ok ? r.json() : { data: [] }),
+      fetch(`/api/paciente/${id}/alergias`).then(r => r.ok ? r.json() : { data: [] })
+    ]);
+    
+    const medicamentos = medsRes.data || [];
+    const alergias = alergiasRes.data || [];
+    
+    // Formatear sexo
+    const sexoTexto = p.sexo === 'M' ? 'Masculino' : p.sexo === 'F' ? 'Femenino' : p.sexo || '—';
+    
+    // Formatear actividad
+    const actividadTexto = p.antropometria?.actividad === 'baja' ? 'Baja' : 
+                          p.antropometria?.actividad === 'moderada' ? 'Moderada' : 
+                          p.antropometria?.actividad === 'alta' ? 'Alta' : 
+                          p.antropometria?.actividad || '—';
+    
+    // Función helper para formatear valores
+    const fmt = (val, unidad = '') => {
+      if (val === null || val === undefined || val === '') return '—';
+      // Formatear números con un decimal si es necesario
+      if (typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val))) {
+        const numVal = parseFloat(val);
+        // Para porcentajes, mostrar con 1 decimal
+        if (unidad === '%') {
+          return `${numVal.toFixed(1)}${unidad ? ' ' + unidad : ''}`;
+        }
+        return `${numVal}${unidad ? ' ' + unidad : ''}`;
+      }
+      return `${val}${unidad ? ' ' + unidad : ''}`;
+    };
+    
+    // Función helper para obtener clase de IMC
+    const getIMCClass = (imc) => {
+      if (!imc) return '';
+      if (imc < 18.5) return 'bajo-peso';
+      if (imc < 25) return 'normal';
+      if (imc < 30) return 'sobrepeso';
+      return 'obesidad';
+    };
+    
+    const imcClass = getIMCClass(p.antropometria?.imc);
+    const imcTexto = p.antropometria?.imc ? `${p.antropometria.imc} kg/m²` : '—';
+    
+    const detalle = `
+      <div class="detalle-paciente">
+        <!-- Header con información principal -->
+        <div class="detalle-header-card">
+          <div class="header-info">
+            <h2><i class="fas fa-user"></i> ${p.nombres || ''} ${p.apellidos || ''}</h2>
+            <div class="header-meta">
+              <span class="badge-id"><i class="fas fa-id-card"></i> DNI: ${p.dni}</span>
+              ${p.edad ? `<span class="badge-edad"><i class="fas fa-birthday-cake"></i> ${p.edad} años</span>` : ''}
+              <span class="badge-sexo"><i class="fas fa-${p.sexo === 'F' ? 'venus' : p.sexo === 'M' ? 'mars' : 'genderless'}"></i> ${sexoTexto}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos de contacto -->
+        <div class="detalle-section">
+          <h3><i class="fas fa-address-card"></i> Información de Contacto</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label><i class="fas fa-envelope"></i> Email</label>
+              <span>${fmt(p.usuario_email)}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-phone"></i> Teléfono</label>
+              <span>${fmt(p.telefono)}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-calendar"></i> Fecha de Nacimiento</label>
+              <span>${p.fecha_nac ? new Date(p.fecha_nac).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Antropometría -->
+        <div class="detalle-section">
+          <h3><i class="fas fa-ruler-combined"></i> Antropometría ${p.antropometria?.fecha_medicion ? `<small>(${new Date(p.antropometria.fecha_medicion).toLocaleDateString('es-ES')})</small>` : ''}</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label><i class="fas fa-weight"></i> Peso</label>
+              <span class="value-large">${fmt(p.antropometria?.peso, 'kg')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-ruler-vertical"></i> Talla</label>
+              <span class="value-large">${fmt(p.antropometria?.talla, 'm')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-chart-line"></i> IMC</label>
+              <span class="value-large imc-${imcClass}">${imcTexto}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-circle"></i> Circunferencia de Cintura</label>
+              <span>${fmt(p.antropometria?.cc, 'cm')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-percentage"></i> Grasa Corporal</label>
+              <span>${fmt(p.antropometria?.bf_pct, '%')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-running"></i> Nivel de Actividad</label>
+              <span class="badge-actividad actividad-${p.antropometria?.actividad || ''}">${actividadTexto}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos Clínicos -->
+        <div class="detalle-section">
+          <h3><i class="fas fa-vials"></i> Datos Clínicos ${p.clinico?.fecha_medicion ? `<small>(${new Date(p.clinico.fecha_medicion).toLocaleDateString('es-ES')})</small>` : ''}</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label><i class="fas fa-tint"></i> HbA1c</label>
+              <span class="value-clinico">${fmt(p.clinico?.hba1c, '%')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-flask"></i> Glucosa en Ayunas</label>
+              <span class="value-clinico">${fmt(p.clinico?.glucosa_ayunas, 'mg/dL')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-heartbeat"></i> Colesterol LDL</label>
+              <span>${fmt(p.clinico?.ldl, 'mg/dL')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-droplet"></i> Triglicéridos</label>
+              <span>${fmt(p.clinico?.trigliceridos, 'mg/dL')}</span>
+            </div>
+            <div class="info-item">
+              <label><i class="fas fa-heart"></i> Presión Arterial</label>
+              <span>${p.clinico?.pa_sis && p.clinico?.pa_dia ? `${p.clinico.pa_sis}/${p.clinico.pa_dia} mmHg` : '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medicamentos -->
+        <div class="detalle-section">
+          <h3><i class="fas fa-pills"></i> Medicamentos ${medicamentos.length > 0 ? `<span class="badge-count">${medicamentos.length}</span>` : ''}</h3>
+          ${medicamentos.length > 0 ? `
+            <div class="medicamentos-list">
+              ${medicamentos.map(m => `
+                <div class="medicamento-item">
+                  <div class="med-nombre"><i class="fas fa-capsules"></i> ${m.nombre || '—'}</div>
+                  ${m.dosis || m.frecuencia ? `
+                    <div class="med-detalle">
+                      ${m.dosis ? `<span><i class="fas fa-syringe"></i> ${m.dosis}</span>` : ''}
+                      ${m.frecuencia ? `<span><i class="fas fa-clock"></i> ${m.frecuencia}</span>` : ''}
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p class="sin-datos">No hay medicamentos registrados</p>'}
+        </div>
+
+        <!-- Alergias -->
+        <div class="detalle-section">
+          <h3><i class="fas fa-exclamation-triangle"></i> Alergias ${alergias.length > 0 ? `<span class="badge-count">${alergias.length}</span>` : ''}</h3>
+          ${alergias.length > 0 ? `
+            <div class="alergias-list">
+              ${alergias.map(a => `
+                <div class="alergia-item">
+                  <div class="alergia-nombre"><i class="fas fa-ban"></i> ${a.ingrediente_nombre || 'Alergia'}</div>
+                  ${a.descripcion ? `<div class="alergia-desc">${a.descripcion}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p class="sin-datos">No hay alergias registradas</p>'}
+        </div>
+      </div>`;
+
+    // Crear selector de fechas si hay múltiples fechas
+    let selectorFechasHTML = '';
+    if (fechasData.ok && fechasData.fechas && fechasData.fechas.length > 1) {
+      selectorFechasHTML = `
+        <div style="padding: 16px; background: #eff6ff; border-bottom: 1px solid #bfdbfe;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1e40af;">
+            <i class="fas fa-calendar-alt"></i> Seleccionar fecha de registro
+          </label>
+          <select id="selectFechaVerDetalle" style="width: 100%; padding: 8px; border: 1px solid #bfdbfe; border-radius: 6px;">
+            ${fechasData.fechas.map(f => `
+              <option value="${f}" ${f === fechaSeleccionada ? 'selected' : ''}>
+                ${new Date(f + "T00:00:00").toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </option>
+            `).join('')}
+          </select>
+        </div>`;
+    }
+    
+    const modal = document.createElement("div");
+    modal.className = "modal open";
+    modal.innerHTML = `
+      <div class="modal-backdrop" onclick="this.parentNode.remove()"></div>
+      <div class="modal-dialog wide">
+        <div class="modal-header" style="padding: 0; border-radius: 0; background: transparent;">
+          <button class="modal-close" onclick="this.closest('.modal').remove()" style="position: absolute; top: 16px; right: 16px; z-index: 10; background: rgba(0,0,0,0.5); color: white; width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px;">×</button>
+        </div>
+        ${selectorFechasHTML}
+        <div class="modal-body detalle-body" style="padding: 0;">${detalle}</div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="editarPaciente(${id}); this.closest('.modal').remove();">
+            <i class="fas fa-edit"></i> Editar Paciente
+          </button>
+          <button class="btn" onclick="this.closest('.modal').remove()">Cerrar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    
+    // Agregar listener para cambio de fecha en el modal de detalle
+    if (fechasData.ok && fechasData.fechas && fechasData.fechas.length > 1) {
+      const selectFecha = document.getElementById("selectFechaVerDetalle");
+      if (selectFecha) {
+        selectFecha.onchange = async function() {
+          const nuevaFecha = this.value;
+          // Recargar detalle con nueva fecha
+          verDetalle(id);
+        };
+      }
+    }
+  }
+
+  // ==== BUSCADOR MEJORADO ====
+  $(document).ready(function () {
+    // Configurar el input de búsqueda
+    const buscarInput = document.getElementById('buscarPacienteInput');
+    const btnClear = document.getElementById('btnClearPaciente');
+    
+    let searchTimeout;
+    
+    buscarInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      
+      if (query.length >= 2) {
+        searchTimeout = setTimeout(() => {
+          cargarPacientes(1, query);
+        }, 300);
+      } else if (query.length === 0) {
+        cargarPacientes(1, '');
+      }
+      
+      btnClear.style.visibility = query ? 'visible' : 'hidden';
+    });
+    
+    btnClear.addEventListener('click', function() {
+      buscarInput.value = '';
+      cargarPacientes(1, '');
+      btnClear.style.visibility = 'hidden';
+      buscarInput.focus();
+    });
+    
+    btnClear.style.visibility = 'hidden';
+  });
+
+
+  // ✅ Añade este helper una sola vez (por ejemplo, cerca de las funciones de modal)
+function setActiveTab(tabKey = 'datos') {
+  document.querySelectorAll(".tab").forEach(tb => tb.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
+  const btn = document.querySelector(`.tab[data-tab="${tabKey}"]`);
+  const pane = document.querySelector(`#tab-${tabKey}`);
+  if (btn && pane) { btn.classList.add("active"); pane.classList.add("active"); }
+}
+
+
+
+  // Ejecuta la carga inicial
+  cargarPacientes();
+
+  /* Tabs */
+  document.querySelectorAll(".tab").forEach(t => {
+    t.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(tb => tb.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
+      t.classList.add("active");
+      document.querySelector("#tab-" + t.dataset.tab).classList.add("active");
+    });
+  });
+
+  /* Modal helpers */
+  const openModal = s => document.querySelector(s).classList.add("open");
+  const closeModal = s => {
+    document.querySelector(s).classList.remove("open");
+    
+    // Si se cierra el modal de paciente, limpiar el formulario
+    if (s === "#modalPaciente") {
+      const form = document.getElementById("formPacienteFull");
+      if (form) {
+        form.reset();
+        // Limpiar campos específicos
+        document.getElementById("dni").value = "";
+        document.getElementById("nombres").value = "";
+        document.getElementById("apellidos").value = "";
+        document.getElementById("sexo").value = "";
+        document.getElementById("fecha_nac").value = "";
+        document.getElementById("telefono").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("peso").value = "";
+        document.getElementById("talla").value = "";
+        document.getElementById("cc").value = "";
+        document.getElementById("bf_pct").value = "";
+        document.getElementById("actividad").value = "";
+        document.getElementById("hba1c").value = "";
+        document.getElementById("glucosa_ayunas").value = "";
+        document.getElementById("ldl").value = "";
+        document.getElementById("pa_sis").value = "";
+        document.getElementById("pa_dia").value = "";
+        document.getElementById("fecha_medicion").value = "";
+        
+        // Limpiar tablas de medicamentos y alergias
+        if (medsTable) medsTable.innerHTML = "";
+        if (alergiasBody) alergiasBody.innerHTML = "";
+        
+        // Limpiar selectores Select2
+        if ($("#selectPacienteExistente").length) {
+          $("#selectPacienteExistente").val(null).trigger('change');
+        }
+        if ($("#selectFechaRegistro").length) {
+          $("#selectFechaRegistro").val(null).trigger('change');
+        }
+        
+        // Ocultar selectores
+        document.getElementById("selector-paciente-container").style.display = "block";
+        document.getElementById("selector-fecha-container").style.display = "none";
+        
+        // Resetear título
+        document.getElementById("pac_titulo").innerText = "Nuevo registro completo";
+        
+        // Resetear action del formulario
+        form.action = "{{ url_for('admin_paciente_guardar') }}";
+      }
+    }
+  };
+  document.querySelectorAll(".js-close-modal").forEach(b => b.addEventListener("click", () => closeModal(b.dataset.target)));
+  
+  // También limpiar cuando se hace clic en el backdrop
+  document.querySelector("#modalPaciente .modal-backdrop")?.addEventListener("click", () => {
+    closeModal("#modalPaciente");
+  });
+
+  /* --- Tablas dinámicas --- */
+  const medsTable = document.querySelector("#tblMeds tbody");
+  // ❗ Usar la tabla real de alergias basada en Select2
+  const alergiasBody = document.getElementById("alergiasBody");
+
+  document.getElementById("btnAddMed").addEventListener("click", () => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><input class='med-nombre'></td>
+                    <td><input class='med-dosis'></td>
+                    <td><input class='med-frec'></td>
+                    <td><button type='button' class='btn btn-danger btn-sm'>×</button></td>`;
+    tr.querySelector("button").onclick = () => tr.remove();
+    medsTable.appendChild(tr);
+  });
+
+  // ❗ El botón correcto es btnAgregarAlergia (no btnAddAlergia)
+  const btnAgregarAlergia = document.getElementById("btnAgregarAlergia");
+  if (btnAgregarAlergia) {
+    btnAgregarAlergia.addEventListener("click", () => crearFilaAlergia());
+  }
+
+  // Medicamentos
+  function setMeds(list) {
+    medsTable.innerHTML = "";
+    (list || []).forEach(m => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><input class='med-nombre' value="${m.nombre || ''}"></td>
+                      <td><input class='med-dosis'  value="${m.dosis || ''}"></td>
+                      <td><input class='med-frec'   value="${m.frecuencia || ''}"></td>
+                      <td><button type='button' class='btn btn-danger btn-sm'>×</button></td>`;
+      tr.querySelector("button").onclick = () => tr.remove();
+      medsTable.appendChild(tr);
+    });
+  }
+
+  function getMeds() {
+    return [...medsTable.querySelectorAll("tr")].map(r => ({
+      nombre: r.querySelector(".med-nombre").value.trim(),
+      dosis: r.querySelector(".med-dosis").value.trim(),
+      frecuencia: r.querySelector(".med-frec").value.trim()
+    })).filter(x => x.nombre);
+  }
+
+  // ❗ Usa SIEMPRE el recolector de la tabla Select2 de alergias
+  // (ya lo tienes definido más arriba en el template)
+  // function recolectarAlergias() { ... }  ← existente
+
+  /* Botón nuevo */
+  document.getElementById("btnNuevoPaciente").addEventListener("click", () => {
+    const f = document.getElementById("formPacienteFull");
+    f.reset();
+    f.action = "{{ url_for('admin_paciente_guardar') }}";
+    document.getElementById("pac_titulo").innerText = "Nuevo registro completo";
+    medsTable.innerHTML = "";
+    alergiasBody.innerHTML = ""; // limpia la tabla de alergias (Select2)
+    
+    // Mostrar selector de paciente, ocultar selector de fecha
+    document.getElementById("selector-paciente-container").style.display = "block";
+    document.getElementById("selector-fecha-container").style.display = "none";
+    
+    // Limpiar selectores
+    $("#selectPacienteExistente").val(null).trigger('change');
+    $("#selectFechaRegistro").val(null).trigger('change');
+    
+    // Limpiar campo de fecha de medición
+    document.getElementById("fecha_medicion").value = "";
+    
+    setActiveTab('datos');
+    openModal("#modalPaciente");
+  });
+  
+  // Inicializar Select2 para búsqueda de pacientes
+  $(document).ready(function() {
+    $("#selectPacienteExistente").select2({
+      placeholder: "Buscar paciente por DNI, nombre o apellido...",
+      allowClear: true,
+      ajax: {
+        url: '/api/pacientes/buscar',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+          return { q: params.term };
+        },
+        processResults: function(data) {
+          return { results: data.results || [] };
+        }
+      },
+      width: '100%'
+    });
+    
+    // Cuando se selecciona un paciente, cargar datos del preregistro
+    $("#selectPacienteExistente").on('select2:select', async function(e) {
+      const pacienteId = e.params.data.id;
+      const pacienteData = e.params.data;
+      
+      // Cargar datos del paciente
+      try {
+        const res = await fetch(`/api/pacientes/${pacienteId}/detalle`);
+        const data = await res.json();
+        
+        if (data.ok) {
+          const p = data.paciente;
+          // Llenar formulario con datos del preregistro
+          document.getElementById("dni").value = p.dni || "";
+          document.getElementById("nombres").value = p.nombres || "";
+          document.getElementById("apellidos").value = p.apellidos || "";
+          document.getElementById("sexo").value = p.sexo || "";
+          document.getElementById("fecha_nac").value = p.fecha_nac || "";
+          document.getElementById("telefono").value = p.telefono || "";
+          document.getElementById("email").value = p.usuario_email || "";
+          
+          // Si hay datos de antropometría/clínico, cargarlos también
+          if (p.antropometria) {
+            document.getElementById("peso").value = p.antropometria.peso || "";
+            document.getElementById("talla").value = p.antropometria.talla || "";
+            document.getElementById("cc").value = p.antropometria.cc || "";
+            document.getElementById("bf_pct").value = p.antropometria.bf_pct || "";
+            document.getElementById("actividad").value = p.antropometria.actividad || "";
+          }
+          
+          if (p.clinico) {
+            document.getElementById("hba1c").value = p.clinico.hba1c || "";
+            document.getElementById("glucosa_ayunas").value = p.clinico.glucosa_ayunas || "";
+            document.getElementById("ldl").value = p.clinico.ldl || "";
+            document.getElementById("trigliceridos").value = p.clinico.trigliceridos || "";
+            document.getElementById("pa_sis").value = p.clinico.pa_sis || "";
+            document.getElementById("pa_dia").value = p.clinico.pa_dia || "";
+          }
+        }
+      } catch (error) {
+        console.error("Error cargando datos del paciente:", error);
+      }
+    });
+    
+    // Cuando se deselecciona, limpiar formulario
+    $("#selectPacienteExistente").on('select2:clear', function() {
+      document.getElementById("formPacienteFull").reset();
+    });
+  });
+
+
+
+
+  // ==== EDITAR PACIENTE ====
+  // ✅ Deja SOLO ESTA versión de editarPaciente(id)
+async function editarPaciente(id) {
+  try {
+    // Ocultar selector de paciente, mostrar selector de fecha
+    document.getElementById("selector-paciente-container").style.display = "none";
+    document.getElementById("selector-fecha-container").style.display = "block";
+    
+    // Cargar fechas disponibles del paciente
+    const fechasRes = await fetch(`/api/pacientes/${id}/fechas`);
+    const fechasData = await fechasRes.json();
+    
+    if (fechasData.ok && fechasData.fechas && fechasData.fechas.length > 0) {
+      // Llenar combo de fechas
+      const selectFecha = document.getElementById("selectFechaRegistro");
+      selectFecha.innerHTML = "";
+      
+      fechasData.fechas.forEach(fecha => {
+        const option = document.createElement("option");
+        option.value = fecha;
+        option.textContent = new Date(fecha + "T00:00:00").toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        if (fecha === fechasData.fecha_mas_reciente) {
+          option.selected = true;
+        }
+        selectFecha.appendChild(option);
+      });
+      
+      // Cargar datos de la fecha más reciente por defecto
+      await cargarDatosPacientePorFecha(id, fechasData.fecha_mas_reciente);
+    } else {
+      // Si no hay fechas, cargar datos más recientes
+      await cargarDatosPacientePorFecha(id, null);
+    }
+    
+    // Prepara el formulario
+    const f = document.getElementById("formPacienteFull");
+    f.action = `/admin/pacientes/${id}/editar`;
+    document.getElementById("pac_titulo").innerText = "Editar registro completo";
+    
+    // Listener para cambio de fecha
+    document.getElementById("selectFechaRegistro").onchange = async function() {
+      const fechaSeleccionada = this.value;
+      await cargarDatosPacientePorFecha(id, fechaSeleccionada);
+    };
+    
+    setActiveTab('datos');
+    openModal("#modalPaciente");
+  } catch (err) {
+    console.error(err);
+    mostrarAlerta("Error al cargar el paciente.", "Error");
+  }
+}
+
+// Función auxiliar para cargar datos de paciente por fecha
+async function cargarDatosPacientePorFecha(pacienteId, fecha) {
+  try {
+    const url = fecha 
+      ? `/api/pacientes/${pacienteId}/detalle?fecha=${fecha}`
+      : `/api/pacientes/${pacienteId}/detalle`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    if (!data.ok) {
+      mostrarAlerta("Error cargando datos del paciente.", "Error");
+      return;
+    }
+    
+    const p = data.paciente;
+    
+    // Rellena datos personales
+    document.getElementById("dni").value = p.dni || "";
+    document.getElementById("nombres").value = p.nombres || "";
+    document.getElementById("apellidos").value = p.apellidos || "";
+    document.getElementById("sexo").value = p.sexo || "";
+    document.getElementById("fecha_nac").value = p.fecha_nac || "";
+    document.getElementById("telefono").value = p.telefono || "";
+    document.getElementById("email").value = p.usuario_email || "";
+    
+    // Rellena antropometría
+    if (p.antropometria) {
+      document.getElementById("peso").value = p.antropometria.peso || "";
+      document.getElementById("talla").value = p.antropometria.talla || "";
+      document.getElementById("cc").value = p.antropometria.cc || "";
+      document.getElementById("bf_pct").value = p.antropometria.bf_pct || "";
+      document.getElementById("actividad").value = p.antropometria.actividad || "";
+      document.getElementById("fecha_medicion").value = p.antropometria.fecha_medicion || "";
+    } else {
+      document.getElementById("peso").value = "";
+      document.getElementById("talla").value = "";
+      document.getElementById("cc").value = "";
+      document.getElementById("bf_pct").value = "";
+      document.getElementById("actividad").value = "";
+    }
+    
+    // Rellena clínico
+    if (p.clinico) {
+      document.getElementById("hba1c").value = p.clinico.hba1c || "";
+      document.getElementById("glucosa_ayunas").value = p.clinico.glucosa_ayunas || "";
+      document.getElementById("ldl").value = p.clinico.ldl || "";
+      document.getElementById("trigliceridos").value = p.clinico.trigliceridos || "";
+      document.getElementById("pa_sis").value = p.clinico.pa_sis || "";
+      document.getElementById("pa_dia").value = p.clinico.pa_dia || "";
+    } else {
+      document.getElementById("hba1c").value = "";
+      document.getElementById("glucosa_ayunas").value = "";
+      document.getElementById("ldl").value = "";
+      document.getElementById("trigliceridos").value = "";
+      document.getElementById("pa_sis").value = "";
+      document.getElementById("pa_dia").value = "";
+    }
+    
+    // Cargar medicamentos y alergias (no dependen de fecha)
+    const [meds, alergias] = await Promise.all([
+      fetch(`/api/paciente/${pacienteId}/medicamentos`).then(r => r.ok ? r.json() : { data: [] }),
+      fetch(`/api/paciente/${pacienteId}/alergias`).then(r => r.ok ? r.json() : { data: [] })
+    ]);
+    
+    // Rellena medicamentos
+    setMeds(meds.data || []);
+    
+    // Rellena alergias
+    alergiasBody.innerHTML = "";
+    (alergias.data || []).forEach(a => {
+      crearFilaAlergia(a.ingrediente_id, a.descripcion || '', a.ingrediente_nombre || '');
+    });
+    
+  } catch (error) {
+    console.error("Error cargando datos:", error);
+    mostrarAlerta("Error al cargar los datos del paciente.", "Error");
+  }
+}
+
+
+  // ==== CARGA INICIAL ====
+  cargarPacientes();
+
+
+
+
+  /* Editar */
+  document.querySelectorAll(".js-edit").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      
+    });
+  });
+
+
+  document.getElementById("formPacienteFull").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const f = ev.target;
+    document.getElementById("meds_json").value = JSON.stringify(getMeds());
+    document.getElementById("alergias_json").value = recolectarAlergias();
+
+    const res = await fetch(f.action, {
+      method: "POST",
+      body: new FormData(f),
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+
+    if (res.ok) {
+      mostrarAviso("✅ Registro guardado correctamente.", "success");
+      setTimeout(() => location.reload(), 800);
+    } else {
+      try {
+        const data = await res.json();
+        mostrarAviso("❌ " + (data.errores?.join(" | ") || "Error al guardar."), "error");
+      } catch {
+        mostrarAviso("❌ Error desconocido.", "error");
+      }
+    }
+  });
+
+  function mostrarAviso(msg, tipo = "info") {
+    // Si ya hay un aviso previo, lo eliminamos (evita espacios vacíos)
+    const existente = document.getElementById("avisoSistema");
+    if (existente) existente.remove();
+
+    // Crear contenedor
+    const aviso = document.createElement("div");
+    aviso.id = "avisoSistema";
+    aviso.className = "aviso-sistema " + tipo;
+    
+    // Auto-ocultar después de 3 segundos
+    setTimeout(function() {
+      if (aviso && aviso.parentNode) {
+        aviso.style.transition = 'opacity 0.5s ease-out';
+        aviso.style.opacity = '0';
+        setTimeout(function() {
+          if (aviso && aviso.parentNode) {
+            aviso.remove();
+          }
+        }, 500);
+      }
+    }, 3000);
+
+    // Botón de cierre manual
+    const btnCerrar = document.createElement("button");
+    btnCerrar.innerHTML = "×";
+    btnCerrar.className = "cerrar-aviso";
+    btnCerrar.onclick = () => aviso.remove();
+
+    // Mensaje
+    const texto = document.createElement("span");
+    texto.textContent = msg;
+
+    aviso.appendChild(texto);
+    aviso.appendChild(btnCerrar);
+
+    // Insertar al inicio del cuerpo del modal
+    const modalBody = document.querySelector("#modalPaciente .modal-body");
+    modalBody.prepend(aviso);
+
+    // Animación y eliminación automática (ya se agregó arriba, pero mantenemos esta como respaldo)
+    // El timeout de 3 segundos ya está configurado arriba
+  }
+  // 🔎 Búsqueda mejorada de pacientes
+  $(document).ready(function () {
+    const buscarInput = document.getElementById('buscarPacienteInput');
+    const btnClear = document.getElementById('btnClearPaciente');
+    
+    let searchTimeout;
+    
+    buscarInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      
+      if (query.length >= 2) {
+        searchTimeout = setTimeout(() => {
+          cargarPacientes(1, query);
+        }, 300);
+      } else if (query.length === 0) {
+        cargarPacientes(1, '');
+      }
+      
+      btnClear.style.visibility = query ? 'visible' : 'hidden';
+    });
+    
+    btnClear.addEventListener('click', function() {
+      buscarInput.value = '';
+      cargarPacientes(1, '');
+      btnClear.style.visibility = 'hidden';
+      buscarInput.focus();
+    });
+    
+    btnClear.style.visibility = 'hidden';
+    
+    // Manejador para botones de borrar paciente
+    $(document).on('click', '.js-borrar-paciente', function() {
+      const btn = this;
+      const pacienteId = btn.dataset.id;
+      const dni = btn.dataset.dni;
+      
+      // Configurar el modal
+      document.getElementById('dniPacienteBorrar').textContent = `DNI ${dni}`;
+      document.getElementById('formConfirmarBorrarPaciente').action = `/admin/pacientes/${pacienteId}/borrar`;
+      
+      // Mostrar el modal
+      document.querySelector('#modalConfirmarBorrarPaciente').classList.add('open');
+    });
+  });
+
+</script>
+{% endblock %}

@@ -1,0 +1,382 @@
+{% extends "paciente/base_paciente.html" %}
+{% set page_title = "NutriSync · Mi Perfil" %}
+{% set header_title = "Mi Perfil" %}
+{% set active_nav = "perfil" %}
+
+{% block content %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-user"></i> Información Personal</h3>
+  </div>
+  <div class="card-body">
+    <div class="profile-section">
+      <h4><i class="fas fa-id-card"></i> Datos Personales</h4>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">DNI</span>
+          <span class="info-value">{{ paciente_data[1] }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Nombres</span>
+          <span class="info-value">{{ paciente_data[6] or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Apellidos</span>
+          <span class="info-value">{{ paciente_data[7] or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Sexo</span>
+          <span class="info-value">
+            {% if paciente_data[2] == 'M' %}Masculino
+            {% elif paciente_data[2] == 'F' %}Femenino
+            {% else %}{{ paciente_data[2] or '—' }}
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Fecha de Nacimiento</span>
+          <span class="info-value">
+            {% if paciente_data[3] %}
+              {{ paciente_data[3]|replace('-', '/') }}
+            {% else %}—{% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Edad</span>
+          <span class="info-value">{{ edad or '—' }} {% if edad %}años{% endif %}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Teléfono</span>
+          <span class="info-value">{{ paciente_data[4] or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Email</span>
+          <span class="info-value">{{ paciente_data[5] or '—' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-ruler-combined"></i> Antropometría</h3>
+    {% if antropo and antropo[5] %}
+    <span class="card-date">Última medición: {{ antropo[5]|replace('-', '/') }}</span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if antropo %}
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Peso</span>
+        <span class="info-value large">{{ antropo[0] or '—' }} {% if antropo[0] %}kg{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Talla</span>
+        <span class="info-value large">{{ antropo[1] or '—' }} {% if antropo[1] %}m{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">IMC</span>
+        <span class="info-value large imc-{{ 'bajo' if imc and imc < 18.5 else 'normal' if imc and imc < 25 else 'sobrepeso' if imc and imc < 30 else 'obesidad' if imc else '' }}">
+          {{ imc or '—' }} {% if imc %}kg/m²{% endif %}
+        </span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Circunferencia de Cintura</span>
+        <span class="info-value">{{ antropo[2] or '—' }} {% if antropo[2] %}cm{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">% Grasa Corporal</span>
+        <span class="info-value">{{ antropo[3] or '—' }} {% if antropo[3] %}%{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Nivel de Actividad</span>
+        <span class="info-value">
+          <span class="badge-actividad actividad-{{ antropo[4] or '' }}">
+            {% if antropo[4] == 'baja' %}Baja
+            {% elif antropo[4] == 'moderada' %}Moderada
+            {% elif antropo[4] == 'alta' %}Alta
+            {% else %}—{% endif %}
+          </span>
+        </span>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-ruler"></i>
+      <p>No hay datos de antropometría registrados</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-vials"></i> Datos Clínicos</h3>
+    {% if clinico and clinico[6] %}
+    <span class="card-date">Última medición: {{ clinico[6]|replace('-', '/') }}</span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if clinico %}
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">HbA1c</span>
+        <span class="info-value large clinico">{{ clinico[0] or '—' }} {% if clinico[0] %}%{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Glucosa en Ayunas</span>
+        <span class="info-value large clinico">{{ clinico[1] or '—' }} {% if clinico[1] %}mg/dL{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Colesterol LDL</span>
+        <span class="info-value">{{ clinico[2] or '—' }} {% if clinico[2] %}mg/dL{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Triglicéridos</span>
+        <span class="info-value">{{ clinico[3] or '—' }} {% if clinico[3] %}mg/dL{% endif %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Presión Arterial</span>
+        <span class="info-value">
+          {% if clinico[4] and clinico[5] %}
+            {{ clinico[4] }}/{{ clinico[5] }} mmHg
+          {% else %}—{% endif %}
+        </span>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-vials"></i>
+      <p>No hay datos clínicos registrados</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if medicamentos %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-pills"></i> Medicamentos</h3>
+    <span class="badge-count">{{ medicamentos|length }}</span>
+  </div>
+  <div class="card-body">
+    <div class="medicamentos-list">
+      {% for med in medicamentos %}
+      <div class="medicamento-item">
+        <div class="med-nombre">
+          <i class="fas fa-capsules"></i> {{ med[0] or '—' }}
+        </div>
+        {% if med[1] or med[2] %}
+        <div class="med-detalle">
+          {% if med[1] %}
+          <span><i class="fas fa-syringe"></i> Dosis: {{ med[1] }}</span>
+          {% endif %}
+          {% if med[2] %}
+          <span><i class="fas fa-clock"></i> Frecuencia: {{ med[2] }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if alergias %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-exclamation-triangle"></i> Alergias</h3>
+    <span class="badge-count">{{ alergias|length }}</span>
+  </div>
+  <div class="card-body">
+    <div class="alergias-list">
+      {% for alergia in alergias %}
+      <div class="alergia-item">
+        <div class="alergia-nombre">
+          <i class="fas fa-ban"></i> {{ alergia[0] or 'Alergia' }}
+        </div>
+        {% if alergia[1] %}
+        <div class="alergia-desc">{{ alergia[1] }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+.card-date {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.profile-section {
+  margin-bottom: 0;
+}
+
+.profile-section h4 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-section h4 i {
+  color: var(--primary);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.info-value.large {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.info-value.clinico {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.info-value.imc-bajo { color: #3b82f6; }
+.info-value.imc-normal { color: #10b981; }
+.info-value.imc-sobrepeso { color: #f59e0b; }
+.info-value.imc-obesidad { color: #ef4444; }
+
+.badge-actividad {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.actividad-baja { background: #fef3c7; color: #92400e; }
+.actividad-moderada { background: #dbeafe; color: #1e40af; }
+.actividad-alta { background: #d1fae5; color: #065f46; }
+
+.badge-count {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.empty-state i {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  margin: 0;
+  font-style: italic;
+}
+
+.medicamentos-list,
+.alergias-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.medicamento-item,
+.alergia-item {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid var(--primary);
+}
+
+.med-nombre,
+.alergia-nombre {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.med-nombre i,
+.alergia-nombre i {
+  color: var(--primary);
+}
+
+.med-detalle {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.med-detalle span {
+  font-size: 13px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.alergia-desc {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,202 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Antropometría" %}
+{% set header_title = "Antropometría" %}
+{% set active_nav = "antropometria" %}
+
+{% block content %}
+<div class="toolbar">
+  <button id="btnNuevaAntro" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Nuevo registro
+  </button>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-ruler-combined"></i> Registros de antropometría</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Paciente</th>
+            <th>Fecha</th>
+            <th>Peso (kg)</th>
+            <th>Talla (m)</th>
+            <th>IMC</th>
+            <th>Cintura (cm)</th>
+            <th>% Grasa</th>
+            <th>Actividad</th>
+            <th style="width:220px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.paciente }}</td>
+            <td>{{ r.fecha }}</td>
+            <td>{{ r.peso if r.peso is not none else '' }}</td>
+            <td>{{ r.talla if r.talla is not none else '' }}</td>
+            <td>{{ r.imc if r.imc is not none else '' }}</td>
+            <td>{{ r.cc if r.cc is not none else '' }}</td>
+            <td>{{ r.bf_pct if r.bf_pct is not none else '' }}</td>
+            <td>{{ r.actividad or '' }}</td>
+            <td class="actions">
+              <button
+                class="btn btn-sm js-edit"
+                data-id="{{ r.id }}"
+                data-paciente_id="{{ r.paciente_id }}"
+                data-fecha="{{ r.fecha }}"
+                data-peso="{{ r.peso or '' }}"
+                data-talla="{{ r.talla or '' }}"
+                data-cc="{{ r.cc or '' }}"
+                data-bf_pct="{{ r.bf_pct or '' }}"
+                data-actividad="{{ r.actividad or '' }}"
+              >
+                <i class="fas fa-edit"></i> Editar
+              </button>
+
+              <form method="post"
+                    action="{{ url_for('admin_antropo_borrar', aid=r.id) }}"
+                    onsubmit="return confirm('¿Eliminar registro de {{ r.paciente }} del {{ r.fecha }}?');"
+                    style="display:inline-block">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  <i class="fas fa-trash"></i> Borrar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="empty">No hay registros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal" id="modalAntro" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalAntro"></div>
+
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-weight"></i> <span id="antro_titulo">Nuevo registro</span></h3>
+      <button class="modal-close js-close-modal" data-target="#modalAntro" aria-label="Cerrar">×</button>
+    </div>
+
+    <form id="formAntro" method="post" action="{{ url_for('admin_antropo_nuevo') }}">
+      <div class="modal-body">
+        <div class="form-row">
+          <label for="a_paciente">Paciente</label>
+          <select class="input" id="a_paciente" name="paciente_id" required>
+            <option value="">— Selecciona —</option>
+            {% for p in pacientes %}
+              <option value="{{ p.id }}">{{ p.dni }} — {{ p.nombre or '(sin nombre)' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="a_fecha">Fecha</label>
+          <input class="input" type="date" id="a_fecha" name="fecha" value="{{ hoy }}" required>
+        </div>
+
+        <div class="form-grid two-cols">
+          <div class="form-col">
+            <div class="form-row">
+              <label for="a_peso">Peso (kg)</label>
+              <input class="input" type="number" step="0.01" id="a_peso" name="peso" placeholder="Ej. 70.5">
+            </div>
+
+            <div class="form-row">
+              <label for="a_talla">Talla (m)</label>
+              <input class="input" type="number" step="0.01" id="a_talla" name="talla" placeholder="Ej. 1.68">
+            </div>
+
+            <div class="form-row">
+              <label for="a_cc">Cintura (cm)</label>
+              <input class="input" type="number" step="0.1" id="a_cc" name="cc" placeholder="Ej. 92.0">
+            </div>
+          </div>
+
+          <div class="form-col">
+            <div class="form-row">
+              <label for="a_bf">Grasa corporal (%)</label>
+              <input class="input" type="number" step="0.1" id="a_bf" name="bf_pct" placeholder="Ej. 24.5">
+            </div>
+
+            <div class="form-row">
+              <label for="a_actividad">Actividad</label>
+              <select class="input" id="a_actividad" name="actividad">
+                <option value="">(opcional)</option>
+                <option value="baja">baja</option>
+                <option value="moderada">moderada</option>
+                <option value="alta">alta</option>
+              </select>
+              <small class="form-help">Se guarda como texto (VARCHAR(10)).</small>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalAntro">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .modal-dialog { width:min(720px, 96vw); }
+  .form-grid.two-cols { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  .form-col .form-row { margin-bottom:12px; }
+  .input { width:100%; padding:10px 12px; border:1px solid #d6d9df; border-radius:10px; }
+  .form-help { color:#6b7280; font-size:12px; }
+</style>
+
+<script>
+  const openModal = sel => document.querySelector(sel).classList.add('open');
+  const closeModal = sel => document.querySelector(sel).classList.remove('open');
+  document.querySelectorAll('.js-close-modal').forEach(b => {
+    b.addEventListener('click', () => closeModal(b.dataset.target));
+  });
+
+  // Nuevo
+  document.getElementById('btnNuevaAntro')?.addEventListener('click', () => {
+    const f = document.getElementById('formAntro');
+    f.action = "{{ url_for('admin_antropo_nuevo') }}";
+    document.getElementById('antro_titulo').innerText = "Nuevo registro";
+    document.getElementById('a_paciente').value = "";
+    document.getElementById('a_fecha').value = "{{ hoy }}";
+    document.getElementById('a_peso').value = "";
+    document.getElementById('a_talla').value = "";
+    document.getElementById('a_cc').value = "";
+    document.getElementById('a_bf').value = "";
+    document.getElementById('a_actividad').value = "";
+    openModal('#modalAntro');
+  });
+
+  // Editar
+  document.querySelectorAll('.js-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const f = document.getElementById('formAntro');
+      f.action = "{{ url_for('admin_antropo_editar', aid=0) }}".replace('/0', '/' + id);
+
+      document.getElementById('antro_titulo').innerText = "Editar registro";
+      document.getElementById('a_paciente').value = btn.dataset.paciente_id || "";
+      document.getElementById('a_fecha').value = btn.dataset.fecha || "";
+      document.getElementById('a_peso').value = btn.dataset.peso || "";
+      document.getElementById('a_talla').value = btn.dataset.talla || "";
+      document.getElementById('a_cc').value = btn.dataset.cc || "";
+      document.getElementById('a_bf').value = btn.dataset.bf_pct || "";
+      document.getElementById('a_actividad').value = btn.dataset.actividad || "";
+      openModal('#modalAntro');
+    });
+  });
+</script>
+{% endblock %}

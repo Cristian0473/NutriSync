@@ -1,0 +1,260 @@
+{% extends "paciente/base_paciente.html" %}
+{% set page_title = "NutriSync · Historial de Planes" %}
+{% set header_title = "Historial de Planes" %}
+{% set active_nav = "historial" %}
+
+{% block content %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-history"></i> Mis Planes Nutricionales</h3>
+  </div>
+  <div class="card-body">
+    {% if planes %}
+    <div class="planes-list">
+      {% for plan in planes %}
+      <div class="plan-card">
+        <div class="plan-header">
+          <div class="plan-title">
+            <h4>Plan Nutricional #{{ plan.id }}</h4>
+            <span class="plan-badge">{% if loop.first %}Activo{% else %}Anterior{% endif %}</span>
+          </div>
+          <div class="plan-dates">
+            <span><i class="fas fa-calendar-alt"></i> {{ plan.fecha_inicio }} - {{ plan.fecha_fin }}</span>
+            <span><i class="fas fa-clock"></i> {{ plan.duracion_dias }} días</span>
+          </div>
+        </div>
+        
+        {% if plan.metas %}
+        <div class="plan-metas">
+          <div class="meta-item">
+            <span class="meta-label">Calorías</span>
+            <span class="meta-value">{{ plan.metas.calorias_diarias }} kcal</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Carbohidratos</span>
+            <span class="meta-value">{{ plan.metas.carbohidratos_porcentaje }}%</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Proteínas</span>
+            <span class="meta-value">{{ plan.metas.proteinas_porcentaje }}%</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Grasas</span>
+            <span class="meta-value">{{ plan.metas.grasas_porcentaje }}%</span>
+          </div>
+        </div>
+        {% endif %}
+        
+        <div class="plan-footer">
+          <span class="plan-created">
+            <i class="fas fa-calendar-check"></i> Creado: {{ plan.creado_en }}
+          </span>
+          {% if loop.first %}
+          <a href="{{ url_for('paciente_mi_plan') }}" class="btn-view-plan">
+            <i class="fas fa-eye"></i> Ver Plan
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-history"></i>
+      <h3>No hay planes registrados</h3>
+      <p>Contacta con tu nutricionista para obtener tu primer plan nutricional personalizado.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.planes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.plan-card {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.plan-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px);
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.plan-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.plan-title h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.plan-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: var(--primary);
+  color: white;
+}
+
+.plan-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.plan-dates span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan-dates i {
+  color: var(--primary);
+}
+
+.plan-metas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.meta-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.plan-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.plan-created {
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan-created i {
+  color: var(--primary);
+}
+
+.btn-view-plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btn-view-plan:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.empty-state i {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  color: #1f2937;
+  font-size: 20px;
+}
+
+.empty-state p {
+  margin: 0;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .plan-header {
+    flex-direction: column;
+  }
+  
+  .plan-metas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .plan-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .btn-view-plan {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+{% endblock %}
+

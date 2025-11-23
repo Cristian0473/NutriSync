@@ -1,0 +1,278 @@
+{% extends "paciente/base_paciente.html" %}
+{% set page_title = "NutriSync · Inicio" %}
+{% set header_title = "Inicio" %}
+{% set active_nav = "dashboard" %}
+
+{% block content %}
+<div class="welcome-card content-card">
+  <div class="card-body">
+    <h2>Bienvenido, {{ paciente_nombre }}</h2>
+    <p>Aquí puedes ver un resumen de tu información y acceder a tu plan nutricional personalizado.</p>
+  </div>
+</div>
+
+<!-- Métricas principales -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-label">Peso Actual</div>
+    <div class="metric-value">{{ ultima_antropo.peso or '—' }}</div>
+    <div class="metric-unit">kg</div>
+  </div>
+  <div class="metric-card info">
+    <div class="metric-label">IMC</div>
+    <div class="metric-value">{{ ultima_antropo.imc or '—' }}</div>
+    <div class="metric-unit">kg/m²</div>
+  </div>
+  <div class="metric-card {% if ultimo_clinico.hba1c and ultimo_clinico.hba1c > 7 %}danger{% elif ultimo_clinico.hba1c and ultimo_clinico.hba1c > 6.5 %}warning{% else %}info{% endif %}">
+    <div class="metric-label">HbA1c</div>
+    <div class="metric-value">{{ ultimo_clinico.hba1c or '—' }}</div>
+    <div class="metric-unit">%</div>
+  </div>
+  <div class="metric-card {% if ultimo_clinico.glucosa_ayunas and ultimo_clinico.glucosa_ayunas > 126 %}danger{% elif ultimo_clinico.glucosa_ayunas and ultimo_clinico.glucosa_ayunas > 100 %}warning{% else %}info{% endif %}">
+    <div class="metric-label">Glucosa en Ayunas</div>
+    <div class="metric-value">{{ ultimo_clinico.glucosa_ayunas or '—' }}</div>
+    <div class="metric-unit">mg/dL</div>
+  </div>
+</div>
+
+<!-- Plan Nutricional Activo -->
+{% if plan_activo %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-utensils"></i> Mi Plan Nutricional Activo</h3>
+  </div>
+  <div class="card-body">
+    <div class="plan-summary">
+      <div class="plan-info">
+        <p><strong>Fecha de inicio:</strong> {{ plan_activo.fecha_inicio }}</p>
+        <p><strong>Fecha de fin:</strong> {{ plan_activo.fecha_fin }}</p>
+        <p><strong>Duración:</strong> {{ plan_activo.duracion_dias }} días</p>
+      </div>
+      <div class="plan-macros">
+        <div class="macro-item">
+          <span class="macro-label">Calorías</span>
+          <span class="macro-value">{{ plan_activo.metas.calorias_diarias }} kcal</span>
+        </div>
+        <div class="macro-item">
+          <span class="macro-label">Carbohidratos</span>
+          <span class="macro-value">{{ plan_activo.metas.carbohidratos_porcentaje }}%</span>
+        </div>
+        <div class="macro-item">
+          <span class="macro-label">Proteínas</span>
+          <span class="macro-value">{{ plan_activo.metas.proteinas_porcentaje }}%</span>
+        </div>
+        <div class="macro-item">
+          <span class="macro-label">Grasas</span>
+          <span class="macro-value">{{ plan_activo.metas.grasas_porcentaje }}%</span>
+        </div>
+      </div>
+      <div class="plan-actions">
+        <a href="{{ url_for('paciente_mi_plan') }}" class="btn btn-primary">
+          <i class="fas fa-eye"></i> Ver Plan Completo
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="content-card">
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="fas fa-utensils"></i>
+      <h3>No tienes un plan nutricional activo</h3>
+      <p>Contacta con tu nutricionista para obtener un plan personalizado.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Accesos rápidos -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-bolt"></i> Accesos Rápidos</h3>
+  </div>
+  <div class="card-body">
+    <div class="quick-actions">
+      <a href="{{ url_for('paciente_mi_plan') }}" class="quick-action-card">
+        <i class="fas fa-utensils"></i>
+        <span>Mi Plan Nutricional</span>
+      </a>
+      <a href="{{ url_for('paciente_mi_perfil') }}" class="quick-action-card">
+        <i class="fas fa-user"></i>
+        <span>Mi Perfil</span>
+      </a>
+      <a href="{{ url_for('paciente_mi_progreso') }}" class="quick-action-card">
+        <i class="fas fa-chart-line"></i>
+        <span>Mi Progreso</span>
+      </a>
+      <a href="{{ url_for('paciente_historial') }}" class="quick-action-card">
+        <i class="fas fa-history"></i>
+        <span>Historial</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+.welcome-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  margin-bottom: 24px;
+}
+
+.welcome-card h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+}
+
+.welcome-card p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.plan-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.plan-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.plan-info p {
+  margin: 0;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.plan-macros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.macro-item {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.macro-label {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.macro-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary {
+  background: var(--primary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.empty-state i {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  color: #1f2937;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.quick-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  background: #f8fafc;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+.quick-action-card:hover {
+  border-color: var(--primary);
+  background: #f0fdf4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.quick-action-card i {
+  font-size: 32px;
+  color: var(--primary);
+}
+
+.quick-action-card span {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .plan-info,
+  .plan-macros,
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}
+

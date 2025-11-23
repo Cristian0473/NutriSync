@@ -1,0 +1,25 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Roles" %}
+{% set header_title = "Roles" %}
+{% set active_nav = "usuarios" %}
+
+{% block content %}
+<div class="form-card">
+  <h3><i class="fas fa-user-shield"></i> Roles de {{ usuario[1] }}</h3>
+  <form method="post">
+    <div class="form-group">
+      {% for r in roles %}
+        <label class="chk">
+          <input type="checkbox" name="roles" value="{{ r[0] }}" {{ 'checked' if r[0] in asignados else '' }}>
+          {{ r[1] }}
+        </label>
+      {% endfor %}
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      <a class="btn" href="{{ url_for('admin_usuarios') }}">Volver</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

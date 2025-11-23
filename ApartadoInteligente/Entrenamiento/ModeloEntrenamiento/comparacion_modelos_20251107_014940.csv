@@ -1,0 +1,4 @@
+Modelo,Test Accuracy,Test Precision,Test Recall,Test F1,Test AUC-ROC
+Random Forest,1.0,1.0,1.0,1.0,1.0
+XGBoost,1.0,1.0,1.0,1.0,1.0
+Logistic Regression,0.9730848861283644,0.9833333333333333,0.8309859154929577,0.9007633587786259,0.999384657459319

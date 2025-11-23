@@ -1,0 +1,406 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Pacientes" %}
+{% set header_title = "Registro integral de pacientes" %}
+{% set active_nav = "pacientes" %}
+
+{% block content %}
+<div class="toolbar">
+  <button id="btnNuevoPaciente" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Nuevo registro completo
+  </button>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-users"></i> Lista de pacientes</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>DNI</th>
+            <th>Paciente</th>
+            <th>Sexo</th>
+            <th>Fecha nac.</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in rows %}
+          <tr>
+            <td>{{ p.id }}</td>
+            <td>{{ p.dni }}</td>
+            <td>{{ (p.nombres ~ ' ' ~ p.apellidos).strip() }}</td>
+            <td>{{ p.sexo or '' }}</td>
+            <td>{{ p.fecha_nac or '' }}</td>
+            <td>{{ p.telefono or '' }}</td>
+            <td>{{ p.usuario_email or '' }}</td>
+            <td class="actions">
+              <button class="btn btn-sm js-edit"
+                data-id="{{ p.id }}"
+                data-dni="{{ p.dni }}"
+                data-nombres="{{ p.nombres }}"
+                data-apellidos="{{ p.apellidos }}"
+                data-sexo="{{ p.sexo or '' }}"
+                data-fecha="{{ p.fecha_nac or '' }}"
+                data-telefono="{{ p.telefono or '' }}"
+                data-email="{{ p.usuario_email or '' }}">
+                <i class="fas fa-edit"></i> Editar
+              </button>
+              <form method="post" action="{{ url_for('admin_paciente_borrar', pid=p.id) }}" style="display:inline-block"
+                onsubmit="return confirm('¿Borrar al paciente DNI {{ p.dni }}?')">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  <i class="fas fa-trash"></i> Borrar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="empty">No hay pacientes registrados.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL REGISTRO INTEGRAL ===== -->
+<div class="modal" id="modalPaciente" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalPaciente"></div>
+  <div class="modal-dialog wide">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-injured"></i> <span id="pac_titulo">Nuevo registro completo</span></h3>
+      <button class="modal-close js-close-modal" data-target="#modalPaciente">×</button>
+    </div>
+
+    <form id="formPacienteFull" method="post" action="{{ url_for('admin_paciente_guardar') }}">
+      <div class="modal-body">
+        <!-- Tabs -->
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="datos">Datos personales</button>
+          <button type="button" class="tab" data-tab="antro">Antropometría</button>
+          <button type="button" class="tab" data-tab="clinico">Datos clínicos</button>
+        </div>
+
+        <!-- TAB: Datos personales -->
+        <div class="tab-content active" id="tab-datos">
+          <div class="form-grid two-cols">
+            <div class="form-row"><label>DNI</label><input type="text" id="dni" name="dni" maxlength="8" required></div>
+            <div class="form-row"><label>Nombres</label><input type="text" id="nombres" name="nombres"></div>
+            <div class="form-row"><label>Apellidos</label><input type="text" id="apellidos" name="apellidos"></div>
+            <div class="form-row">
+              <label>Sexo</label>
+              <select id="sexo" name="sexo">
+                <option value="">(sin especificar)</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
+            <div class="form-row"><label>Fecha de nacimiento</label><input type="date" id="fecha_nac" name="fecha_nac"></div>
+            <div class="form-row"><label>Teléfono</label><input type="text" id="telefono" name="telefono"></div>
+            <div class="form-row full"><label>Email (usuario)</label><input type="email" id="email" name="email" placeholder="email@ejemplo.com"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Antropometría -->
+        <div class="tab-content" id="tab-antro">
+          <div class="form-grid two-cols">
+            <div class="form-row"><label>Peso (kg)</label><input type="number" step="0.01" id="peso" name="peso"></div>
+            <div class="form-row"><label>Talla (m)</label><input type="number" step="0.01" id="talla" name="talla"></div>
+            <div class="form-row"><label>Cintura (cm)</label><input type="number" step="0.01" id="cc" name="cc"></div>
+            <div class="form-row"><label>Grasa corporal (%)</label><input type="number" step="0.01" id="bf_pct" name="bf_pct"></div>
+            <div class="form-row">
+              <label>Actividad</label>
+              <select id="actividad" name="actividad">
+                <option value="">(opcional)</option>
+                <option value="baja">Baja</option>
+                <option value="moderada">Moderada</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Datos clínicos -->
+        <div class="tab-content" id="tab-clinico">
+          <div class="form-grid two-cols">
+            <div class="form-row"><label>HbA1c (%)</label><input type="number" step="0.01" id="hba1c" name="hba1c"></div>
+            <div class="form-row"><label>Glucosa ayunas (mg/dL)</label><input type="number" step="0.01" id="glucosa_ayunas" name="glucosa_ayunas"></div>
+            <div class="form-row"><label>LDL (mg/dL)</label><input type="number" step="0.01" id="ldl" name="ldl"></div>
+            <div class="form-row"><label>Triglicéridos (mg/dL)</label><input type="number" step="0.01" id="trigliceridos" name="trigliceridos"></div>
+            <div class="form-row"><label>PA Sistólica</label><input type="number" id="pa_sis" name="pa_sis"></div>
+            <div class="form-row"><label>PA Diastólica</label><input type="number" id="pa_dia" name="pa_dia"></div>
+          </div>
+
+          <!-- Tabla medicamentos -->
+          <div class="form-row full">
+            <label>Medicamentos</label>
+            <table class="mini-table" id="tblMeds">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Dosis</th>
+                  <th>Frecuencia</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <button type="button" class="btn btn-sm" id="btnAddMed"><i class="fas fa-plus"></i> Agregar</button>
+          </div>
+
+          <!-- Alergias / Otros -->
+          <h6 class="mt-4 mb-2">Alergias / Otros</h6>
+          <table class="table table-bordered align-middle" id="tablaAlergias">
+            <thead>
+              <tr>
+                <th style="width:40%">Ingrediente</th>
+                <th>Descripción</th>
+                <th style="width:40px"></th>
+              </tr>
+            </thead>
+            <tbody id="alergiasBody"></tbody>
+          </table>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarAlergia">+ Agregar</button>
+        </div>
+      </div>
+
+      <input type="hidden" name="meds_json" id="meds_json">
+      <input type="hidden" name="alergias_json" id="alergias_json">
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalPaciente">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar todo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .modal-dialog.wide { max-width: 960px; }
+  .tabs { display:flex; border-bottom:1px solid #ccc; margin-bottom:1em; }
+  .tab { flex:1; text-align:center; padding:10px; cursor:pointer; border:none; background:#f3f4f6; font-weight:600; }
+  .tab.active { background:#fff; border-bottom:3px solid #007bff; color:#007bff; }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+  .mini-table { width:100%; border-collapse:collapse; margin-bottom:6px; }
+  .mini-table th,.mini-table td { border:1px solid #ddd; padding:6px; text-align:left; font-size:.9em; }
+  .mini-table input { width:100%; box-sizing:border-box; padding:4px; }
+</style>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  /* Tabs */
+  document.querySelectorAll(".tab").forEach(t => {
+    t.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(tb => tb.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
+      t.classList.add("active");
+      document.querySelector("#tab-" + t.dataset.tab).classList.add("active");
+    });
+  });
+
+  /* Modal helpers */
+  const openModal  = s => document.querySelector(s).classList.add("open");
+  const closeModal = s => document.querySelector(s).classList.remove("open");
+  document.querySelectorAll(".js-close-modal").forEach(b => b.addEventListener("click", () => closeModal(b.dataset.target)));
+
+  /* --- Tablas dinámicas --- */
+  const medsTable = document.querySelector("#tblMeds tbody");
+  const alergiasBody = document.getElementById("alergiasBody");
+
+  document.getElementById("btnAddMed").addEventListener("click", () => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><input class='med-nombre'></td>
+                    <td><input class='med-dosis'></td>
+                    <td><input class='med-frec'></td>
+                    <td><button type='button' class='btn btn-danger btn-sm'>×</button></td>`;
+    tr.querySelector("button").onclick = () => tr.remove();
+    medsTable.appendChild(tr);
+  });
+
+  // =========== ALERGIAS (Select2) ===========
+  function crearFilaAlergia(ingrediente_id = null, descripcion = '', ingrediente_text = '') {
+  const tr = document.createElement('tr');
+
+  const td1 = document.createElement('td');
+  const select = document.createElement('select');
+  select.classList.add('form-select', 'ingrediente-select');
+  td1.appendChild(select);
+
+  const td2 = document.createElement('td');
+  const inputDesc = document.createElement('input');
+  inputDesc.type = 'text';
+  inputDesc.classList.add('form-control', 'descripcion');
+  inputDesc.value = descripcion || '';
+  td2.appendChild(inputDesc);
+
+  const td3 = document.createElement('td');
+  const btnDel = document.createElement('button');
+  btnDel.type = 'button';
+  btnDel.classList.add('btn', 'btn-danger', 'btn-sm');
+  btnDel.textContent = '×';
+  btnDel.onclick = () => tr.remove();
+  td3.appendChild(btnDel);
+
+  tr.append(td1, td2, td3);
+  alergiasBody.appendChild(tr);
+
+  // 1) Inicializa select2 dentro del modal para evitar problemas de z-index
+  $(select).select2({
+    placeholder: 'Buscar ingrediente...',
+    allowClear: true,
+    ajax: {
+      url: '/api/ingredientes/activos',
+      dataType: 'json',
+      delay: 250,
+      data: params => ({ q: params.term }),
+      processResults: data => ({ results: data.results })
+    },
+    // 👇 MUY IMPORTANTE cuando está dentro de un modal
+    dropdownParent: $('#modalPaciente'),
+    width: '100%'
+  });
+
+  // 2) Si viene valor desde BD, registra esa opción en el "data" interno de select2
+  if (ingrediente_id) {
+    const id = String(ingrediente_id);
+    const text = ingrediente_text || `#${id}`;
+    // Inserta una <option selected> y notifica a select2
+    select.innerHTML = `<option value="${id}" selected>${text}</option>`;
+    $(select).val(id).trigger('change.select2');
+  }
+}
+
+  // Recolector para enviar al backend
+  function recolectarAlergias() {
+    const filas = document.querySelectorAll('#alergiasBody tr');
+    const data = [];
+    filas.forEach(tr => {
+      const ingrediente_id = tr.querySelector('.ingrediente-select').value || null;
+      const descripcion = tr.querySelector('.descripcion').value.trim();
+      if (ingrediente_id || descripcion) {
+        data.push({ ingrediente_id, descripcion });
+      }
+    });
+    return JSON.stringify(data);
+  }
+
+  // Botón agregar (una sola fila por clic)
+  const btnAgregarAlergia = document.getElementById("btnAgregarAlergia");
+  if (btnAgregarAlergia) {
+    btnAgregarAlergia.addEventListener("click", () => crearFilaAlergia());
+  }
+
+  // Medicamentos helpers
+  function setMeds(list) {
+    medsTable.innerHTML = "";
+    (list || []).forEach(m => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><input class='med-nombre' value="${m.nombre || ''}"></td>
+                      <td><input class='med-dosis'  value="${m.dosis  || ''}"></td>
+                      <td><input class='med-frec'   value="${m.frecuencia || ''}"></td>
+                      <td><button type='button' class='btn btn-danger btn-sm'>×</button></td>`;
+      tr.querySelector("button").onclick = () => tr.remove();
+      medsTable.appendChild(tr);
+    });
+  }
+
+  function getMeds() {
+    return [...medsTable.querySelectorAll("tr")].map(r => ({
+      nombre:     r.querySelector(".med-nombre").value.trim(),
+      dosis:      r.querySelector(".med-dosis").value.trim(),
+      frecuencia: r.querySelector(".med-frec").value.trim()
+    })).filter(x => x.nombre);
+  }
+
+  /* Nuevo */
+  document.getElementById("btnNuevoPaciente").addEventListener("click", () => {
+    const f = document.getElementById("formPacienteFull");
+    f.reset();
+    f.action = "{{ url_for('admin_paciente_guardar') }}";
+    document.getElementById("pac_titulo").innerText = "Nuevo registro completo";
+    medsTable.innerHTML = "";
+    alergiasBody.innerHTML = "";
+    openModal("#modalPaciente");
+  });
+
+  /* Editar */
+  document.querySelectorAll(".js-edit").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const f = document.getElementById("formPacienteFull");
+      f.reset();
+      f.action = `/admin/pacientes/${btn.dataset.id}/editar`;
+      document.getElementById("pac_titulo").innerText = "Editar registro completo";
+
+      dni.value        = btn.dataset.dni      || "";
+      nombres.value    = btn.dataset.nombres  || "";
+      apellidos.value  = btn.dataset.apellidos|| "";
+      sexo.value       = btn.dataset.sexo     || "";
+      fecha_nac.value  = btn.dataset.fecha    || "";
+      telefono.value   = btn.dataset.telefono || "";
+      email.value      = btn.dataset.email    || "";
+
+      try {
+        const [antropo, clinico, meds, alergias] = await Promise.all([
+          fetch(`/api/paciente/${btn.dataset.id}/antropometria/ultima`).then(r => r.ok ? r.json() : null),
+          fetch(`/api/paciente/${btn.dataset.id}/clinico/ultimo`).then(r => r.ok ? r.json() : null),
+          fetch(`/api/paciente/${btn.dataset.id}/medicamentos`).then(r => r.ok ? r.json() : { data: [] }),
+          fetch(`/api/paciente/${btn.dataset.id}/alergias`).then(r => r.ok ? r.json() : { data: [] })
+        ]);
+
+        if (antropo?.ok) {
+          const a = antropo.data;
+          peso.value = a.peso ?? ""; talla.value = a.talla ?? "";
+          cc.value   = a.cc   ?? ""; bf_pct.value= a.bf_pct ?? "";
+          actividad.value = a.actividad ?? "";
+        }
+        if (clinico?.ok) {
+          const c = clinico.data;
+          hba1c.value = c.hba1c ?? ""; glucosa_ayunas.value = c.glucosa_ayunas ?? "";
+          ldl.value   = c.ldl   ?? ""; 
+          document.getElementById("trigliceridos").value = c.trigliceridos ?? "";
+          pa_sis.value = c.pa_sis ?? ""; pa_dia.value = c.pa_dia ?? "";
+        }
+
+        // Medicamentos
+        setMeds(meds.data || []);
+
+        // Alergias (recrear filas con id + nombre + descripción)
+        alergiasBody.innerHTML = "";
+        (alergias.data || []).forEach(a =>
+          crearFilaAlergia(a.ingrediente_id || null, a.descripcion || "", a.ingrediente || "")
+        );
+      } catch (e) {
+        console.error(e);
+      }
+      openModal("#modalPaciente");
+    });
+  });
+
+  /* Guardar */
+  document.getElementById("formPacienteFull").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const f = ev.target;
+    document.getElementById("meds_json").value     = JSON.stringify(getMeds());
+    document.getElementById("alergias_json").value = recolectarAlergias();
+
+    const res = await fetch(f.action, {
+      method: "POST",
+      body: new FormData(f),
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+    if (res.ok) location.reload();
+  });
+</script>
+{% endblock %}

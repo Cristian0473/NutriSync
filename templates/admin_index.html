@@ -1,0 +1,79 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Panel Administrador" %}
+{% set header_title = "Panel Administrador" %}
+{% set active_nav = "home" %}
+
+{% block content %}
+<div class="welcome">
+  <h2>Bienvenido</h2>
+  <p>Selecciona un módulo de mantenimiento en la barra lateral para gestionar los datos del sistema.</p>
+  
+  <!-- Enlace para pacientes -->
+  {% if 'paciente' in roles %}
+  <div class="patient-section">
+    <h3><i class="fas fa-utensils"></i> Mi Recomendación Nutricional</h3>
+    <p>Accede a tu plan nutricional personalizado basado en tu perfil de diabetes tipo 2.</p>
+    <a href="{{ url_for('paciente_mi_recomendacion') }}" class="btn btn-primary">
+      <i class="fas fa-chart-line"></i> Ver Mi Recomendación
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid">
+  <a class="grid-card" href="{{ url_for('admin_usuarios') }}"><i class="fas fa-users-cog"></i><span>Usuarios</span></a>
+  <a class="grid-card" href="{{ url_for('admin_roles_list') }}"><i class="fas fa-user-shield"></i><span>Roles</span></a>
+  <a class="grid-card" href="{{ url_for('admin_preregistro') }}"><i
+      class="fas fa-id-card"></i><span>Pre-registro</span></a>
+  <a class="grid-card" href="{{ url_for('admin_activaciones') }}"><i class="fas fa-link"></i><span>Tokens</span></a>
+  <a class="grid-card" href="{{ url_for('admin_pacientes') }}"><i
+      class="fas fa-user-injured"></i><span>Pacientes</span></a>
+  <a class="grid-card" href="{{ url_for('admin_nutricionistas') }}">
+    <i class="fas fa-user-nurse"></i><span>Nutricionistas</span>
+  </a>
+  <a class="grid-card" href="{{ url_for('admin_ingredientes') }}"><i
+      class="fas fa-carrot"></i><span>Ingredientes</span></a>
+  <a class="grid-card" href="{{ url_for('admin_planes') }}"><i class="fas fa-list"></i><span>Planes</span></a>
+  <a class="grid-card" href="{{ url_for('admin_generar_plan') }}"><i
+      class="fas fa-magic"></i><span>Generar plan</span></a>
+  <a class="grid-card" href="{{ url_for('admin_config') }}"><i class="fas fa-cog"></i><span>Config. clínica</span></a>
+</div>
+
+<style>
+.patient-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.patient-section h3 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.patient-section p {
+  margin-bottom: 1.5rem;
+  opacity: 0.9;
+}
+
+.patient-section .btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.patient-section .btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+</style>
+{% endblock %}

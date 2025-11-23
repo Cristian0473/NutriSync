@@ -1,0 +1,168 @@
+{% extends "admin/base_admin.html" %}
+{% set page_title = "NutriSync · Tokens de activación" %}
+{% set header_title = "Tokens de activación" %}
+{% set active_nav = "activaciones" %}
+
+{% block content %}
+
+<!-- ===== Toolbar ===== -->
+<div class="toolbar">
+  <form class="toolbar-form" method="get" action="{{ url_for('admin_activaciones') }}">
+    <label class="lbl">Buscar por DNI o email</label>
+    <input class="input" type="text" name="q" value="{{ filtro or '' }}" placeholder="Ej: 12345678 o correo@dominio.com">
+    <button class="btn"><i class="fas fa-search"></i> Buscar</button>
+  </form>
+
+  <button id="btnNuevoToken" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Generar token
+  </button>
+</div>
+
+<!-- ===== Tabla ===== -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-link"></i> Listado de tokens</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:110px">DNI</th>
+            <th>Nombre / Email</th>
+            <th>Token</th>
+            <th>Vence</th>
+            <th>Usado</th>
+            <th>Enlace</th>
+            <th style="width:260px">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if tokens|length == 0 %}
+            <tr><td colspan="7" class="empty">Sin tokens.</td></tr>
+          {% else %}
+            {% for t in tokens %}
+            <tr class="{% if t.expirado and not t.usado %}row-warn{% endif %}">
+              <td><code>{{ t.dni }}</code></td>
+              <td>
+                <div>{{ t.nombre or "(sin nombre)" }}</div>
+                <div class="muted small">{{ t.email or "" }}</div>
+                <div class="muted small">Creado: {{ t.creado }}</div>
+              </td>
+              <td><code class="small">{{ t.token }}</code></td>
+              <td>
+                {{ t.vence }}
+                {% if t.expirado and not t.usado %}
+                  <span class="badge warn">expirado</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if t.usado %}
+                  <span class="badge">Sí</span>
+                {% else %}
+                  <span class="badge ok">No</span>
+                {% endif %}
+              </td>
+              <td style="max-width:320px">
+                <div class="text-truncate small" title="{{ t.link }}">
+                  <a href="{{ t.link }}" target="_blank">{{ t.link }}</a>
+                </div>
+              </td>
+              <td class="actions">
+                <!-- Toggle usado -->
+                <form method="post" action="{{ url_for('admin_activaciones_toggle', dni=t.dni, token=t.token) }}" class="inline">
+                  <button class="btn btn-sm">
+                    {% if t.usado %}<i class="fas fa-undo"></i> Marcar NO usado{% else %}<i class="fas fa-check"></i> Marcar usado{% endif %}
+                  </button>
+                </form>
+
+                <!-- Regenerar -->
+                <form method="post" action="{{ url_for('admin_activaciones_regenerar', dni=t.dni) }}" class="inline">
+                  <input type="hidden" name="horas" value="{{ horas_default }}">
+                  <button class="btn btn-sm btn-warn"><i class="fas fa-sync-alt"></i> Regenerar</button>
+                </form>
+
+                <!-- Borrar -->
+                <form method="post" action="{{ url_for('admin_activaciones_borrar', dni=t.dni, token=t.token) }}"
+                      class="inline"
+                      onsubmit="return confirm('¿Eliminar el token {{ t.token }} de {{ t.dni }}?');">
+                  <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Borrar</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal nuevo token ===== -->
+<div class="modal" id="modalToken" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalToken"></div>
+
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-plus-circle"></i> Generar token</h3>
+      <button class="modal-close js-close-modal" data-target="#modalToken" aria-label="Cerrar">×</button>
+    </div>
+
+    <form method="post" action="{{ url_for('admin_activaciones_nuevo') }}">
+      <div class="modal-body">
+        <div class="form-row">
+          <label for="t_dni">DNI</label>
+          <input id="t_dni" class="input" name="dni" maxlength="8" required placeholder="DNI (8)">
+        </div>
+        <div class="form-row">
+          <label for="t_horas">Validez (horas)</label>
+          <input id="t_horas" class="input" type="number" name="horas" min="1" value="{{ horas_default }}">
+          <small class="form-help">Se calculará la fecha/hora de vencimiento desde ahora.</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalToken">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Generar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .toolbar { display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .toolbar-form { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .lbl { font-weight:600; color:#374151; }
+  .muted { color:#6b7280; }
+  .text-truncate { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .small { font-size:12px; }
+  .inline { display:inline-block; margin-right:6px; }
+  .row-warn { background:#fff7ed; }               /* similar a warning suave */
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#e5e7eb; font-size:12px; }
+  .badge.ok { background:#d1fae5; }
+  .badge.warn { background:#fde68a; }
+
+  /* Modal width */
+  .modal-dialog { width:min(560px, 96vw); }
+  .form-row { margin-bottom:12px; }
+  .form-help { color:#6b7280; font-size:12px; }
+  .input { width:100%; padding:10px 12px; border:1px solid #d6d9df; border-radius:10px; }
+</style>
+
+<script>
+  const openModal = sel => document.querySelector(sel).classList.add('open');
+  const closeModal = sel => document.querySelector(sel).classList.remove('open');
+
+  document.getElementById('btnNuevoToken')?.addEventListener('click', () => {
+    document.getElementById('t_dni').value = '';
+    document.getElementById('t_horas').value = '{{ horas_default }}';
+    openModal('#modalToken');
+  });
+
+  document.querySelectorAll('.js-close-modal').forEach(b => {
+    b.addEventListener('click', () => closeModal(b.dataset.target));
+  });
+</script>
+
+{% endblock %}

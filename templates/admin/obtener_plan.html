@@ -206,19 +206,24 @@
             <div class="form-col">
                 <div class="form-row">
                     <label>Fecha de inicio</label>
-                    <input class="input" id="fecha_inicio" type="date">
+                    <input class="input" id="fecha_inicio" type="date" min="">
                 </div>
             </div>
             <div class="form-col">
                 <div class="form-row">
-                    <label>Fecha de fin</label>
-                    <input class="input" id="fecha_fin" type="date">
+                    <label>Duración del plan</label>
+                    <select class="input" id="duracion_plan">
+                        <option value="7">1 semana (7 días)</option>
+                        <option value="14" selected>2 semanas (14 días)</option>
+                        <option value="21">3 semanas (21 días)</option>
+                    </select>
                 </div>
             </div>
             <div class="form-col">
                 <div class="form-row">
                     <label>Días del plan</label>
                     <input class="input" id="dias_plan" type="number" min="1" max="365" readonly>
+                    <input type="hidden" id="fecha_fin" value="">
                 </div>
             </div>
         </div>
@@ -271,7 +276,7 @@
                     <label>Patrón de comidas</label>
                     <div class="checkbox-group">
                         <label class="checkbox-item">
-                            <input type="checkbox" id="comida_des" value="des" checked>
+                            <input type="checkbox" id="comida_des" value="des" checked disabled>
                             <span>Desayuno</span>
                         </label>
                         <label class="checkbox-item">
@@ -279,7 +284,7 @@
                             <span>Media mañana</span>
                         </label>
                         <label class="checkbox-item">
-                            <input type="checkbox" id="comida_alm" value="alm" checked>
+                            <input type="checkbox" id="comida_alm" value="alm" checked disabled>
                             <span>Almuerzo</span>
                         </label>
                         <label class="checkbox-item">
@@ -287,7 +292,7 @@
                             <span>Media tarde</span>
                         </label>
                         <label class="checkbox-item">
-                            <input type="checkbox" id="comida_cena" value="cena" checked>
+                            <input type="checkbox" id="comida_cena" value="cena" checked disabled>
                             <span>Cena</span>
                         </label>
                     </div>
@@ -308,7 +313,7 @@
         </div>
         <div class="card-body">
             <div class="form-row">
-                <label>Selecciona los grupos de alimentos a excluir:</label>
+                <label>Selecciona los grupos de alimentos a excluir (máximo 2):</label>
                 <div class="grupos-exclusion-grid">
                     <div class="grupos-exclusion-row">
                         <label class="checkbox-item">
@@ -355,21 +360,7 @@
         <h3><i class="fas fa-apple-alt"></i> Alimentos Específicos</h3>
     </div>
     <div class="card-body">
-        <div class="form-grid two-cols">
-            <div class="form-col">
-                <div class="form-row">
-                    <label>Alimentos a Incluir (Priorizar)</label>
-                    <div class="searchbox" style="position: relative;">
-                        <i class="fas fa-plus-circle"></i>
-                        <input id="qIngredienteIncluir" type="text" placeholder="Buscar Alimentos para incluir...">
-                        <button id="btnClearIngredienteIncluir" class="clear" title="Limpiar">×</button>
-                        <div id="sugerencias-ingredientes-incluir" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
-                    </div>
-                    <div id="lista-ingredientes-incluir" class="ingredientes-lista">
-                        <!-- Los ingredientes incluidos aparecerán aquí -->
-                    </div>
-                </div>
-            </div>
+        <div class="form-grid">
             <div class="form-col">
                 <div class="form-row">
                     <label>Alimentos a Excluir</label>
@@ -381,7 +372,6 @@
                     </div>
                     <div id="lista-ingredientes-excluir" class="ingredientes-lista">
                         <!-- Los ingredientes excluidos aparecerán aquí -->
-                        </div>
                     </div>
                 </div>
             </div>

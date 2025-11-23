@@ -169,7 +169,7 @@ function mostrarPlanCompletoParaImpresion(plan) {
 function recolectarConfiguracionActual() {
     return {
         fecha_inicio: document.getElementById('fecha_inicio')?.value || null,
-        fecha_fin: document.getElementById('fecha_fin')?.value || null,
+        fecha_fin: obtenerRangoFechas().fechaFin || null,
         dias_plan: parseInt(document.getElementById('dias_plan')?.value || '7'),
         kcal_objetivo: parseFloat(document.getElementById('kcal_objetivo')?.value || '0') || null,
         cho_pct: parseFloat(document.getElementById('cho_pct')?.value || '0') || null,
@@ -183,7 +183,7 @@ function recolectarConfiguracionActual() {
 
 function recolectarFiltrosIngredientes() {
     return {
-        incluir: [...ingredientesIncluir],
+        incluir: [], // Ya no se usa incluir ingredientes
         excluir: [...ingredientesExcluir],
         grupos_excluidos: [...gruposExcluidos]
     };
@@ -457,7 +457,7 @@ async function buscarIngredientes(query) {
 
 function mostrarIndicadorCarga(mostrar) {
     // Buscar contenedores de sugerencias existentes
-    const contenedores = ['sugerencias-ingredientes-incluir', 'sugerencias-ingredientes-excluir'];
+    const contenedores = ['sugerencias-ingredientes-excluir']; // Ya no se usa incluir
     
     contenedores.forEach(contenedorId => {
         const existente = document.getElementById(contenedorId);
@@ -492,7 +492,7 @@ function mostrarIndicadorCarga(mostrar) {
 
 function limpiarDropdownsIngredientes() {
     // Limpiar todos los dropdowns de ingredientes
-    const dropdowns = ['sugerencias-ingredientes-incluir', 'sugerencias-ingredientes-excluir'];
+    const dropdowns = ['sugerencias-ingredientes-excluir']; // Ya no se usa incluir
     dropdowns.forEach(id => {
         const dropdown = document.getElementById(id);
         if (dropdown) {
@@ -506,9 +506,25 @@ function limpiarDropdownsIngredientes() {
 function actualizarGruposExcluidos() {
     gruposExcluidos = [];
     const checkboxes = document.querySelectorAll('.grupos-exclusion-grid input[type="checkbox"]:checked');
-    checkboxes.forEach(checkbox => {
-        gruposExcluidos.push(checkbox.value);
-    });
+    
+    // Limitar a máximo 2 grupos
+    if (checkboxes.length > 2) {
+        // Si hay más de 2 seleccionados, desmarcar el último
+        const ultimoCheckbox = checkboxes[checkboxes.length - 1];
+        ultimoCheckbox.checked = false;
+        alert('Solo se pueden excluir máximo 2 grupos de alimentos');
+        
+        // Actualizar lista con solo los primeros 2
+        const primerosDos = Array.from(checkboxes).slice(0, 2);
+        primerosDos.forEach(checkbox => {
+            gruposExcluidos.push(checkbox.value);
+        });
+    } else {
+        checkboxes.forEach(checkbox => {
+            gruposExcluidos.push(checkbox.value);
+        });
+    }
+    
     console.log('🚫 Grupos excluidos actualizados:', gruposExcluidos);
     
     // Remover ingredientes de grupos excluidos
@@ -517,12 +533,19 @@ function actualizarGruposExcluidos() {
 
 function obtenerPatronComidas() {
     const comidas = [];
-    const checkboxes = document.querySelectorAll('#comida_des, #comida_mm, #comida_alm, #comida_mt, #comida_cena');
-    checkboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            comidas.push(checkbox.value);
-        }
-    });
+    // Desayuno, almuerzo y cena siempre están marcados (disabled)
+    comidas.push('des', 'alm', 'cena');
+    
+    // Media mañana y media tarde solo si están marcados
+    const comidaMm = document.getElementById('comida_mm');
+    const comidaMt = document.getElementById('comida_mt');
+    if (comidaMm && comidaMm.checked) {
+        comidas.push('mm');
+    }
+    if (comidaMt && comidaMt.checked) {
+        comidas.push('mt');
+    }
+    
     const patron = comidas.join(',');
     console.log('🍽️ Patrón de comidas:', patron);
     return patron;
@@ -530,24 +553,25 @@ function obtenerPatronComidas() {
 
 function calcularDiasDelPlan() {
     const fechaInicio = document.getElementById('fecha_inicio').value;
-    const fechaFin = document.getElementById('fecha_fin').value;
+    const duracionPlan = document.getElementById('duracion_plan');
     const campoDias = document.getElementById('dias_plan');
+    const campoFechaFin = document.getElementById('fecha_fin');
     
-    if (fechaInicio && fechaFin) {
+    if (fechaInicio && duracionPlan && duracionPlan.value) {
+        const dias = parseInt(duracionPlan.value);
         const inicio = new Date(fechaInicio);
-        const fin = new Date(fechaFin);
         
-        // Calcular diferencia en días
-        const diferenciaTiempo = fin.getTime() - inicio.getTime();
-        const dias = Math.ceil(diferenciaTiempo / (1000 * 3600 * 24)) + 1; // +1 para incluir ambos días
+        // Calcular fecha de fin basada en la duración
+        const fin = new Date(inicio);
+        fin.setDate(fin.getDate() + dias - 1); // -1 porque incluye el día de inicio
         
-        if (dias > 0) {
-            campoDias.value = dias;
-            console.log(`📅 Plan calculado: ${dias} días (${fechaInicio} a ${fechaFin})`);
-        } else {
-            campoDias.value = '';
-            console.log('⚠️ Fecha de fin debe ser posterior a fecha de inicio');
+        // Actualizar campo oculto de fecha_fin si existe (para compatibilidad)
+        if (campoFechaFin) {
+            campoFechaFin.value = fin.toISOString().split('T')[0];
         }
+        
+        campoDias.value = dias;
+        console.log(`📅 Plan calculado: ${dias} días (${fechaInicio} a ${fin.toISOString().split('T')[0]})`);
     } else {
         campoDias.value = '';
     }
@@ -555,8 +579,17 @@ function calcularDiasDelPlan() {
 
 function obtenerRangoFechas() {
     const fechaInicio = document.getElementById('fecha_inicio').value;
-    const fechaFin = document.getElementById('fecha_fin').value;
-    const dias = document.getElementById('dias_plan').value;
+    const duracionPlan = document.getElementById('duracion_plan');
+    const dias = duracionPlan ? parseInt(duracionPlan.value) : document.getElementById('dias_plan').value;
+    
+    // Calcular fecha de fin basada en inicio + duración
+    let fechaFin = '';
+    if (fechaInicio && dias) {
+        const inicio = new Date(fechaInicio);
+        const fin = new Date(inicio);
+        fin.setDate(fin.getDate() + parseInt(dias) - 1);
+        fechaFin = fin.toISOString().split('T')[0];
+    }
     
     console.log('📅 Rango de fechas:', { fechaInicio, fechaFin, dias });
     
@@ -570,18 +603,7 @@ function obtenerRangoFechas() {
 function removerIngredientesDeGruposExcluidos() {
     let ingredientesRemovidos = 0;
     
-    // Remover de ingredientes a incluir
-    const ingredientesIncluirOriginal = [...ingredientesIncluir];
-    ingredientesIncluir = ingredientesIncluir.filter(ingrediente => {
-        if (gruposExcluidos.includes(ingrediente.grupo)) {
-            ingredientesRemovidos++;
-            console.log(`🗑️ Removiendo ingrediente "${ingrediente.text}" del grupo excluido "${ingrediente.grupo}"`);
-            return false;
-        }
-        return true;
-    });
-    
-    // Remover de ingredientes a excluir
+    // Remover de ingredientes a excluir (ya no se usa incluir)
     const ingredientesExcluirOriginal = [...ingredientesExcluir];
     ingredientesExcluir = ingredientesExcluir.filter(ingrediente => {
         if (gruposExcluidos.includes(ingrediente.grupo)) {
@@ -594,7 +616,7 @@ function removerIngredientesDeGruposExcluidos() {
     
     // Actualizar la UI si se removieron ingredientes
     if (ingredientesRemovidos > 0) {
-        actualizarListaIngredientes('incluir');
+        // actualizarListaIngredientes('incluir') ya no se usa
         actualizarListaIngredientes('excluir');
         
         Toastify({
@@ -1098,11 +1120,10 @@ function limpiarFormulario() {
         if (btnMotorRecomendacion) btnMotorRecomendacion.disabled = true;
         
         // Limpiar listas de ingredientes
-        ingredientesIncluir.length = 0;
+        // ingredientesIncluir ya no se usa
         ingredientesExcluir.length = 0;
         gruposExcluidos.length = 0;
         limpiarDropdownsIngredientes();
-        actualizarListaIngredientes('incluir');
         actualizarListaIngredientes('excluir');
         
         // Limpiar checkboxes de grupos excluidos
@@ -1995,7 +2016,7 @@ function recopilarDatosPlan(pacienteId) {
         },
         configuracion_original: configuracionOriginal, // Configuración propuesta por el sistema (antes del ajuste ML)
         ingredientes: {
-            incluir: ingredientesIncluir,
+            incluir: [], // Ya no se usa incluir ingredientes
             excluir: ingredientesExcluir,
             grupos_excluidos: gruposExcluidos
         }
@@ -2627,10 +2648,35 @@ function inicializarFechas() {
     const hoy = new Date();
     const fechaHoy = hoy.toISOString().split('T')[0];
     
+    // Calcular fecha máxima (1 semana desde hoy)
+    const fechaMaxima = new Date(hoy);
+    fechaMaxima.setDate(fechaMaxima.getDate() + 7);
+    const fechaMaximaStr = fechaMaxima.toISOString().split('T')[0];
+    
     const campoFechaInicio = document.getElementById('fecha_inicio');
+    const duracionPlan = document.getElementById('duracion_plan');
+    
     if (campoFechaInicio) {
         campoFechaInicio.value = fechaHoy;
+        campoFechaInicio.min = fechaHoy; // No permitir fechas pasadas
+        campoFechaInicio.max = fechaMaximaStr; // Máximo 1 semana desde hoy
         console.log('📅 Fecha de inicio establecida:', fechaHoy);
+        console.log('📅 Rango permitido: hoy hasta 1 semana desde hoy');
+    }
+    
+    // Actualizar cuando cambie la fecha de inicio o la duración
+    if (campoFechaInicio) {
+        campoFechaInicio.addEventListener('change', function() {
+            calcularDiasDelPlan();
+        });
+    }
+    
+    if (duracionPlan) {
+        duracionPlan.addEventListener('change', function() {
+            calcularDiasDelPlan();
+        });
+        // Calcular días iniciales
+        calcularDiasDelPlan();
     }
 }
 
@@ -2710,11 +2756,10 @@ function limpiarTodosLosCampos() {
     document.getElementById('comida_cena').checked = true;
     
     // Limpiar listas de ingredientes
-    ingredientesIncluir.length = 0;
+    // ingredientesIncluir ya no se usa
     ingredientesExcluir.length = 0;
     gruposExcluidos.length = 0;
     limpiarDropdownsIngredientes();
-    actualizarListaIngredientes('incluir');
     actualizarListaIngredientes('excluir');
     
     // Deshabilitar botones
@@ -2972,26 +3017,46 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Configurar event listeners para fechas
     const campoFechaInicio = document.getElementById('fecha_inicio');
-    const campoFechaFin = document.getElementById('fecha_fin');
+    const duracionPlan = document.getElementById('duracion_plan');
     
     if (campoFechaInicio) {
         campoFechaInicio.addEventListener('change', calcularDiasDelPlan);
     }
-    if (campoFechaFin) {
-        campoFechaFin.addEventListener('change', calcularDiasDelPlan);
+    if (duracionPlan) {
+        duracionPlan.addEventListener('change', calcularDiasDelPlan);
     }
     
-    // Configurar event listeners para grupos excluidos
+    // Configurar event listeners para grupos excluidos (máximo 2)
     const checkboxesGrupos = document.querySelectorAll('.grupos-exclusion-grid input[type="checkbox"]');
     checkboxesGrupos.forEach(checkbox => {
-        checkbox.addEventListener('change', actualizarGruposExcluidos);
+        checkbox.addEventListener('change', function() {
+            const checked = document.querySelectorAll('.grupos-exclusion-grid input[type="checkbox"]:checked');
+            if (checked.length > 2) {
+                this.checked = false;
+                alert('Solo se pueden excluir máximo 2 grupos de alimentos');
+            }
+            actualizarGruposExcluidos();
+        });
     });
     
     // Configurar event listeners para patrones de comidas
-    const checkboxesComidas = document.querySelectorAll('#comida_des, #comida_mm, #comida_alm, #comida_mt, #comida_cena');
-    checkboxesComidas.forEach(checkbox => {
-        checkbox.addEventListener('change', obtenerPatronComidas);
-    });
+    // Desayuno, almuerzo y cena siempre están marcados y no se pueden desmarcar
+    const comidaDes = document.getElementById('comida_des');
+    const comidaAlm = document.getElementById('comida_alm');
+    const comidaCena = document.getElementById('comida_cena');
+    if (comidaDes) comidaDes.checked = true;
+    if (comidaAlm) comidaAlm.checked = true;
+    if (comidaCena) comidaCena.checked = true;
+    
+    // Solo media mañana y media tarde se pueden marcar/desmarcar
+    const comidaMm = document.getElementById('comida_mm');
+    const comidaMt = document.getElementById('comida_mt');
+    if (comidaMm) {
+        comidaMm.addEventListener('change', obtenerPatronComidas);
+    }
+    if (comidaMt) {
+        comidaMt.addEventListener('change', obtenerPatronComidas);
+    }
     
     // Configurar búsqueda de pacientes
     const qPac = document.getElementById('qPac');
@@ -3025,30 +3090,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('❌ No se encontró el campo de búsqueda qPac');
     }
     
-    // Configurar búsqueda de ingredientes para incluir
-    const qIngredienteIncluir = document.getElementById('qIngredienteIncluir');
-    if (qIngredienteIncluir) {
-        console.log('✅ Campo de búsqueda de ingredientes para incluir encontrado');
-        let timeoutId;
-        qIngredienteIncluir.addEventListener('input', function() {
-            console.log('⌨️ Input detectado en ingredientes incluir:', this.value);
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(async () => {
-                const query = this.value.trim();
-                console.log('🔍 Query procesado para ingredientes incluir:', query);
-                if (query.length >= 1) {
-                    console.log('🚀 Iniciando búsqueda de ingredientes para incluir...');
-                    const sugerencias = await buscarIngredientes(query);
-                    mostrarSugerenciasIngredientes(sugerencias, 'incluir');
-                } else {
-                    console.log('📭 Query vacío, limpiando sugerencias de ingredientes incluir');
-                    limpiarDropdownsIngredientes();
-                }
-            }, 300);
-        });
-    } else {
-        console.error('❌ No se encontró el campo de búsqueda qIngredienteIncluir');
-    }
+    // Código de incluir ingredientes eliminado - ya no se usa
     
     // Configurar búsqueda de ingredientes para excluir
     const qIngredienteExcluir = document.getElementById('qIngredienteExcluir');
@@ -3075,14 +3117,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('❌ No se encontró el campo de búsqueda qIngredienteExcluir');
     }
     
-    // Configurar botones clear de ingredientes
-    const btnClearIngredienteIncluir = document.getElementById('btnClearIngredienteIncluir');
-    if (btnClearIngredienteIncluir) {
-        btnClearIngredienteIncluir.onclick = function() {
-            document.getElementById('qIngredienteIncluir').value = '';
-            limpiarDropdownsIngredientes();
-        };
-    }
+    // Botón clear de incluir ingredientes eliminado - ya no se usa
     
     const btnClearIngredienteExcluir = document.getElementById('btnClearIngredienteExcluir');
     if (btnClearIngredienteExcluir) {

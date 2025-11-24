@@ -6113,28 +6113,60 @@ def paciente_mi_progreso():
     
     paciente_id = paciente_data[0]
     
-    # Obtener historial de antropometría (últimos 12 meses)
+    # Obtener historial de antropometría (últimos 12 meses) - usar subconsulta para evitar duplicados por fecha
+    # Tomamos el registro más reciente (mayor id) para cada fecha
     historial_antropo = fetch_all("""
-        SELECT peso, talla, cc, bf_pct, TO_CHAR(fecha,'YYYY-MM-DD') AS fecha
-        FROM antropometria
-        WHERE paciente_id = %s
-        AND fecha >= CURRENT_DATE - INTERVAL '12 months'
-        ORDER BY fecha DESC
-    """, (paciente_id,))
+        SELECT a.peso, a.talla, a.cc, a.bf_pct, TO_CHAR(a.fecha,'YYYY-MM-DD') AS fecha
+        FROM antropometria a
+        INNER JOIN (
+            SELECT fecha, MAX(id) as max_id
+            FROM antropometria
+            WHERE paciente_id = %s
+            AND fecha >= CURRENT_DATE - INTERVAL '12 months'
+            GROUP BY fecha
+        ) b ON a.fecha = b.fecha AND a.id = b.max_id
+        WHERE a.paciente_id = %s
+        ORDER BY a.fecha DESC
+    """, (paciente_id, paciente_id))
     
-    # Obtener historial clínico (últimos 12 meses)
+    # Obtener historial clínico (últimos 12 meses) - usar subconsulta para evitar duplicados por fecha
+    # Tomamos el registro más reciente (mayor id) para cada fecha
     historial_clinico = fetch_all("""
-        SELECT hba1c, glucosa_ayunas, ldl, trigliceridos, TO_CHAR(fecha,'YYYY-MM-DD') AS fecha
-        FROM clinico
-        WHERE paciente_id = %s
-        AND fecha >= CURRENT_DATE - INTERVAL '12 months'
-        ORDER BY fecha DESC
-    """, (paciente_id,))
+        SELECT c.hba1c, c.glucosa_ayunas, c.ldl, c.trigliceridos, TO_CHAR(c.fecha,'YYYY-MM-DD') AS fecha
+        FROM clinico c
+        INNER JOIN (
+            SELECT fecha, MAX(id) as max_id
+            FROM clinico
+            WHERE paciente_id = %s
+            AND fecha >= CURRENT_DATE - INTERVAL '12 months'
+            GROUP BY fecha
+        ) d ON c.fecha = d.fecha AND c.id = d.max_id
+        WHERE c.paciente_id = %s
+        ORDER BY c.fecha DESC
+    """, (paciente_id, paciente_id))
+    
+    # Filtrar duplicados por fecha como medida de seguridad adicional
+    # (por si acaso la consulta SQL no los eliminó completamente)
+    fechas_vistas_antropo = set()
+    historial_antropo_filtrado = []
+    for registro in historial_antropo:
+        fecha = registro[4]  # La fecha está en el índice 4
+        if fecha not in fechas_vistas_antropo:
+            fechas_vistas_antropo.add(fecha)
+            historial_antropo_filtrado.append(registro)
+    
+    fechas_vistas_clinico = set()
+    historial_clinico_filtrado = []
+    for registro in historial_clinico:
+        fecha = registro[4]  # La fecha está en el índice 4
+        if fecha not in fechas_vistas_clinico:
+            fechas_vistas_clinico.add(fecha)
+            historial_clinico_filtrado.append(registro)
     
     return render_template("paciente/mi_progreso.html",
                          paciente_data=paciente_data,
-                         historial_antropo=historial_antropo,
-                         historial_clinico=historial_clinico)
+                         historial_antropo=historial_antropo_filtrado,
+                         historial_clinico=historial_clinico_filtrado)
 
 @app.route("/paciente/historial")
 @login_required

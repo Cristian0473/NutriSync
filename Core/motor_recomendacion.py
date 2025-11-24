@@ -2346,7 +2346,8 @@ class MotorRecomendacion:
                 # motor_ia = None  # Ya no se usa para validar combinaciones
                 
                 # Crear optimizador (sin motor_ia, usará Modelo 3 en su lugar)
-                optimizador = OptimizadorPlan(umbral_cumplimiento=0.90, max_iteraciones=20, motor_ia=None, perfil_paciente=perfil, motor_recomendacion=self)
+                # max_iteraciones reducido a 10 para evitar timeouts en producción
+                optimizador = OptimizadorPlan(umbral_cumplimiento=0.90, max_iteraciones=10, motor_ia=None, perfil_paciente=perfil, motor_recomendacion=self)
                 plan_optimizado, estadisticas = optimizador.optimizar_plan(
                     plan_semanal, 
                     metas_dict, 

@@ -22,19 +22,20 @@ class CumplimientoObjetivos:
 class OptimizadorPlan:
     """Optimizador de planes nutricionales para cumplir objetivos"""
     
-    def __init__(self, umbral_cumplimiento: float = 0.90, max_iteraciones: int = 20, motor_ia=None, perfil_paciente=None, motor_recomendacion=None):
+    def __init__(self, umbral_cumplimiento: float = 0.90, max_iteraciones: int = 10, motor_ia=None, perfil_paciente=None, motor_recomendacion=None):
         """
         Inicializa el optimizador
         
         Args:
             umbral_cumplimiento: Porcentaje mínimo de cumplimiento (0.90 = 90%)
-            max_iteraciones: Número máximo de iteraciones de optimización
+            max_iteraciones: Número máximo de iteraciones de optimización (reducido a 10 para evitar timeouts)
             motor_ia: Instancia opcional de MotorIARecomendaciones (DESACTIVADO - ya no se usa)
             perfil_paciente: Perfil del paciente para validaciones con ML
             motor_recomendacion: Instancia de MotorRecomendacion para usar Modelo 3
         """
         self.umbral_cumplimiento = umbral_cumplimiento
-        self.max_iteraciones = max_iteraciones
+        self.max_iteraciones = max_iteraciones  # Reducido a 10 para evitar timeouts
+        self.verbose_logging = False  # Control de logging verboso
         self.motor_ia = None  # Desactivado - ya no se usa ChatGPT
         self.motor_recomendacion = motor_recomendacion  # Para usar Modelo 3
         # Convertir perfil_paciente a diccionario si es un objeto
@@ -103,18 +104,18 @@ class OptimizadorPlan:
         # Calcular promedio (sin fibra para el cálculo principal)
         promedio = (porcentajes['kcal'] + porcentajes['cho'] + porcentajes['pro'] + porcentajes['fat']) / 4.0
         
-        # Considerar que cumple si está entre 83% y 100% (solo para visualización)
-        # El optimizador sigue trabajando hasta 90% como objetivo
-        # No exceder más del 100% para evitar valores demasiado altos
+        # Considerar que cumple si está entre 85% y 105% (más relajado para evitar bucles infinitos)
+        # El optimizador acepta este rango como "suficientemente bueno"
+        # No exceder más del 105% para evitar valores demasiado altos
         cumple = (
-            porcentajes['kcal'] >= 83 and
-            porcentajes['kcal'] <= 100 and
-            porcentajes['cho'] >= 83 and
-            porcentajes['cho'] <= 100 and
-            porcentajes['pro'] >= 83 and
-            porcentajes['pro'] <= 100 and
-            porcentajes['fat'] >= 83 and
-            porcentajes['fat'] <= 100
+            porcentajes['kcal'] >= 85 and
+            porcentajes['kcal'] <= 105 and
+            porcentajes['cho'] >= 85 and
+            porcentajes['cho'] <= 105 and
+            porcentajes['pro'] >= 85 and
+            porcentajes['pro'] <= 105 and
+            porcentajes['fat'] >= 85 and
+            porcentajes['fat'] <= 105
         )
         
         return CumplimientoObjetivos(
@@ -212,20 +213,37 @@ class OptimizadorPlan:
         estadisticas['cumplimiento_inicial'] = cumplimiento_promedio_inicial
         
         # Optimizar cada día
+        dias_que_cumplen = set()
         for iteracion in range(self.max_iteraciones):
             estadisticas['iteraciones'] = iteracion + 1
             mejoras_en_iteracion = 0
             
+            # Si todos los días cumplen, salir temprano
+            if len(dias_que_cumplen) >= len([k for k in plan_semanal_data.keys() if k.startswith('dia_')]):
+                if self.verbose_logging:
+                    print(f"[OK] Todos los días cumplen objetivos, terminando optimización (iteración {iteracion + 1})")
+                break
+            
             for dia_key, dia_data in plan_semanal_data.items():
                 if not dia_key.startswith('dia_'):
                     continue
+                
+                # Si este día ya cumple, saltarlo
+                if dia_key in dias_que_cumplen:
+                    continue
+                
                 cumplimiento = self.calcular_cumplimiento_dia(dia_data, metas)
                 
-                print(f"[DEBUG] DEBUG Optimizador - {dia_key}: Kcal={cumplimiento.kcal_porcentaje:.1f}%, CHO={cumplimiento.cho_porcentaje:.1f}%, PRO={cumplimiento.pro_porcentaje:.1f}%, FAT={cumplimiento.fat_porcentaje:.1f}%, Cumple={cumplimiento.cumple_objetivos}")
+                # Solo loggear en primera iteración o si hay problemas
+                if iteracion == 0 or not cumplimiento.cumple_objetivos:
+                    if self.verbose_logging:
+                        print(f"[DEBUG] Optimizador - {dia_key}: Kcal={cumplimiento.kcal_porcentaje:.1f}%, CHO={cumplimiento.cho_porcentaje:.1f}%, PRO={cumplimiento.pro_porcentaje:.1f}%, FAT={cumplimiento.fat_porcentaje:.1f}%, Cumple={cumplimiento.cumple_objetivos}")
                 
-                # Si ya cumple (entre 90% y 100%), continuar sin optimizar
+                # Si ya cumple (entre 85% y 105%), marcarlo y continuar sin optimizar
                 if cumplimiento.cumple_objetivos:
-                    print(f"[OK] {dia_key} ya cumple objetivos, saltando optimización")
+                    dias_que_cumplen.add(dia_key)
+                    if self.verbose_logging:
+                        print(f"[OK] {dia_key} ya cumple objetivos, saltando optimización")
                     continue
                 
                 # Si excede (más del 100%), reducir valores primero
@@ -254,7 +272,8 @@ class OptimizadorPlan:
                     cumplimiento = self.calcular_cumplimiento_dia(dia_data, metas)
                 
                 # Intentar optimizar este día
-                print(f"[OPT] Intentando optimizar {dia_key}...")
+                if self.verbose_logging:
+                    print(f"[OPT] Intentando optimizar {dia_key}...")
                 dia_mejorado = self._optimizar_dia(
                     dia_data, 
                     cumplimiento, 
@@ -268,30 +287,37 @@ class OptimizadorPlan:
                 cumplimiento_mejorado = self.calcular_cumplimiento_dia(dia_mejorado, metas)
                 
                 # Considerar mejora si:
-                # 1. El promedio mejoró, O
-                # 2. Al menos un macronutriente que estaba bajo ahora está mejor
+                # 1. El promedio mejoró al menos 0.5%, O
+                # 2. Al menos un macronutriente que estaba bajo ahora está mejor (mejora > 2%)
                 mejora_detectada = False
-                if cumplimiento_mejorado.promedio_cumplimiento > cumplimiento.promedio_cumplimiento:
+                mejora_promedio = cumplimiento_mejorado.promedio_cumplimiento - cumplimiento.promedio_cumplimiento
+                
+                if mejora_promedio > 0.5:  # Mejora significativa del promedio
                     mejora_detectada = True
                 else:
-                    # Verificar si algún macronutriente bajo mejoró significativamente
+                    # Verificar si algún macronutriente bajo mejoró significativamente (mínimo 2%)
                     mejoras_individuales = [
-                        (cumplimiento.kcal_porcentaje < 90 and cumplimiento_mejorado.kcal_porcentaje > cumplimiento.kcal_porcentaje + 1),
-                        (cumplimiento.fat_porcentaje < 90 and cumplimiento_mejorado.fat_porcentaje > cumplimiento.fat_porcentaje + 1),
-                        (cumplimiento.pro_porcentaje < 90 and cumplimiento_mejorado.pro_porcentaje > cumplimiento.pro_porcentaje + 1),
-                        (cumplimiento.cho_porcentaje < 90 and cumplimiento_mejorado.cho_porcentaje > cumplimiento.cho_porcentaje + 1)
+                        (cumplimiento.kcal_porcentaje < 85 and cumplimiento_mejorado.kcal_porcentaje > cumplimiento.kcal_porcentaje + 2),
+                        (cumplimiento.fat_porcentaje < 85 and cumplimiento_mejorado.fat_porcentaje > cumplimiento.fat_porcentaje + 2),
+                        (cumplimiento.pro_porcentaje < 85 and cumplimiento_mejorado.pro_porcentaje > cumplimiento.pro_porcentaje + 2),
+                        (cumplimiento.cho_porcentaje < 85 and cumplimiento_mejorado.cho_porcentaje > cumplimiento.cho_porcentaje + 2)
                     ]
                     if any(mejoras_individuales):
                         mejora_detectada = True
                 
                 if mejora_detectada:
-                    # Verificar que no haya excedido el 100% después de la mejora
+                    # Verificar que no haya excedido el 105% después de la mejora
                     # Si excedió, reducir excesos antes de guardar
-                    if cumplimiento_mejorado.kcal_porcentaje > 100 or cumplimiento_mejorado.cho_porcentaje > 100 or \
-                       cumplimiento_mejorado.pro_porcentaje > 100 or cumplimiento_mejorado.fat_porcentaje > 100:
-                        print(f"  [WARN]  {dia_key} excedió después de optimizar, reduciendo excesos...")
+                    if cumplimiento_mejorado.kcal_porcentaje > 105 or cumplimiento_mejorado.cho_porcentaje > 105 or \
+                       cumplimiento_mejorado.pro_porcentaje > 105 or cumplimiento_mejorado.fat_porcentaje > 105:
+                        if self.verbose_logging:
+                            print(f"  [WARN]  {dia_key} excedió después de optimizar, reduciendo excesos...")
                         dia_mejorado = self._reducir_excesos_dia(dia_mejorado, cumplimiento_mejorado, metas)
                         cumplimiento_mejorado = self.calcular_cumplimiento_dia(dia_mejorado, metas)
+                    
+                    # Si ahora cumple, agregarlo a la lista
+                    if cumplimiento_mejorado.cumple_objetivos:
+                        dias_que_cumplen.add(dia_key)
                     
                     plan_semanal_data[dia_key] = dia_mejorado
                     # Actualizar también en plan_optimizado si tiene la estructura con 'plan_semanal'
@@ -302,14 +328,15 @@ class OptimizadorPlan:
                     estadisticas['mejoras_aplicadas'].append({
                         'iteracion': iteracion + 1,
                         'dia': dia_key,
-                        'mejora': cumplimiento_mejorado.promedio_cumplimiento - cumplimiento.promedio_cumplimiento
+                        'mejora': mejora_promedio
                     })
-                    print(f"[OK] {dia_key} mejorado: {cumplimiento.promedio_cumplimiento:.1f}% → {cumplimiento_mejorado.promedio_cumplimiento:.1f}%")
-                else:
-                    print(f"[WARN] {dia_key} no mejoró significativamente")
+                    if self.verbose_logging:
+                        print(f"[OK] {dia_key} mejorado: {cumplimiento.promedio_cumplimiento:.1f}% → {cumplimiento_mejorado.promedio_cumplimiento:.1f}%")
             
             # Si no hubo mejoras en esta iteración, detener
             if mejoras_en_iteracion == 0:
+                if self.verbose_logging:
+                    print(f"[OK] No hubo mejoras en iteración {iteracion + 1}, terminando optimización")
                 break
         
         # Calcular cumplimiento final
@@ -351,29 +378,33 @@ class OptimizadorPlan:
         """
         dia_optimizado = copy.deepcopy(dia)
         
-        # Identificar qué macronutrientes faltan (solo si están por debajo de 90%)
-        # Calcular déficit basado en llegar al 90% como mínimo
-        porcentaje_objetivo = 90.0  # Objetivo mínimo de cumplimiento
+        # Identificar qué macronutrientes faltan (solo si están por debajo de 85%)
+        # Calcular déficit basado en llegar al 85% como mínimo (más relajado)
+        porcentaje_objetivo = 85.0  # Objetivo mínimo de cumplimiento (reducido de 90% para evitar bucles)
         
         deficit_kcal = 0
         if cumplimiento.kcal_porcentaje < porcentaje_objetivo:
             deficit_kcal = metas.get('calorias_diarias', 2000) * ((porcentaje_objetivo - cumplimiento.kcal_porcentaje) / 100)
-            print(f"  [INFO] Déficit Kcal: {deficit_kcal:.1f} kcal (actual: {cumplimiento.kcal_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
+            if self.verbose_logging:
+                print(f"  [INFO] Déficit Kcal: {deficit_kcal:.1f} kcal (actual: {cumplimiento.kcal_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
         
         deficit_cho = 0
         if cumplimiento.cho_porcentaje < porcentaje_objetivo:
             deficit_cho = metas.get('carbohidratos_g', 250) * ((porcentaje_objetivo - cumplimiento.cho_porcentaje) / 100)
-            print(f"  [INFO] Déficit CHO: {deficit_cho:.1f} g (actual: {cumplimiento.cho_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
+            if self.verbose_logging:
+                print(f"  [INFO] Déficit CHO: {deficit_cho:.1f} g (actual: {cumplimiento.cho_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
         
         deficit_pro = 0
         if cumplimiento.pro_porcentaje < porcentaje_objetivo:
             deficit_pro = metas.get('proteinas_g', 100) * ((porcentaje_objetivo - cumplimiento.pro_porcentaje) / 100)
-            print(f"  [INFO] Déficit PRO: {deficit_pro:.1f} g (actual: {cumplimiento.pro_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
+            if self.verbose_logging:
+                print(f"  [INFO] Déficit PRO: {deficit_pro:.1f} g (actual: {cumplimiento.pro_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
         
         deficit_fat = 0
         if cumplimiento.fat_porcentaje < porcentaje_objetivo:
             deficit_fat = metas.get('grasas_g', 65) * ((porcentaje_objetivo - cumplimiento.fat_porcentaje) / 100)
-            print(f"  [INFO] Déficit FAT: {deficit_fat:.1f} g (actual: {cumplimiento.fat_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
+            if self.verbose_logging:
+                print(f"  [INFO] Déficit FAT: {deficit_fat:.1f} g (actual: {cumplimiento.fat_porcentaje:.1f}%, objetivo: {porcentaje_objetivo}%)")
         
         # Priorizar ajustes: primero calorías (si están muy bajas), luego grasas, proteínas, carbohidratos
         # Si las calorías están muy bajas (< 80%), priorizar ajustarlas primero
@@ -405,8 +436,8 @@ class OptimizadorPlan:
             elif macronutriente == 'kcal':
                 porcentaje_actual = cumplimiento.kcal_porcentaje
             
-            # Solo ajustar si hay déficit significativo (está por debajo de 90%) Y no excede el 100%
-            if deficit > 0.1 and porcentaje_actual < 100 and porcentaje_actual < porcentaje_objetivo:
+            # Solo ajustar si hay déficit significativo (está por debajo de 85%) Y no excede el 105%
+            if deficit > 0.1 and porcentaje_actual < 105 and porcentaje_actual < porcentaje_objetivo:
                 # Priorizar ajustar en comidas principales (almuerzo y cena) para mantener desayunos ligeros
                 # Solo ajustar en desayuno si el déficit es muy grande
                 comidas_para_ajustar = ['alm', 'cena']  # Priorizar comidas principales
@@ -471,8 +502,8 @@ class OptimizadorPlan:
                             if abs(deficit_antes - deficit) < 1.0:
                                 continue
                             
-                            # Detener si ya se cumplió el objetivo (>= 90%) o se excedió (>= 100%)
-                            if deficit <= 0.1 or porcentaje_actual >= porcentaje_objetivo or porcentaje_actual >= 100:
+                            # Detener si ya se cumplió el objetivo (>= 85%) o se excedió (>= 105%)
+                            if deficit <= 0.1 or porcentaje_actual >= porcentaje_objetivo or porcentaje_actual >= 105:
                                 break
         
         return dia_optimizado
@@ -504,7 +535,8 @@ class OptimizadorPlan:
         factor_reduccion_pro = 100.0 / max(100.0, cumplimiento.pro_porcentaje) if cumplimiento.pro_porcentaje > 100 else 1.0
         factor_reduccion_fat = 100.0 / max(100.0, cumplimiento.fat_porcentaje) if cumplimiento.fat_porcentaje > 100 else 1.0
         
-        print(f"   [AJUSTE] Reduciendo excesos: Kcal {cumplimiento.kcal_porcentaje:.1f}% (factor: {factor_reduccion_kcal:.3f}), CHO {cumplimiento.cho_porcentaje:.1f}% (factor: {factor_reduccion_cho:.3f}), PRO {cumplimiento.pro_porcentaje:.1f}% (factor: {factor_reduccion_pro:.3f}), FAT {cumplimiento.fat_porcentaje:.1f}% (factor: {factor_reduccion_fat:.3f})")
+        if self.verbose_logging:
+            print(f"   [AJUSTE] Reduciendo excesos: Kcal {cumplimiento.kcal_porcentaje:.1f}% (factor: {factor_reduccion_kcal:.3f}), CHO {cumplimiento.cho_porcentaje:.1f}% (factor: {factor_reduccion_cho:.3f}), PRO {cumplimiento.pro_porcentaje:.1f}% (factor: {factor_reduccion_pro:.3f}), FAT {cumplimiento.fat_porcentaje:.1f}% (factor: {factor_reduccion_fat:.3f})")
         
         # Aplicar reducción a todas las comidas
         for tiempo in ['des', 'mm', 'alm', 'mt', 'cena']:
@@ -1244,9 +1276,7 @@ class OptimizadorPlan:
                                     print(f"      [OK] Comida corregida: {len(nuevos_alimentos)} alimentos (removidos: {sum(nutrientes_removidos.values()):.1f} nutrientes, agregados: {sum(nutrientes_agregados.values()):.1f} nutrientes)")
                                 else:
                                     print(f"      [WARN]  No se pudo corregir: lista de alimentos vacía")
-                            else:
-                                if validacion.get('sugerencias'):
-                                    print(f"   Sugerencias: {', '.join(validacion['sugerencias'][:2])}")
+                            # Nota: validacion ya no se usa aquí, se usa score_combinacion directamente
                         else:
                             print(f"[OK] Modelo 3 aprobó: {dia_key} - {tiempo} (score={score_combinacion:.2f})")
                     except Exception as e:

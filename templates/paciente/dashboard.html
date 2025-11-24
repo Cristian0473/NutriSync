@@ -6,7 +6,7 @@
 {% block content %}
 <div class="welcome-card content-card">
   <div class="card-body">
-    <h2>Bienvenido, {{ paciente_nombre }}</h2>
+    <h2>Bienvenido(a), {{ paciente_nombre }}</h2>
     <p>Aquí puedes ver un resumen de tu información y acceder a tu plan nutricional personalizado.</p>
   </div>
 </div>
@@ -47,6 +47,17 @@
         <p><strong>Fecha de inicio:</strong> {{ plan_activo.fecha_inicio }}</p>
         <p><strong>Fecha de fin:</strong> {{ plan_activo.fecha_fin }}</p>
         <p><strong>Duración:</strong> {{ plan_activo.duracion_dias }} días</p>
+        {% if plan_activo.nutricionista %}
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 4px 0; color: #64748b; font-size: 13px;"><strong>Nutricionista:</strong> {{ plan_activo.nutricionista.nombre }}</p>
+          {% if plan_activo.nutricionista.colegiatura %}
+          <p style="margin: 4px 0; color: #64748b; font-size: 13px;"><strong>Colegiatura:</strong> {{ plan_activo.nutricionista.colegiatura }}</p>
+          {% endif %}
+          {% if plan_activo.nutricionista.fecha_creacion %}
+          <p style="margin: 4px 0; color: #64748b; font-size: 13px;"><strong>Generado el:</strong> {{ plan_activo.nutricionista.fecha_creacion }}</p>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
       <div class="plan-macros">
         <div class="macro-item">

@@ -1,0 +1,613 @@
+{% extends "nutricionista/base_nutricionista.html" %}
+{% set page_title = "NutriSync · Nutricionistas" %}
+{% set header_title = "Nutricionistas" %}
+{% set active_nav = "nutricionistas" %}
+
+{% block content %}
+<div class="toolbar" style="justify-content: space-between; gap:10px;">
+    <button id="btnNuevoNutri" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuevo nutricionista
+    </button>
+    
+    <!-- 🔎 Buscador por nombres -->
+    <div class="searchbox" style="min-width:360px;">
+        <i class="fas fa-user-nurse"></i>
+        <input id="buscarNutricionistaInput" type="text" placeholder="Buscar nutricionista por nombre...">
+        <button id="btnClearNutricionista" class="clear" title="Limpiar">×</button>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="fas fa-user-nurse"></i> Lista de nutricionistas</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Email (usuario)</th>
+                        <th>Nombres</th>
+                        <th>Apellidos</th>
+                        <th>Sexo</th>
+                        <th>Colegiatura</th>
+                        <th>Especialidad</th>
+                        <th>Teléfono</th>
+                        <th>Activo</th>
+                        <th style="width:200px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for n in rows %}
+                    <tr>
+                        <td>{{ n.email }}</td>
+                        <td>{{ n.nombres or '' }}</td>
+                        <td>{{ n.apellidos or '' }}</td>
+                        <td>{{ n.sexo or '' }}</td>
+                        <td>{{ n.colegiatura or '' }}</td>
+                        <td>{{ n.especialidad or '' }}</td>
+                        <td>{{ n.telefono or '' }}</td>
+                        <td>
+                            {% if n.perfil_activo %}
+                                <span class="badge success">Sí</span>
+                            {% else %}
+                                <span class="badge">No</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions">
+                            <button class="btn btn-sm js-edit"
+                                data-uid="{{ n.uid }}"
+                                data-email="{{ n.email }}"
+                                data-estado="{{ n.estado }}"
+                                data-mfa="{{ '1' if n.mfa else '0' }}"
+                                data-nombres="{{ n.nombres or '' }}"
+                                data-apellidos="{{ n.apellidos or '' }}"
+                                data-sexo="{{ n.sexo or '' }}"
+                                data-colegiatura="{{ n.colegiatura or '' }}"
+                                data-especialidad="{{ n.especialidad or '' }}"
+                                data-telefono="{{ n.telefono or '' }}">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+
+                            <button type="button" class="btn btn-sm btn-danger js-confirmar-borrar-nutri"
+                                    data-uid="{{ n.uid }}"
+                                    data-email="{{ n.email }}">
+                                <i class="fas fa-trash"></i> Borrar
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="empty">No hay nutricionistas registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL CONFIRMACIÓN ELIMINAR ===== -->
+<div class="modal" id="modalConfirmarBorrarNutri" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalConfirmarBorrarNutri"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h3>
+      <button class="modal-close js-close-modal" data-target="#modalConfirmarBorrarNutri" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de eliminar al nutricionista <strong id="emailNutricionistaBorrar"></strong>?</p>
+      <p class="muted" style="margin-top: 10px; color: #6b7280;">Esto eliminará su usuario y perfil permanentemente.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn js-close-modal" data-target="#modalConfirmarBorrarNutri">Cancelar</button>
+      <form id="formConfirmarBorrarNutri" method="post" style="display:inline-block">
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash"></i> Sí, eliminar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal" id="modalNutri" aria-hidden="true">
+    <div class="modal-backdrop js-close-modal" data-target="#modalNutri"></div>
+
+    <div class="modal-dialog modal-md">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-md"></i> <span id="nutri_titulo">Nuevo nutricionista</span></h3>
+            <button class="modal-close js-close-modal" data-target="#modalNutri" aria-label="Cerrar">×</button>
+        </div>
+
+        <form id="formNutri" method="post" action="{{ url_for('admin_nutri_nuevo') }}">
+            <div class="modal-body">
+                <div class="form-grid two-cols">
+                    <!-- Izquierda -->
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Email</label>
+                            <input class="input" type="email" id="n_email" name="email" required>
+                        </div>
+
+                        <div class="form-row">
+                            <label>Contraseña (opcional)</label>
+                            <input class="input" type="password" id="n_pwd" name="password" placeholder="(vacío = no cambiar)">
+                        </div>
+
+                        <div class="form-row">
+                            <label>Estado</label>
+                            <select class="input" id="n_estado" name="estado">
+                                <option value="activo">activo</option>
+                                <option value="bloqueado">bloqueado</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row inline">
+                            <label class="checkbox">
+                                Requiere MFA
+                                <input type="checkbox" id="n_mfa" name="mfa" checked>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Derecha -->
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Nombres</label>
+                            <input class="input" type="text" id="n_nombres" name="nombres" maxlength="80">
+                        </div>
+
+                        <div class="form-row">
+                            <label>Apellidos</label>
+                            <input class="input" type="text" id="n_apellidos" name="apellidos" maxlength="80">
+                        </div>
+
+                        <div class="form-row">
+                            <label>Sexo</label>
+                            <select class="input" id="n_sexo" name="sexo">
+                                <option value="">(sin especificar)</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                                <option value="O">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <label>Colegiatura</label>
+                            <input class="input" type="text" id="n_colegiatura" name="colegiatura" maxlength="40">
+                        </div>
+
+                        <div class="form-row">
+                            <label>Especialidad</label>
+                            <input class="input" type="text" id="n_especialidad" name="especialidad" maxlength="80">
+                        </div>
+
+                        <div class="form-row">
+                            <label>Teléfono</label>
+                            <input class="input" type="text" id="n_telefono" name="telefono" maxlength="20">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn js-close-modal" data-target="#modalNutri">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Dependencies -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
+
+<style>
+  /* ===== ESTILOS MODERNOS PARA NUTRICIONISTAS ===== */
+  
+  /* Tabla compacta y moderna */
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+  }
+  
+  .tbl th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .tbl td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  
+  .tbl tbody tr:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  /* Badges modernos */
+  .badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .badge.success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  }
+  
+  .badge:not(.success) {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+    box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3);
+  }
+  
+  /* Botones de acción modernos */
+  .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .actions .btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .actions .btn-sm {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .actions .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  .actions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  }
+  
+  .actions .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+  
+  .actions .btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  }
+  
+  /* Modal mejorado */
+  .modal-dialog {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .modal-dialog.modal-md {
+    max-width: 600px;
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .modal-body {
+    padding: 24px;
+  }
+  
+  /* Formulario mejorado */
+  .form-grid {
+    display: grid;
+    gap: 20px;
+  }
+  
+  .form-grid.two-cols {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .form-row {
+    margin-bottom: 20px;
+  }
+  
+  .form-row label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .form-row input,
+  .form-row select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+  }
+  
+  .form-row select {
+    min-height: 48px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+  
+  .form-row input:focus,
+  .form-row select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .form-row.inline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .form-row.inline label.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    cursor: pointer;
+  }
+  
+  .form-row.inline input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+  }
+  
+  .modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  
+  .modal-footer .btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .modal-footer .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+  
+  .modal-footer .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .tbl {
+      font-size: 12px;
+    }
+    
+    .tbl th, .tbl td {
+      padding: 8px 6px;
+    }
+    
+    .actions {
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .modal-dialog {
+      margin: 20px;
+      width: calc(100% - 40px);
+    }
+    
+    .form-grid.two-cols {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+// ====== BUSCADOR MEJORADO ======
+$(document).ready(function () {
+    // Configurar el input de búsqueda
+    const buscarInput = document.getElementById('buscarNutricionistaInput');
+    const btnClear = document.getElementById('btnClearNutricionista');
+    
+    let searchTimeout;
+    
+    buscarInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length >= 2) {
+            searchTimeout = setTimeout(() => {
+                // Filtrar la tabla existente
+                filtrarTablaNutricionistas(query);
+            }, 300);
+        } else if (query.length === 0) {
+            // Mostrar todos los nutricionistas
+            mostrarTodosNutricionistas();
+        }
+        
+        btnClear.style.visibility = query ? 'visible' : 'hidden';
+    });
+    
+    btnClear.addEventListener('click', function() {
+        buscarInput.value = '';
+        mostrarTodosNutricionistas();
+        btnClear.style.visibility = 'hidden';
+        buscarInput.focus();
+    });
+    
+    btnClear.style.visibility = 'hidden';
+});
+
+// Función para filtrar la tabla de nutricionistas
+function filtrarTablaNutricionistas(query) {
+    const filas = document.querySelectorAll('tbody tr');
+    let encontrados = 0;
+    
+    filas.forEach(fila => {
+        const texto = fila.textContent.toLowerCase();
+        if (texto.includes(query.toLowerCase())) {
+            fila.style.display = '';
+            encontrados++;
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+    
+    // Mostrar mensaje si no hay resultados
+    const tbody = document.querySelector('tbody');
+    let mensajeNoEncontrado = tbody.querySelector('.no-encontrado');
+    
+    if (encontrados === 0) {
+        if (!mensajeNoEncontrado) {
+            mensajeNoEncontrado = document.createElement('tr');
+            mensajeNoEncontrado.className = 'no-encontrado';
+            mensajeNoEncontrado.innerHTML = '<td colspan="9" class="empty">No se encontraron nutricionistas que coincidan con la búsqueda.</td>';
+            tbody.appendChild(mensajeNoEncontrado);
+        }
+        mensajeNoEncontrado.style.display = '';
+    } else {
+        if (mensajeNoEncontrado) {
+            mensajeNoEncontrado.style.display = 'none';
+        }
+    }
+}
+
+// Función para mostrar todos los nutricionistas
+function mostrarTodosNutricionistas() {
+    const filas = document.querySelectorAll('tbody tr');
+    filas.forEach(fila => {
+        fila.style.display = '';
+    });
+    
+    const mensajeNoEncontrado = document.querySelector('.no-encontrado');
+    if (mensajeNoEncontrado) {
+        mensajeNoEncontrado.style.display = 'none';
+    }
+}
+
+const openModal = sel => document.querySelector(sel).classList.add('open');
+const closeModal = sel => document.querySelector(sel).classList.remove('open');
+document.querySelectorAll('.js-close-modal').forEach(b =>
+    b.addEventListener('click', () => closeModal(b.dataset.target))
+);
+
+// Nuevo
+document.getElementById('btnNuevoNutri')?.addEventListener('click', () => {
+    const f = document.getElementById('formNutri');
+    f.action = "{{ url_for('admin_nutri_nuevo') }}";
+    document.getElementById('nutri_titulo').innerText = "Nuevo nutricionista";
+    ['n_email','n_pwd','n_nombres','n_apellidos','n_sexo','n_colegiatura','n_especialidad','n_telefono']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+    document.getElementById('n_estado').value = "activo";
+    document.getElementById('n_mfa').checked = true;
+    openModal('#modalNutri');
+});
+
+// Editar
+document.querySelectorAll('.js-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const uid = btn.dataset.uid;
+        const f = document.getElementById('formNutri');
+        f.action = "{{ url_for('admin_nutri_editar', uid=0) }}".replace('/0', '/' + uid);
+
+        document.getElementById('nutri_titulo').innerText = "Editar nutricionista";
+        document.getElementById('n_email').value = btn.dataset.email || "";
+        document.getElementById('n_pwd').value = "";
+        document.getElementById('n_estado').value = btn.dataset.estado || "activo";
+        document.getElementById('n_mfa').checked = (btn.dataset.mfa === '1');
+
+        document.getElementById('n_nombres').value = btn.dataset.nombres || "";
+        document.getElementById('n_apellidos').value = btn.dataset.apellidos || "";
+        document.getElementById('n_sexo').value = btn.dataset.sexo || "";
+        document.getElementById('n_colegiatura').value = btn.dataset.colegiatura || "";
+        document.getElementById('n_especialidad').value = btn.dataset.especialidad || "";
+        document.getElementById('n_telefono').value = btn.dataset.telefono || "";
+        openModal('#modalNutri');
+    });
+});
+
+// Borrar con modal de confirmación
+document.querySelectorAll('.js-confirmar-borrar-nutri').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const uid = btn.dataset.uid;
+        const email = btn.dataset.email;
+        
+        // Configurar el modal
+        document.getElementById('emailNutricionistaBorrar').textContent = email;
+        document.getElementById('formConfirmarBorrarNutri').action = `/admin/nutricionistas/${uid}/borrar`;
+        
+        // Mostrar el modal
+        document.querySelector('#modalConfirmarBorrarNutri').classList.add('open');
+    });
+});
+</script>
+{% endblock %}

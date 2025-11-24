@@ -24,6 +24,43 @@
       </div>
     </div>
 
+    <!-- Información del Nutricionista -->
+    {% if nutricionista_info %}
+    <div class="nutritionist-info-section">
+      <h4><i class="fas fa-user-md"></i> Información del Nutricionista</h4>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Nombre:</span>
+          <span class="info-value">{{ nutricionista_info.nombre }}</span>
+        </div>
+        {% if nutricionista_info.colegiatura %}
+        <div class="info-item">
+          <span class="info-label">Colegiatura:</span>
+          <span class="info-value">{{ nutricionista_info.colegiatura }}</span>
+        </div>
+        {% endif %}
+        {% if nutricionista_info.especialidad %}
+        <div class="info-item">
+          <span class="info-label">Especialidad:</span>
+          <span class="info-value">{{ nutricionista_info.especialidad }}</span>
+        </div>
+        {% endif %}
+        {% if nutricionista_info.email %}
+        <div class="info-item">
+          <span class="info-label">Email:</span>
+          <span class="info-value">{{ nutricionista_info.email }}</span>
+        </div>
+        {% endif %}
+        {% if nutricionista_info.fecha_creacion %}
+        <div class="info-item">
+          <span class="info-label">Plan generado el:</span>
+          <span class="info-value">{{ nutricionista_info.fecha_creacion }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Metas Nutricionales -->
     {% if metas_nutricionales %}
     <div class="metas-section">
@@ -316,6 +353,7 @@
 
 <style>
 .patient-info-section,
+.nutritionist-info-section,
 .metas-section,
 .comidas-section {
   margin-bottom: 32px;
@@ -323,13 +361,20 @@
   border-bottom: 2px solid #e5e7eb;
 }
 
+.nutritionist-info-section {
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+}
+
 .patient-info-section:last-child,
+.nutritionist-info-section:last-child,
 .metas-section:last-child,
 .comidas-section:last-child {
   border-bottom: none;
 }
 
 .patient-info-section h4,
+.nutritionist-info-section h4,
 .metas-section h4,
 .comidas-section h4 {
   margin: 0 0 20px 0;
@@ -342,6 +387,7 @@
 }
 
 .patient-info-section h4 i,
+.nutritionist-info-section h4 i,
 .metas-section h4 i,
 .comidas-section h4 i {
   color: var(--primary);
@@ -650,6 +696,7 @@
   .comidas-section,
   .schedule-grid-wrapper,
   .patient-info-section,
+  .nutritionist-info-section,
   .metas-section {
     margin-left: 0 !important;
     padding-left: 0 !important;
@@ -727,8 +774,25 @@
     border-radius: 8px;
     page-break-inside: avoid;
   }
-  
+
   .patient-info-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 14pt;
+    color: #1f2937;
+    border-bottom: 2px solid #10b981;
+    padding-bottom: 5px;
+  }
+
+  /* Información del nutricionista */
+  .nutritionist-info-section {
+    margin-bottom: 30px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    page-break-inside: avoid;
+  }
+
+  .nutritionist-info-section h4 {
     margin: 0 0 10px 0;
     font-size: 14pt;
     color: #1f2937;

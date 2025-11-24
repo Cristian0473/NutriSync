@@ -1,0 +1,233 @@
+{% extends "nutricionista/base_nutricionista.html" %}
+{% set page_title = "NutriSync · Pre-registro (DNI)" %}
+{% set header_title = "Pre-registro (DNI)" %}
+{% set active_nav = "preregistro" %}
+
+{% block content %}
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-id-card"></i> Nuevo pre-registro</h3>
+  </div>
+  <div class="card-body">
+    
+
+    <form method="post" action="{{ url_for('admin_preregistro') }}">
+      <div class="form-grid">
+        <div class="form-row">
+          <label>DNI
+            <input type="text" name="dni" maxlength="8" required/>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Nombres
+            <input type="text" name="nombres" required/>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Apellidos
+            <input type="text" name="apellidos" required/>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Teléfono
+            <input type="text" name="telefono"/>
+          </label>
+        </div>
+        <div class="form-row full">
+          <label>Email
+            <input type="email" name="email"/>
+          </label>
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:8px">
+        <button class="btn btn-primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="content-card" style="margin-top:16px">
+  <div class="card-header">
+    <h3><i class="fas fa-list"></i> Listado 
+      {% if total > 0 %}
+      <span class="muted" style="font-size:14px; font-weight:normal;">({{ total }} registro{{ 's' if total != 1 else '' }})</span>
+      {% endif %}
+    </h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>DNI</th>
+            <th>Paciente</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Estado</th>
+            <th>Actualizado</th>
+            <th style="width:220px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in filas %}
+          <tr>
+            <td>{{ r.dni }}</td>
+            <td>{{ r.nombres }} {{ r.apellidos }}</td>
+            <td>{{ r.telefono }}</td>
+            <td>{{ r.email }}</td>
+            <td><span class="badge {{ 'ok' if r.estado=='activado' else 'warn' }}">{{ r.estado }}</span></td>
+            <td>{{ r.actualizado }}</td>
+            <td class="actions">
+              <form method="post" action="{{ url_for('admin_preregistro_token', dni=r.dni) }}" style="display:inline-block">
+                <button class="btn btn-sm" type="submit">
+                  <i class="fas fa-link"></i> Generar token
+                </button>
+              </form>
+              {% if not r.tiene_paciente %}
+              <button type="button" class="btn btn-sm btn-danger js-confirmar-borrar-preregistro"
+                      data-dni="{{ r.dni }}"
+                      data-nombre="{{ r.nombres }} {{ r.apellidos }}">
+                <i class="fas fa-trash"></i> Eliminar
+              </button>
+              {% else %}
+              <span class="muted" style="font-size:12px; font-style:italic;" title="No se puede eliminar: ya existe un paciente con este DNI">
+                <i class="fas fa-lock"></i> Registrado
+              </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty">Sin registros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    {% if total_pages > 1 %}
+    <div class="pagination" style="margin-top:20px; display:flex; justify-content:center; gap:8px;">
+      {% if page > 1 %}
+      <a href="?page={{ page - 1 }}" class="btn btn-sm">
+        <i class="fas fa-chevron-left"></i> Anterior
+      </a>
+      {% endif %}
+      
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+        <span class="btn btn-sm btn-primary">{{ p }}</span>
+        {% elif p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+        <a href="?page={{ p }}" class="btn btn-sm">{{ p }}</a>
+        {% elif p == page - 2 or p == page + 2 %}
+        <span class="btn btn-sm" style="border:none; background:transparent;">...</span>
+        {% endif %}
+      {% endfor %}
+      
+      {% if page < total_pages %}
+      <a href="?page={{ page + 1 }}" class="btn btn-sm">
+        Siguiente <i class="fas fa-chevron-right"></i>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ===== MODAL CONFIRMACIÓN ELIMINAR ===== -->
+<div class="modal" id="modalConfirmarBorrarPreregistro" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalConfirmarBorrarPreregistro"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h3>
+      <button class="modal-close js-close-modal" data-target="#modalConfirmarBorrarPreregistro" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de eliminar el pre-registro de <strong id="nombrePreregistroBorrar"></strong> (DNI: <strong id="dniPreregistroBorrar"></strong>)?</p>
+      <p class="muted" style="margin-top: 10px; color: #6b7280;">Esto eliminará el pre-registro permanentemente. No se puede eliminar si ya existe un paciente con ese DNI.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn js-close-modal" data-target="#modalConfirmarBorrarPreregistro">Cancelar</button>
+      <form id="formConfirmarBorrarPreregistro" method="post" style="display:inline-block">
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash"></i> Sí, eliminar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .pagination .btn {
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: #64748b;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .pagination .btn:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+  }
+  
+  .pagination .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  .pagination .btn-sm {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  .muted {
+    color: #6b7280;
+    font-weight: normal;
+  }
+</style>
+
+<script>
+  // ====== Manejar modal de confirmación para eliminar ======
+  document.querySelectorAll('.js-confirmar-borrar-preregistro').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dni = btn.dataset.dni;
+      const nombre = btn.dataset.nombre;
+      
+      // Configurar el modal
+      document.getElementById('dniPreregistroBorrar').textContent = dni;
+      document.getElementById('nombrePreregistroBorrar').textContent = nombre || 'N/A';
+      const form = document.getElementById('formConfirmarBorrarPreregistro');
+      form.action = `/admin/pre-registro/${dni}/borrar`;
+      
+      // Mostrar el modal
+      document.querySelector('#modalConfirmarBorrarPreregistro').classList.add('open');
+    });
+  });
+
+  // ====== Util modales ======
+  const closeModal = sel => document.querySelector(sel).classList.remove('open');
+  document.querySelectorAll('.js-close-modal').forEach(b => {
+    b.addEventListener('click', () => closeModal(b.dataset.target));
+  });
+</script>
+
+{% endblock %}

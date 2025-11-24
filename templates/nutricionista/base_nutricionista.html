@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ page_title or "NutriSync · Nutricionista" }}</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  <script>
+    // Aplicar estado colapsado INMEDIATAMENTE para evitar flash
+    (function() {
+      try {
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const isMobile = window.innerWidth <= 768;
+        
+        if (isCollapsed && !isMobile) {
+          // Crear y aplicar estilos críticos antes de renderizar
+          const style = document.createElement('style');
+          style.id = 'sidebar-inline-state';
+          style.textContent = `
+            #sidebar { width: 70px !important; }
+            .main { margin-left: 70px !important; width: calc(100% - 70px) !important; }
+            #sidebar .brand-text { display: none !important; }
+            #sidebar .brand { justify-content: center !important; }
+            #sidebar .brand-icon { margin: 0 auto !important; }
+            #sidebar .nav-title { display: none !important; }
+            #sidebar .nav-item span { display: none !important; }
+            #sidebar .nav-item { justify-content: center !important; padding: 12px 8px !important; }
+          `;
+          document.head.appendChild(style);
+        }
+      } catch(e) {
+        // Silenciar errores si localStorage no está disponible
+      }
+    })();
+  </script>
+</head>
+
+
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon"><i class="fas fa-apple-alt"></i></div>
+      <div class="brand-text">Nutri<span>Sync</span></div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item {{ 'is-active' if active_nav=='home' else '' }}" href="{{ url_for('nutricionista_home') }}">
+        <i class="fas fa-chart-line"></i><span>Dashboard</span>
+      </a>
+      
+      <div class="nav-title">Mantenimientos</div>
+      <a class="nav-item {{ 'is-active' if active_nav=='prereg' else '' }}" href="{{ url_for('admin_preregistro') }}">
+        <i class="fas fa-id-card"></i><span>Pre-registro (DNI)</span>
+      </a>
+      <a class="nav-item {{ 'is-active' if active_nav=='tokens' else '' }}" href="{{ url_for('admin_activaciones') }}">
+        <i class="fas fa-link"></i><span>Tokens de activación</span>
+      </a>
+      <a class="nav-item {{ 'is-active' if active_nav=='pacientes' else '' }}" href="{{ url_for('admin_pacientes') }}">
+        <i class="fas fa-user-injured"></i><span>Pacientes</span>
+      </a>
+      {% if 'admin' in get_user_roles() %}
+      <a class="nav-item {{ 'is-active' if active_nav=='nutricionistas' else '' }}"
+        href="{{ url_for('admin_nutricionistas') }}">
+        <i class="fas fa-user-nurse"></i><span>Nutricionistas</span>
+      </a>
+      {% endif %}
+      <a class="nav-item {{ 'is-active' if active_nav=='ingred' else '' }}" href="{{ url_for('admin_ingredientes') }}">
+        <i class="fas fa-carrot"></i><span>Alimentos</span>
+      </a>
+
+      <a class="nav-item {{ 'is-active' if active_nav=='planes' else '' }}" href="{{ url_for('admin_planes') }}">
+        <i class="fas fa-list"></i><span>Planes y detalle</span>
+      </a>
+      <a class="nav-item {{ 'is-active' if active_nav=='generar_plan' else '' }}" href="{{ url_for('admin_generar_plan') }}">
+        <i class="fas fa-magic"></i><span>Generar Plan</span>
+      </a>
+
+      <div class="nav-title">Sesión</div>
+      <a class="nav-item" href="{{ url_for('logout') }}">
+        <i class="fas fa-sign-out-alt"></i><span>Cerrar sesión</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Área principal -->
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alerts">
+      {% for cat, msg in messages %}
+      <div class="alert {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    <header class="header">
+      <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="Menú">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1>{{ header_title or "Panel Nutricionista" }}</h1>
+      <div class="who">
+        <i class="fas fa-user-nurse"></i>
+        <span>{{ session.get('user_email') }}</span>
+      </div>
+    </header>
+
+    <section class="content">
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+  
+  <!-- Overlay para móviles -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  
+  <script>
+    // Toggle del sidebar - unificado para desktop y móvil
+    document.addEventListener('DOMContentLoaded', function() {
+      const sidebar = document.getElementById('sidebar');
+      const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+      const sidebarOverlay = document.getElementById('sidebarOverlay');
+      const main = document.querySelector('.main');
+      
+      // Estado del sidebar (guardado en localStorage) - solo en desktop
+      const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+      const isMobile = window.innerWidth <= 768;
+      
+      if (isCollapsed && !isMobile) {
+        sidebar.classList.add('collapsed');
+        main.classList.add('expanded');
+        // Remover el estilo inline crítico ya que las clases CSS lo manejarán
+        const inlineStyle = document.getElementById('sidebar-inline-state');
+        if (inlineStyle) {
+          setTimeout(() => inlineStyle.remove(), 100);
+        }
+      } else {
+        // Si no está colapsado, remover el estilo inline si existe
+        const inlineStyle = document.getElementById('sidebar-inline-state');
+        if (inlineStyle) {
+          inlineStyle.remove();
+        }
+      }
+      
+      // Funciones para móvil
+      function openMobileSidebar() {
+        // Asegurar que el sidebar esté expandido (sin clase collapsed) en móvil
+        sidebar.classList.remove('collapsed');
+        main.classList.remove('expanded');
+        sidebar.classList.add('open');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+      
+      function closeMobileSidebar() {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+      
+      // Botón unificado en header (funciona en desktop y móvil)
+      const menuToggleBtn = document.getElementById('menuToggleBtn');
+      if (menuToggleBtn) {
+        menuToggleBtn.addEventListener('click', function() {
+          const isMobileNow = window.innerWidth <= 768;
+          
+          if (isMobileNow) {
+            // Comportamiento móvil: abrir/cerrar sidebar
+            if (sidebar.classList.contains('open')) {
+              closeMobileSidebar();
+            } else {
+              openMobileSidebar();
+            }
+          } else {
+            // Comportamiento desktop: contraer/expandir sidebar
+            sidebar.classList.toggle('collapsed');
+            main.classList.toggle('expanded');
+            
+            // Guardar estado
+            const collapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', collapsed);
+          }
+        });
+      }
+      
+      // Overlay para móviles
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+      }
+      
+      // Cerrar sidebar al hacer clic en un enlace (solo móvil)
+      const navItems = sidebar.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        item.addEventListener('click', function() {
+          if (window.innerWidth <= 768) {
+            setTimeout(closeMobileSidebar, 100);
+          }
+        });
+      });
+      
+      // Manejar resize
+      window.addEventListener('resize', function() {
+        const isMobileNow = window.innerWidth <= 768;
+        if (isMobileNow) {
+          // Al cambiar a móvil, asegurar que el sidebar no esté contraído
+          sidebar.classList.remove('collapsed');
+          main.classList.remove('expanded');
+          // Cerrar sidebar móvil si estaba abierto
+          closeMobileSidebar();
+        } else {
+          // Al cambiar a desktop, cerrar el sidebar móvil si está abierto
+          closeMobileSidebar();
+          // Restaurar estado colapsado si estaba guardado
+          const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+          if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+            main.classList.add('expanded');
+          } else {
+            sidebar.classList.remove('collapsed');
+            main.classList.remove('expanded');
+          }
+        }
+      });
+    });
+  </script>
+  
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  
+  <!-- Modal de confirmación/alerta reutilizable -->
+  <div id="modalConfirm" class="modal-overlay" style="display: none;">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h3 id="modalConfirmTitle">Confirmar</h3>
+        <button class="modal-close" onclick="cerrarModalConfirm()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modalConfirmMessage"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="cerrarModalConfirm()" id="modalConfirmCancel">Cancelar</button>
+        <button class="btn btn-primary" id="modalConfirmOk">Aceptar</button>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.2s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .modal-sm {
+      max-width: 400px;
+    }
+    
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #f3f4f6;
+      color: #111827;
+    }
+    
+    .modal-body {
+      padding: 24px;
+    }
+    
+    .modal-body p {
+      margin: 0;
+      color: #374151;
+      line-height: 1.6;
+    }
+    
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    
+    .modal-footer .btn {
+      min-width: 100px;
+    }
+  </style>
+  
+  <script>
+    // Sistema de modales de confirmación y alerta
+    let modalConfirmCallback = null;
+    
+    function mostrarModalConfirm(titulo, mensaje, tipo = 'confirm', callback = null) {
+      const modal = document.getElementById('modalConfirm');
+      const title = document.getElementById('modalConfirmTitle');
+      const message = document.getElementById('modalConfirmMessage');
+      const okBtn = document.getElementById('modalConfirmOk');
+      const cancelBtn = document.getElementById('modalConfirmCancel');
+      
+      title.textContent = titulo;
+      message.textContent = mensaje;
+      modalConfirmCallback = callback;
+      
+      // Configurar botones según el tipo
+      if (tipo === 'alert') {
+        cancelBtn.style.display = 'none';
+        okBtn.textContent = 'Aceptar';
+      } else {
+        cancelBtn.style.display = 'inline-flex';
+        okBtn.textContent = 'Aceptar';
+      }
+      
+      // Configurar colores según el tipo
+      if (tipo === 'danger' || tipo === 'delete') {
+        okBtn.className = 'btn btn-danger';
+      } else if (tipo === 'warning') {
+        okBtn.className = 'btn';
+        okBtn.style.backgroundColor = '#f59e0b';
+        okBtn.style.borderColor = '#f59e0b';
+        okBtn.style.color = 'white';
+      } else {
+        okBtn.className = 'btn btn-primary';
+      }
+      
+      modal.style.display = 'flex';
+      
+      // Configurar eventos
+      okBtn.onclick = function() {
+        if (modalConfirmCallback) {
+          modalConfirmCallback(true);
+        }
+        cerrarModalConfirm();
+      };
+      
+      cancelBtn.onclick = function() {
+        if (modalConfirmCallback) {
+          modalConfirmCallback(false);
+        }
+        cerrarModalConfirm();
+      };
+      
+      // Cerrar con ESC
+      const escHandler = function(e) {
+        if (e.key === 'Escape') {
+          if (modalConfirmCallback) {
+            modalConfirmCallback(false);
+          }
+          cerrarModalConfirm();
+          document.removeEventListener('keydown', escHandler);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+    }
+    
+    function cerrarModalConfirm() {
+      const modal = document.getElementById('modalConfirm');
+      modal.style.display = 'none';
+      modalConfirmCallback = null;
+    }
+    
+    // Funciones de conveniencia
+    function mostrarAlerta(mensaje, titulo = 'Información') {
+      return new Promise((resolve) => {
+        mostrarModalConfirm(titulo, mensaje, 'alert', resolve);
+      });
+    }
+    
+    function mostrarConfirmacion(mensaje, titulo = 'Confirmar', tipo = 'confirm') {
+      return new Promise((resolve) => {
+        mostrarModalConfirm(titulo, mensaje, tipo, resolve);
+      });
+    }
+    
+    // Reemplazar alert() y confirm() nativos
+    window.alert = function(mensaje) {
+      mostrarAlerta(mensaje, 'Información');
+    };
+    
+    window.confirm = function(mensaje) {
+      return new Promise((resolve) => {
+        mostrarModalConfirm('Confirmar', mensaje, 'confirm', (resultado) => {
+          resolve(resultado);
+        });
+      });
+    };
+    
+    // Ocultar automáticamente los mensajes flash después de 3 segundos
+    document.addEventListener('DOMContentLoaded', function() {
+      const alerts = document.querySelectorAll('.alerts .alert');
+      alerts.forEach(function(alert) {
+        setTimeout(function() {
+          alert.style.transition = 'opacity 0.5s ease-out';
+          alert.style.opacity = '0';
+          setTimeout(function() {
+            alert.remove();
+            // Si no quedan más alertas, ocultar el contenedor
+            const alertsContainer = document.querySelector('.alerts');
+            if (alertsContainer && alertsContainer.children.length === 0) {
+              alertsContainer.remove();
+            }
+          }, 500);
+        }, 3000);
+      });
+      
+      // Cerrar modal al hacer clic fuera
+      const modalOverlay = document.getElementById('modalConfirm');
+      if (modalOverlay) {
+        modalOverlay.addEventListener('click', function(e) {
+          if (e.target === modalOverlay) {
+            cerrarModalConfirm();
+          }
+        });
+      }
+    });
+  </script>
+  
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>
+

@@ -48,13 +48,45 @@ def login_required(view_func):
     return wrapper
 
 
-def admin_required(view_func):
+def admin_only_required(view_func):
+    """Decorador que solo permite acceso a administradores (no nutricionistas)"""
     def wrapper(*args, **kwargs):
         uid = session.get("user_id")
         if not uid:
             return redirect(url_for("login"))
-        if "admin" not in get_user_roles(uid):
+        roles = get_user_roles(uid)
+        if "admin" not in roles:
             flash("Acceso restringido al rol Administrador", "error")
+            return redirect(url_for("home"))
+        return view_func(*args, **kwargs)
+    wrapper.__name__ = view_func.__name__
+    return wrapper
+
+
+def admin_required(view_func):
+    """Decorador que permite acceso a administradores y nutricionistas"""
+    def wrapper(*args, **kwargs):
+        uid = session.get("user_id")
+        if not uid:
+            return redirect(url_for("login"))
+        roles = get_user_roles(uid)
+        if "admin" not in roles and "nutricionista" not in roles:
+            flash("Acceso restringido al rol Administrador o Nutricionista", "error")
+            return redirect(url_for("home"))
+        return view_func(*args, **kwargs)
+    wrapper.__name__ = view_func.__name__
+    return wrapper
+
+
+def nutricionista_required(view_func):
+    """Decorador que permite acceso a nutricionistas y administradores"""
+    def wrapper(*args, **kwargs):
+        uid = session.get("user_id")
+        if not uid:
+            return redirect(url_for("login"))
+        roles = get_user_roles(uid)
+        if "admin" not in roles and "nutricionista" not in roles:
+            flash("Acceso restringido al rol Nutricionista o Administrador", "error")
             return redirect(url_for("home"))
         return view_func(*args, **kwargs)
     wrapper.__name__ = view_func.__name__
@@ -86,6 +118,28 @@ def get_user_roles(user_id: int) -> list[str]:
         WHERE ur.usuario_id = %s
     """, (user_id,))
     return [r[0] for r in rows] if rows else []
+
+
+def get_template_base():
+    """Determina el directorio base de templates según el rol del usuario"""
+    user_id = session.get("user_id")
+    if not user_id:
+        return "admin"
+    roles = get_user_roles(user_id)
+    if "nutricionista" in roles and "admin" not in roles:
+        return "nutricionista"
+    return "admin"
+
+
+@app.context_processor
+def inject_user_roles():
+    """Hace disponible get_user_roles en todos los templates"""
+    def get_roles():
+        user_id = session.get("user_id")
+        if not user_id:
+            return []
+        return get_user_roles(user_id)
+    return dict(get_user_roles=get_roles)
 
 
 # ---------- Rutas básicas ----------
@@ -488,6 +542,8 @@ def login():
         
         if "admin" in roles:
             return redirect(url_for("admin_home"))
+        elif "nutricionista" in roles:
+            return redirect(url_for("nutricionista_home"))
         elif "paciente" in roles:
             # Verificar que el usuario tenga un registro en la tabla paciente
             paciente_data = get_paciente_by_user_id(user_id)
@@ -558,17 +614,23 @@ def activar():
             flash("El DNI ya fue activado. Inicia sesión.", "info")
             return redirect(url_for("login"))
 
+        # Si no hay email, generar uno genérico basado en el DNI
+        if not email or email.strip() == "":
+            email = f"paciente.{dni}@nutrisync.local"
+            # Actualizar el email en pre_registro
+            execute("UPDATE pre_registro SET email=%s WHERE dni=%s", (email, dni))
+
         user = fetch_one("SELECT id FROM usuario WHERE email=%s", (email,))
         if user:
             user_id = user[0]
-            execute("UPDATE usuario SET hash_pwd=%s, estado='activo' WHERE id=%s",
+            execute("UPDATE usuario SET hash_pwd=%s, estado='activo', mfa=FALSE WHERE id=%s",
                     (generate_password_hash(pwd), user_id))
         else:
-            user_id = execute("""
+            user_id = fetch_one("""
                 INSERT INTO usuario (email, hash_pwd, estado, mfa)
                 VALUES (%s, %s, 'activo', FALSE)
                 RETURNING id
-            """, (email, generate_password_hash(pwd))).fetchone()[0]
+            """, (email, generate_password_hash(pwd)))[0]
 
         # ✅ Asegurar que el usuario tenga el rol de "paciente"
         ensure_role(user_id, "paciente")
@@ -854,6 +916,8 @@ def home():
     
     if "admin" in roles:
         return redirect(url_for("admin_home"))
+    elif "nutricionista" in roles:
+        return redirect(url_for("nutricionista_home"))
     elif "paciente" in roles:
         return redirect(url_for("paciente_dashboard"))
     # Por defecto, redirigir al admin
@@ -866,7 +930,22 @@ def home():
 def admin_home():
     """Dashboard principal del administrador/nutricionista"""
     email = session.get("user_email")
-    roles = get_user_roles(session["user_id"])
+    user_id = session.get("user_id")
+    roles = get_user_roles(user_id)
+    
+    # Obtener nombre y apellido del usuario (si es admin, puede no tener perfil_nutricionista)
+    usuario_nombre = email  # Por defecto usar email
+    perfil = fetch_one("""
+        SELECT nombres, apellidos
+        FROM perfil_nutricionista
+        WHERE usuario_id = %s
+    """, (user_id,))
+    if perfil and perfil[0] and perfil[1]:
+        usuario_nombre = f"{perfil[0]} {perfil[1]}"
+    elif perfil and perfil[0]:
+        usuario_nombre = perfil[0]
+    elif perfil and perfil[1]:
+        usuario_nombre = perfil[1]
     
     # ========== 1. RESUMEN GENERAL (CARDS) ==========
     total_pacientes = fetch_one("SELECT COUNT(*) FROM paciente")[0] or 0
@@ -1116,9 +1195,42 @@ def admin_home():
         LIMIT 10
     """)
     
+    # ========== DATOS ESPECÍFICOS DE ADMINISTRADOR ==========
+    # Total de usuarios en el sistema
+    total_usuarios = fetch_one("SELECT COUNT(*) FROM usuario")[0] or 0
+    
+    # Total de nutricionistas
+    total_nutricionistas = fetch_one("""
+        SELECT COUNT(DISTINCT u.id)
+        FROM usuario u
+        JOIN usuario_rol ur ON ur.usuario_id = u.id
+        JOIN rol r ON r.id = ur.rol_id
+        WHERE r.nombre = 'nutricionista'
+    """)[0] or 0
+    
+    # Usuarios activos vs inactivos
+    usuarios_activos = fetch_one("SELECT COUNT(*) FROM usuario WHERE estado='activo'")[0] or 0
+    usuarios_inactivos = fetch_one("SELECT COUNT(*) FROM usuario WHERE estado='bloqueado'")[0] or 0
+    
+    # Pre-registros pendientes
+    preregistros_pendientes = fetch_one("""
+        SELECT COUNT(*) FROM pre_registro WHERE estado='pendiente'
+    """)[0] or 0
+    
+    # Tokens de activación pendientes
+    tokens_pendientes = fetch_one("""
+        SELECT COUNT(*) 
+        FROM activacion_token 
+        WHERE usado=FALSE AND vence_en >= CURRENT_TIMESTAMP
+    """)[0] or 0
+    
+    # Usuarios con MFA activado
+    usuarios_mfa = fetch_one("SELECT COUNT(*) FROM usuario WHERE mfa=TRUE")[0] or 0
+    
     return render_template("admin/dashboard.html",
                          email=email,
                          roles=roles,
+                         usuario_nombre=usuario_nombre,
                          # Resumen general
                          total_pacientes=total_pacientes,
                          planes_30d=planes_30d,
@@ -1139,7 +1251,368 @@ def admin_home():
                          # Alertas
                          sin_plan_activo=sin_plan_activo,
                          datos_desactualizados=datos_desactualizados,
-                         planes_por_vencer=planes_por_vencer)
+                         planes_por_vencer=planes_por_vencer,
+                         # Datos específicos de administrador
+                         total_usuarios=total_usuarios,
+                         total_nutricionistas=total_nutricionistas,
+                         usuarios_activos=usuarios_activos,
+                         usuarios_inactivos=usuarios_inactivos,
+                         preregistros_pendientes=preregistros_pendientes,
+                         tokens_pendientes=tokens_pendientes,
+                         usuarios_mfa=usuarios_mfa)
+
+
+# ---------- Panel Nutricionista ----------
+@app.route("/nutricionista")
+@nutricionista_required
+def nutricionista_home():
+    """Dashboard principal del nutricionista"""
+    email = session.get("user_email")
+    user_id = session.get("user_id")
+    roles = get_user_roles(user_id)
+    
+    # Obtener nombre y apellido del nutricionista
+    usuario_nombre = email  # Por defecto usar email
+    perfil = fetch_one("""
+        SELECT nombres, apellidos
+        FROM perfil_nutricionista
+        WHERE usuario_id = %s
+    """, (user_id,))
+    if perfil and perfil[0] and perfil[1]:
+        usuario_nombre = f"{perfil[0]} {perfil[1]}"
+    elif perfil and perfil[0]:
+        usuario_nombre = perfil[0]
+    elif perfil and perfil[1]:
+        usuario_nombre = perfil[1]
+    
+    # ========== 1. RESUMEN GENERAL (CARDS) ==========
+    total_pacientes = fetch_one("SELECT COUNT(*) FROM paciente")[0] or 0
+    
+    # Planes generados últimos 30 días
+    planes_30d = fetch_one("""
+        SELECT COUNT(*) 
+        FROM plan 
+        WHERE creado_en >= CURRENT_DATE - INTERVAL '30 days'
+    """)[0] or 0
+    
+    # Pacientes con datos clínicos recientes (últimos 30 días)
+    pacientes_con_datos = fetch_one("""
+        SELECT COUNT(DISTINCT c.paciente_id)
+        FROM clinico c
+        WHERE c.fecha >= CURRENT_DATE - INTERVAL '30 days'
+    """)[0] or 0
+    
+    # Planes activos (vigentes)
+    planes_activos = fetch_one("""
+        SELECT COUNT(*) 
+        FROM plan 
+        WHERE fecha_fin >= CURRENT_DATE
+    """)[0] or 0
+    
+    # Promedio de planes por paciente
+    promedio_planes = fetch_one("""
+        SELECT CASE 
+            WHEN COUNT(DISTINCT paciente_id) > 0 
+            THEN ROUND(COUNT(*)::numeric / COUNT(DISTINCT paciente_id), 2)
+            ELSE 0
+        END
+        FROM plan
+    """)[0] or 0
+    
+    # ========== 2. ESTADÍSTICAS DE PACIENTES ==========
+    # Distribución por sexo
+    distribucion_sexo = fetch_all("""
+        SELECT 
+            COALESCE(sexo, 'No especificado') as sexo,
+            COUNT(*) as cantidad
+        FROM paciente
+        GROUP BY sexo
+    """)
+    
+    # Distribución por rangos de edad
+    distribucion_edad = fetch_all("""
+        SELECT 
+            CASE 
+                WHEN EXTRACT(YEAR FROM AGE(fecha_nac)) < 30 THEN '18-29'
+                WHEN EXTRACT(YEAR FROM AGE(fecha_nac)) < 40 THEN '30-39'
+                WHEN EXTRACT(YEAR FROM AGE(fecha_nac)) < 50 THEN '40-49'
+                WHEN EXTRACT(YEAR FROM AGE(fecha_nac)) < 60 THEN '50-59'
+                WHEN EXTRACT(YEAR FROM AGE(fecha_nac)) < 70 THEN '60-69'
+                ELSE '70+'
+            END as rango_edad,
+            COUNT(*) as cantidad
+        FROM paciente
+        WHERE fecha_nac IS NOT NULL
+        GROUP BY rango_edad
+        ORDER BY MIN(EXTRACT(YEAR FROM AGE(fecha_nac)))
+    """)
+    
+    # Distribución por IMC (última medición)
+    distribucion_imc = fetch_all("""
+        WITH ultima_antropo AS (
+            SELECT DISTINCT ON (paciente_id) 
+                paciente_id,
+                peso,
+                talla,
+                CASE 
+                    WHEN peso IS NOT NULL AND talla IS NOT NULL AND talla > 0
+                    THEN ROUND((peso / (talla * talla))::numeric, 2)
+                    ELSE NULL
+                END as imc
+            FROM antropometria
+            ORDER BY paciente_id, fecha DESC
+        )
+        SELECT 
+            CASE 
+                WHEN imc < 18.5 THEN 'Bajo peso'
+                WHEN imc < 25 THEN 'Normal'
+                WHEN imc < 30 THEN 'Sobrepeso'
+                WHEN imc >= 30 THEN 'Obesidad'
+                ELSE 'Sin datos'
+            END as categoria_imc,
+            COUNT(*) as cantidad
+        FROM ultima_antropo
+        GROUP BY categoria_imc
+    """)
+    
+    # Pacientes por control glucémico (última HbA1c)
+    control_glucemico = fetch_all("""
+        WITH ultimo_clinico AS (
+            SELECT DISTINCT ON (paciente_id) 
+                paciente_id,
+                hba1c
+            FROM clinico
+            WHERE hba1c IS NOT NULL
+            ORDER BY paciente_id, fecha DESC
+        )
+        SELECT 
+            CASE 
+                WHEN hba1c < 7 THEN 'Bueno (<7%%)'
+                WHEN hba1c < 8 THEN 'Moderado (7-8%%)'
+                WHEN hba1c >= 8 THEN 'Malo (≥8%%)'
+                ELSE 'Sin datos'
+            END as control,
+            COUNT(*) as cantidad
+        FROM ultimo_clinico
+        GROUP BY control
+    """)
+    
+    # Pacientes con datos incompletos
+    pacientes_incompletos = fetch_one("""
+        SELECT COUNT(DISTINCT p.id)
+        FROM paciente p
+        LEFT JOIN (
+            SELECT DISTINCT ON (paciente_id) paciente_id
+            FROM antropometria
+            WHERE fecha >= CURRENT_DATE - INTERVAL '90 days'
+            ORDER BY paciente_id, fecha DESC
+        ) a ON a.paciente_id = p.id
+        LEFT JOIN (
+            SELECT DISTINCT ON (paciente_id) paciente_id
+            FROM clinico
+            WHERE fecha >= CURRENT_DATE - INTERVAL '90 days'
+            ORDER BY paciente_id, fecha DESC
+        ) c ON c.paciente_id = p.id
+        WHERE a.paciente_id IS NULL OR c.paciente_id IS NULL
+    """)[0] or 0
+    
+    # ========== 3. MÉTRICAS CLÍNICAS (TENDENCIAS) ==========
+    # Promedio de HbA1c por mes (últimos 6 meses)
+    tendencia_hba1c = fetch_all("""
+        SELECT 
+            TO_CHAR(fecha, 'YYYY-MM') as mes,
+            ROUND(AVG(hba1c)::numeric, 2) as promedio_hba1c,
+            COUNT(*) as mediciones
+        FROM clinico
+        WHERE hba1c IS NOT NULL 
+            AND fecha >= CURRENT_DATE - INTERVAL '6 months'
+        GROUP BY TO_CHAR(fecha, 'YYYY-MM')
+        ORDER BY mes
+    """)
+    
+    # Promedio de glucosa en ayunas por mes
+    tendencia_glucosa = fetch_all("""
+        SELECT 
+            TO_CHAR(fecha, 'YYYY-MM') as mes,
+            ROUND(AVG(glucosa_ayunas)::numeric, 2) as promedio_glucosa,
+            COUNT(*) as mediciones
+        FROM clinico
+        WHERE glucosa_ayunas IS NOT NULL 
+            AND fecha >= CURRENT_DATE - INTERVAL '6 months'
+        GROUP BY TO_CHAR(fecha, 'YYYY-MM')
+        ORDER BY mes
+    """)
+    
+    # Promedio de IMC por mes
+    tendencia_imc = fetch_all("""
+        SELECT 
+            TO_CHAR(fecha, 'YYYY-MM') as mes,
+            ROUND(AVG(CASE 
+                WHEN peso IS NOT NULL AND talla IS NOT NULL AND talla > 0
+                THEN peso / (talla * talla)
+                ELSE NULL
+            END)::numeric, 2) as promedio_imc,
+            COUNT(*) as mediciones
+        FROM antropometria
+        WHERE peso IS NOT NULL AND talla IS NOT NULL
+            AND fecha >= CURRENT_DATE - INTERVAL '6 months'
+        GROUP BY TO_CHAR(fecha, 'YYYY-MM')
+        ORDER BY mes
+    """)
+    
+    # Pacientes con riesgo metabólico alto (IMC >30 + HbA1c >7%)
+    riesgo_metabolico = fetch_one("""
+        WITH ultima_antropo AS (
+            SELECT DISTINCT ON (paciente_id) 
+                paciente_id,
+                CASE 
+                    WHEN peso IS NOT NULL AND talla IS NOT NULL AND talla > 0
+                    THEN peso / (talla * talla)
+                    ELSE NULL
+                END as imc
+            FROM antropometria
+            ORDER BY paciente_id, fecha DESC
+        ),
+        ultimo_clinico AS (
+            SELECT DISTINCT ON (paciente_id) 
+                paciente_id,
+                hba1c
+            FROM clinico
+            ORDER BY paciente_id, fecha DESC
+        )
+        SELECT COUNT(DISTINCT ua.paciente_id)
+        FROM ultima_antropo ua
+        JOIN ultimo_clinico uc ON uc.paciente_id = ua.paciente_id
+        WHERE ua.imc >= 30 AND uc.hba1c > 7
+    """)[0] or 0
+    
+    # ========== 4. ALERTAS Y ACCIONES PENDIENTES ==========
+    # Pacientes sin plan activo
+    sin_plan_activo = fetch_all("""
+        SELECT p.id, 
+               COALESCE(pr.nombres, '') || ' ' || COALESCE(pr.apellidos, '') as nombre,
+               p.dni
+        FROM paciente p
+        LEFT JOIN pre_registro pr ON pr.dni = p.dni
+        LEFT JOIN plan pl ON pl.paciente_id = p.id AND pl.fecha_fin >= CURRENT_DATE
+        WHERE pl.id IS NULL
+        ORDER BY p.id
+        LIMIT 10
+    """)
+    
+    # Pacientes con datos clínicos desactualizados (>90 días)
+    datos_desactualizados = fetch_all("""
+        SELECT DISTINCT ON (p.id)
+            p.id,
+            COALESCE(pr.nombres, '') || ' ' || COALESCE(pr.apellidos, '') as nombre,
+            p.dni,
+            MAX(c.fecha) as ultima_fecha_clinica
+        FROM paciente p
+        LEFT JOIN pre_registro pr ON pr.dni = p.dni
+        LEFT JOIN clinico c ON c.paciente_id = p.id
+        GROUP BY p.id, pr.nombres, pr.apellidos, p.dni
+        HAVING MAX(c.fecha) < CURRENT_DATE - INTERVAL '90 days' OR MAX(c.fecha) IS NULL
+        ORDER BY p.id, ultima_fecha_clinica DESC NULLS LAST
+        LIMIT 10
+    """)
+    
+    # Planes próximos a vencer (próximos 7 días)
+    planes_por_vencer = fetch_all("""
+        SELECT 
+            p.id as plan_id,
+            p.fecha_fin,
+            pa.id as paciente_id,
+            COALESCE(pr.nombres, '') || ' ' || COALESCE(pr.apellidos, '') as nombre,
+            pa.dni
+        FROM plan p
+        JOIN paciente pa ON pa.id = p.paciente_id
+        LEFT JOIN pre_registro pr ON pr.dni = pa.dni
+        WHERE p.fecha_fin >= CURRENT_DATE 
+            AND p.fecha_fin <= CURRENT_DATE + INTERVAL '7 days'
+        ORDER BY p.fecha_fin
+        LIMIT 10
+    """)
+    
+    # ========== DATOS ESPECÍFICOS DE NUTRICIONISTA ==========
+    # Planes creados por este nutricionista (si está disponible)
+    user_id = session.get("user_id")
+    mis_planes = fetch_one("""
+        SELECT COUNT(*) 
+        FROM plan 
+        WHERE creado_por=%s AND creado_en >= CURRENT_DATE - INTERVAL '30 days'
+    """, (user_id,))[0] or 0
+    
+    # Pacientes asignados a este nutricionista (planes creados por él)
+    mis_pacientes = fetch_one("""
+        SELECT COUNT(DISTINCT paciente_id)
+        FROM plan
+        WHERE creado_por=%s
+    """, (user_id,))[0] or 0
+    
+    # Planes activos creados por este nutricionista
+    mis_planes_activos = fetch_one("""
+        SELECT COUNT(*) 
+        FROM plan 
+        WHERE creado_por=%s AND fecha_fin >= CURRENT_DATE
+    """, (user_id,))[0] or 0
+    
+    # Pacientes que necesitan seguimiento (sin datos recientes)
+    pacientes_seguimiento = fetch_all("""
+        SELECT DISTINCT ON (p.id)
+            p.id,
+            COALESCE(pr.nombres, '') || ' ' || COALESCE(pr.apellidos, '') as nombre,
+            p.dni,
+            MAX(pl.fecha_fin) as ultimo_plan
+        FROM paciente p
+        LEFT JOIN pre_registro pr ON pr.dni = p.dni
+        LEFT JOIN plan pl ON pl.paciente_id = p.id AND pl.creado_por = %s
+        LEFT JOIN (
+            SELECT DISTINCT ON (paciente_id) paciente_id, fecha
+            FROM antropometria
+            ORDER BY paciente_id, fecha DESC
+        ) a ON a.paciente_id = p.id
+        LEFT JOIN (
+            SELECT DISTINCT ON (paciente_id) paciente_id, fecha
+            FROM clinico
+            ORDER BY paciente_id, fecha DESC
+        ) c ON c.paciente_id = p.id
+        WHERE pl.creado_por = %s
+            AND (a.fecha < CURRENT_DATE - INTERVAL '90 days' OR a.fecha IS NULL)
+        GROUP BY p.id, pr.nombres, pr.apellidos, p.dni
+        ORDER BY p.id, ultimo_plan DESC NULLS LAST
+        LIMIT 10
+    """, (user_id, user_id))
+    
+    return render_template("nutricionista/dashboard.html",
+                         email=email,
+                         roles=roles,
+                         usuario_nombre=usuario_nombre,
+                         # Resumen general
+                         total_pacientes=total_pacientes,
+                         planes_30d=planes_30d,
+                         pacientes_con_datos=pacientes_con_datos,
+                         planes_activos=planes_activos,
+                         promedio_planes=promedio_planes,
+                         # Estadísticas pacientes
+                         distribucion_sexo=distribucion_sexo,
+                         distribucion_edad=distribucion_edad,
+                         distribucion_imc=distribucion_imc,
+                         control_glucemico=control_glucemico,
+                         pacientes_incompletos=pacientes_incompletos,
+                         # Métricas clínicas
+                         tendencia_hba1c=tendencia_hba1c,
+                         tendencia_glucosa=tendencia_glucosa,
+                         tendencia_imc=tendencia_imc,
+                         riesgo_metabolico=riesgo_metabolico,
+                         # Alertas
+                         sin_plan_activo=sin_plan_activo,
+                         datos_desactualizados=datos_desactualizados,
+                         planes_por_vencer=planes_por_vencer,
+                         # Datos específicos de nutricionista
+                         mis_planes=mis_planes,
+                         mis_pacientes=mis_pacientes,
+                         mis_planes_activos=mis_planes_activos,
+                         pacientes_seguimiento=pacientes_seguimiento)
 
 
 # ---- Placeholders de mantenimiento (para que los links del panel funcionen) ----
@@ -1148,7 +1621,7 @@ def _placeholder(nombre):
 
 # --------- ADMIN: USUARIOS (CRUD) ---------
 @app.route("/admin/usuarios")
-@admin_required
+@admin_only_required
 def admin_usuarios():
     rows = fetch_all("""
         SELECT u.id, u.email, u.estado, u.mfa,
@@ -1229,7 +1702,8 @@ def admin_generar_plan():
 def admin_obtener_plan():
     """Nueva ruta para obtener plan con paginación implementada correctamente"""
     paciente_id = request.args.get('paciente_id')
-    return render_template("admin/obtener_plan.html",
+    template_base = get_template_base()
+    return render_template(f"{template_base}/obtener_plan.html",
                            active_nav="obtener_plan",
                            page_title="NutriSync · Obtener plan",
                            header_title="Obtener plan",
@@ -1598,8 +2072,9 @@ def ensure_preregistro(dni: str,
 @app.route("/admin/pacientes")
 @admin_required
 def admin_pacientes():
+    template_base = get_template_base()
     return render_template(
-        "admin/pacientes_list.html",
+        f"{template_base}/pacientes_list.html",
         active_nav="pacientes",
         page_title="NutriSync · Pacientes",
         header_title="Pacientes"
@@ -1676,26 +2151,93 @@ def admin_paciente_guardar():
     ensure_preregistro(dni, nombres, apellidos, telefono, email)
     usuario_id = get_or_create_user_with_paciente_role(email) if email else None
 
-    # 1️⃣ Insertar paciente
-    pid = fetch_one("""
-        INSERT INTO paciente (usuario_id, dni, sexo, fecha_nac, telefono, creado_en, actualizado_en)
-        VALUES (%s,%s,%s,%s,%s,NOW(),NOW())
-        RETURNING id
-    """, (usuario_id, dni, sexo, fecha_nac, telefono))[0]
+    # 1️⃣ Buscar paciente existente o crear uno nuevo
+    paciente_existente = None
+    if dni:
+        paciente_existente = fetch_one("""
+            SELECT id FROM paciente WHERE dni=%s LIMIT 1
+        """, (dni,))
+    elif usuario_id:
+        paciente_existente = fetch_one("""
+            SELECT id FROM paciente WHERE usuario_id=%s LIMIT 1
+        """, (usuario_id,))
+    
+    if paciente_existente:
+        # Paciente existe: actualizar datos básicos y agregar registros históricos
+        pid = paciente_existente[0]
+        execute("""
+            UPDATE paciente
+               SET usuario_id=COALESCE(%s, usuario_id), 
+                   sexo=COALESCE(%s, sexo), 
+                   fecha_nac=COALESCE(%s, fecha_nac), 
+                   telefono=COALESCE(%s, telefono), 
+                   actualizado_en=NOW()
+             WHERE id=%s
+        """, (usuario_id, sexo, fecha_nac, telefono, pid))
+    else:
+        # Paciente no existe: crear nuevo
+        pid = fetch_one("""
+            INSERT INTO paciente (usuario_id, dni, sexo, fecha_nac, telefono, creado_en, actualizado_en)
+            VALUES (%s,%s,%s,%s,%s,NOW(),NOW())
+            RETURNING id
+        """, (usuario_id, dni, sexo, fecha_nac, telefono))[0]
 
-    # 2️⃣ Insertar antropometría si hay datos
+    # 2️⃣ Insertar nuevo registro de antropometría (historial) si hay datos
+    # Permitir fecha personalizada para seguimiento histórico
+    fecha_medicion = request.form.get("fecha_medicion") or None
+    if fecha_medicion:
+        try:
+            from datetime import datetime
+            fecha_medicion = datetime.strptime(fecha_medicion, '%Y-%m-%d').date()
+        except:
+            fecha_medicion = date.today()
+    else:
+        fecha_medicion = date.today()
+    
     if any([peso, talla, cc, bf_pct, actividad]):
-        execute("""
-            INSERT INTO antropometria (paciente_id, fecha, peso, talla, cc, bf_pct, actividad)
-            VALUES (%s, CURRENT_DATE, %s,%s,%s,%s,%s)
-        """, (pid, peso, talla, cc, bf_pct, actividad))
+        # Verificar si ya existe un registro para esta fecha
+        existe_antropo = fetch_one("""
+            SELECT id FROM antropometria 
+            WHERE paciente_id=%s AND fecha=%s 
+            LIMIT 1
+        """, (pid, fecha_medicion))
+        
+        if existe_antropo:
+            # Si ya existe registro para esta fecha, actualizar ese registro
+            execute("""
+                UPDATE antropometria
+                   SET peso=%s, talla=%s, cc=%s, bf_pct=%s, actividad=%s
+                 WHERE id=%s
+            """, (peso, talla, cc, bf_pct, actividad, existe_antropo[0]))
+        else:
+            # Si no existe registro para esta fecha, insertar nuevo (seguimiento histórico)
+            execute("""
+                INSERT INTO antropometria (paciente_id, fecha, peso, talla, cc, bf_pct, actividad)
+                VALUES (%s, %s, %s,%s,%s,%s,%s)
+            """, (pid, fecha_medicion, peso, talla, cc, bf_pct, actividad))
 
-    # 3️⃣ Insertar clínico si hay datos cuantitativos
+    # 3️⃣ Insertar nuevo registro clínico (historial) si hay datos cuantitativos
     if any([hba1c, glucosa_ayunas, ldl, trigliceridos, pa_sis, pa_dia]):
-        execute("""
-            INSERT INTO clinico (paciente_id, fecha, hba1c, glucosa_ayunas, ldl, trigliceridos, pa_sis, pa_dia)
-            VALUES (%s, CURRENT_DATE, %s,%s,%s,%s,%s,%s)
-        """, (pid, hba1c, glucosa_ayunas, ldl, trigliceridos, pa_sis, pa_dia))
+        # Verificar si ya existe un registro para esta fecha
+        existe_clinico = fetch_one("""
+            SELECT id FROM clinico 
+            WHERE paciente_id=%s AND fecha=%s 
+            LIMIT 1
+        """, (pid, fecha_medicion))
+        
+        if existe_clinico:
+            # Si ya existe registro para esta fecha, actualizar ese registro
+            execute("""
+                UPDATE clinico
+                   SET hba1c=%s, glucosa_ayunas=%s, ldl=%s, trigliceridos=%s, pa_sis=%s, pa_dia=%s
+                 WHERE id=%s
+            """, (hba1c, glucosa_ayunas, ldl, trigliceridos, pa_sis, pa_dia, existe_clinico[0]))
+        else:
+            # Si no existe registro para esta fecha, insertar nuevo (seguimiento histórico)
+            execute("""
+                INSERT INTO clinico (paciente_id, fecha, hba1c, glucosa_ayunas, ldl, trigliceridos, pa_sis, pa_dia)
+                VALUES (%s, %s, %s,%s,%s,%s,%s,%s)
+            """, (pid, fecha_medicion, hba1c, glucosa_ayunas, ldl, trigliceridos, pa_sis, pa_dia))
 
         # 4️⃣ Guardar medicamentos y alergias desde JSON enriquecido
     meds_json = request.form.get("meds_json")
@@ -2309,7 +2851,7 @@ def ensure_role(usuario_id: int, role_name: str):
 
 # ===== ADMIN: NUTRICIONISTAS =====
 @app.route("/api/nutricionistas/buscar")
-@admin_required
+@admin_only_required
 def api_nutricionistas_buscar():
     q = (request.args.get("q") or "").strip().lower()
     if not q:
@@ -2338,7 +2880,7 @@ def api_nutricionistas_buscar():
     }
 
 @app.route("/admin/nutricionistas")
-@admin_required
+@admin_only_required
 def admin_nutricionistas():
     rows = fetch_all("""
         SELECT u.id, u.email, u.estado, u.mfa,
@@ -2365,8 +2907,9 @@ def admin_nutricionistas():
         "perfil_activo": bool(r[10]) if r[10] is not None else (r[2] == "activo"),
     } for r in rows]
 
+    template_base = get_template_base()
     return render_template(
-        "admin/nutricionistas_list.html",
+        f"{template_base}/nutricionistas_list.html",
         rows=out,
         active_nav="nutricionistas",
         page_title="NutriSync · Nutricionistas",
@@ -2376,7 +2919,7 @@ def admin_nutricionistas():
 
 
 @app.route("/admin/nutricionistas/nuevo", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_nutri_nuevo():
     email   = (request.form.get("email") or "").strip().lower()
     pwd     = request.form.get("password") or ""
@@ -2436,7 +2979,7 @@ def admin_nutri_nuevo():
 
 
 @app.route("/admin/nutricionistas/<int:uid>/editar", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_nutri_editar(uid):
     email   = (request.form.get("email") or "").strip().lower()
     pwd     = request.form.get("password") or ""
@@ -2488,7 +3031,7 @@ def admin_nutri_editar(uid):
 
 
 @app.route("/admin/nutricionistas/<int:usuario_id>/borrar", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_nutri_borrar(usuario_id):
     # Borra el usuario; por FK se eliminará perfil_nutricionista y usuario_rol
     execute("DELETE FROM usuario WHERE id=%s", (usuario_id,))
@@ -2498,7 +3041,7 @@ def admin_nutri_borrar(usuario_id):
 
 
 @app.route("/admin/usuarios/<int:uid>/borrar", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_usuario_borrar(uid):
     execute("DELETE FROM usuario WHERE id=%s", (uid,))
     flash("Usuario eliminado", "success")
@@ -2507,7 +3050,7 @@ def admin_usuario_borrar(uid):
 # --------- ADMIN: ASIGNAR ROLES ---------
 
 @app.route("/admin/usuarios/<int:uid>/roles", methods=["GET","POST"])
-@admin_required
+@admin_only_required
 def admin_usuario_roles(uid):
     if request.method == "POST":
         # limpiar y volver a insertar selección
@@ -2594,8 +3137,9 @@ def admin_preregistro():
         "tiene_paciente": r[7]  # True si ya tiene paciente registrado
     } for r in rows]
 
+    template_base = get_template_base()
     return render_template(
-        "admin/preregistro.html",
+        f"{template_base}/preregistro.html",
         filas=filas,
         page=page,
         total_pages=total_pages,
@@ -2685,7 +3229,7 @@ def admin_preregistro_borrar(dni):
     return redirect(url_for("admin_preregistro"))
 ## Modales
 @app.route("/admin/usuarios/<int:uid>/json")
-@admin_required
+@admin_only_required
 def admin_usuario_json(uid):
     row = fetch_one("""
         SELECT id, email, estado, mfa
@@ -2698,7 +3242,7 @@ def admin_usuario_json(uid):
     return {"ok": True, "user": u}
 
 @app.route("/admin/usuarios/nuevo", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_usuario_nuevo():
     if request.is_json:
         data = request.get_json(force=True)
@@ -2732,7 +3276,7 @@ def admin_usuario_nuevo():
 
 
 @app.route("/admin/usuarios/<int:uid>/editar", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_usuario_editar(uid):
     if request.is_json:
         data = request.get_json(force=True)
@@ -2774,7 +3318,7 @@ def admin_usuario_editar(uid):
 # --------- ADMIN: ROLES (CRUD) ---------
 
 @app.route("/admin/roles")
-@admin_required
+@admin_only_required
 def admin_roles_list():
     rows = fetch_all("""
         SELECT r.id, r.nombre, r.descripcion,
@@ -2794,7 +3338,7 @@ def admin_roles_list():
     )
 
 @app.route("/admin/roles/nuevo", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_rol_nuevo():
     nombre = (request.form.get("nombre") or "").strip().lower()
     descripcion = (request.form.get("descripcion") or "").strip() or None
@@ -2814,7 +3358,7 @@ def admin_rol_nuevo():
     return redirect(url_for("admin_roles_list"))
 
 @app.route("/admin/roles/<int:rid>/editar", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_rol_editar(rid):
     nombre = (request.form.get("nombre") or "").strip()
     descripcion = (request.form.get("descripcion") or "").strip() or None
@@ -2848,7 +3392,7 @@ def admin_rol_editar(rid):
     return redirect(url_for("admin_roles_list"))
 
 @app.route("/admin/roles/<int:rid>/borrar", methods=["POST"])
-@admin_required
+@admin_only_required
 def admin_rol_borrar(rid):
     row = fetch_one("SELECT nombre FROM rol WHERE id=%s", (rid,))
     if not row:
@@ -2999,8 +3543,9 @@ def admin_clinico():
         "paciente": f"{r[9]} — {(r[10] or '(sin nombre)')}"
     } for r in rows]
 
+    template_base = get_template_base()
     return render_template(
-        "admin/clinico_list.html",
+        f"{template_base}/clinico_list.html",
         rows=registros,
         pacientes=pacientes,
         hoy=date.today().strftime("%Y-%m-%d"),
@@ -3171,8 +3716,9 @@ def admin_antropometria():
             "paciente": f"{dni} — {(nombre or '(sin nombre)')}"
         })
 
+    template_base = get_template_base()
     return render_template(
-        "admin/antropometria_list.html",
+        f"{template_base}/antropometria_list.html",
         rows=out,
         pacientes=pacientes,
         hoy=date.today().strftime("%Y-%m-%d"),
@@ -3312,8 +3858,9 @@ def admin_activaciones():
             "expirado": _now() > datetime.strptime(vence, "%Y-%m-%d %H:%M")
         })
 
+    template_base = get_template_base()
     return render_template(
-        "admin/activaciones.html",
+        f"{template_base}/activaciones.html",
         tokens=tokens,
         filtro=q,
         horas_default=TOKEN_HORAS_VALIDEZ,
@@ -3528,8 +4075,9 @@ def admin_ingredientes():
 
     rows = [_fmt(r) for r in rows]
 
+    template_base = get_template_base()
     return render_template(
-        "admin/ingredientes_list.html",
+        f"{template_base}/ingredientes_list.html",
         rows=rows,
         grupos=ING_GRUPOS,
         active_nav="ingredientes",
@@ -3905,8 +4453,9 @@ def admin_planes():
                 "paciente_edad": paciente["paciente_edad"],
             })
 
+    template_base = get_template_base()
     return render_template(
-        "admin/planes.html",
+        f"{template_base}/planes.html",
         planes=planes,  # Mantener para compatibilidad
         pacientes_agrupados=pacientes_agrupados,  # Nueva estructura agrupada
         pacientes=_get_pacientes_combo(),
@@ -5209,14 +5758,21 @@ def paciente_dashboard():
         "fecha_medicion": clinico[6] if clinico else None
     }
     
-    # Plan activo (último plan generado)
+    # Plan activo (último plan generado) con información del nutricionista
     plan = fetch_one("""
-        SELECT id, fecha_ini, fecha_fin, 
-               (fecha_fin - fecha_ini + 1) as duracion_dias,
-               metas_json
-        FROM plan
-        WHERE paciente_id = %s
-        ORDER BY fecha_ini DESC
+        SELECT pl.id, pl.fecha_ini, pl.fecha_fin, 
+               (pl.fecha_fin - pl.fecha_ini + 1) as duracion_dias,
+               pl.metas_json,
+               pl.creado_por, pl.creado_en,
+               u.email as nutricionista_email,
+               pn.nombres as nutricionista_nombres,
+               pn.apellidos as nutricionista_apellidos,
+               pn.colegiatura as nutricionista_colegiatura
+        FROM plan pl
+        LEFT JOIN usuario u ON u.id = pl.creado_por
+        LEFT JOIN perfil_nutricionista pn ON pn.usuario_id = pl.creado_por
+        WHERE pl.paciente_id = %s
+        ORDER BY pl.fecha_ini DESC
         LIMIT 1
     """, (paciente_id,))
     
@@ -5230,6 +5786,17 @@ def paciente_dashboard():
             except:
                 metas_json = {}
         
+        # Información del nutricionista
+        nutricionista_nombre = ""
+        if plan[8] and plan[9]:  # nombres y apellidos
+            nutricionista_nombre = f"{plan[8]} {plan[9]}"
+        elif plan[8]:
+            nutricionista_nombre = plan[8]
+        elif plan[9]:
+            nutricionista_nombre = plan[9]
+        elif plan[7]:  # email como fallback
+            nutricionista_nombre = plan[7]
+        
         plan_activo = {
             "id": plan[0],
             "fecha_inicio": plan[1].strftime("%d/%m/%Y") if plan[1] else None,
@@ -5240,7 +5807,12 @@ def paciente_dashboard():
                 "carbohidratos_porcentaje": metas_json.get("carbohidratos_porcentaje", 0) if metas_json else 0,
                 "proteinas_porcentaje": metas_json.get("proteinas_porcentaje", 0) if metas_json else 0,
                 "grasas_porcentaje": metas_json.get("grasas_porcentaje", 0) if metas_json else 0
-            }
+            },
+            "nutricionista": {
+                "nombre": nutricionista_nombre or "Nutricionista",
+                "colegiatura": plan[10] or "",
+                "fecha_creacion": plan[6].strftime("%d/%m/%Y %H:%M") if plan[6] else None
+            } if plan[5] else None  # creado_por
         }
     
     return render_template("paciente/dashboard.html",
@@ -5271,17 +5843,26 @@ def paciente_mi_plan():
     
     paciente_id = paciente_data[0]
     
-    # Obtener el plan activo (último plan)
+    # Obtener el plan activo (último plan) con información del nutricionista
     plan = fetch_one("""
-        SELECT id, fecha_ini, fecha_fin, metas_json
-        FROM plan
-        WHERE paciente_id = %s
-        ORDER BY fecha_ini DESC
+        SELECT pl.id, pl.fecha_ini, pl.fecha_fin, pl.metas_json,
+               pl.creado_por, pl.creado_en,
+               u.email as nutricionista_email,
+               pn.nombres as nutricionista_nombres,
+               pn.apellidos as nutricionista_apellidos,
+               pn.colegiatura as nutricionista_colegiatura,
+               pn.especialidad as nutricionista_especialidad
+        FROM plan pl
+        LEFT JOIN usuario u ON u.id = pl.creado_por
+        LEFT JOIN perfil_nutricionista pn ON pn.usuario_id = pl.creado_por
+        WHERE pl.paciente_id = %s
+        ORDER BY pl.fecha_ini DESC
         LIMIT 1
     """, (paciente_id,))
     
     plan_completo = None
     metas_nutricionales = None
+    nutricionista_info = None
     
     if plan:
         plan_id = plan[0]
@@ -5294,6 +5875,28 @@ def paciente_mi_plan():
             except:
                 metas_json = {}
         metas_nutricionales = metas_json
+        
+        # Información del nutricionista que creó el plan
+        nutricionista_info = None
+        if plan[4]:  # creado_por
+            nutricionista_nombre = ""
+            if plan[7] and plan[8]:  # nombres y apellidos
+                nutricionista_nombre = f"{plan[7]} {plan[8]}"
+            elif plan[7]:
+                nutricionista_nombre = plan[7]
+            elif plan[8]:
+                nutricionista_nombre = plan[8]
+            elif plan[6]:  # email como fallback
+                nutricionista_nombre = plan[6]
+            
+            nutricionista_info = {
+                "nombre": nutricionista_nombre or "Nutricionista",
+                "email": plan[6] or "",
+                "colegiatura": plan[9] or "",
+                "especialidad": plan[10] or "",
+                "fecha_creacion": plan[5].strftime("%d/%m/%Y %H:%M") if plan[5] else None,
+                "fecha_creacion_raw": plan[5] if plan[5] else None
+            }
         
         # Obtener detalles del plan (comidas por día)
         detalles = fetch_all("""
@@ -5372,49 +5975,17 @@ def paciente_mi_plan():
             'dias': plan_por_dia
         }
     
-    # Si no hay plan guardado, generar recomendación diaria
-    if not plan_completo:
-        try:
-            motor = MotorRecomendacion()
-            recomendacion = motor.generar_recomendacion_diaria(paciente_id)
-            # Convertir a formato de plan completo para mostrar
-            fecha_hoy = date.today().strftime("%Y-%m-%d")
-            plan_completo = {
-                'fecha_ini': fecha_hoy,
-                'fecha_fin': fecha_hoy,
-                'dias': {
-                    fecha_hoy: {
-                        tiempo: {
-                            'nombre': comida.get('nombre', ''),
-                            'horario': comida.get('horario', ''),
-                            'alimentos': [
-                                {
-                                    'nombre': a['ingrediente']['nombre'],
-                                    'grupo': a['ingrediente'].get('grupo', ''),
-                                    'cantidad': f"{a['cantidad_sugerida']:g}",  # Formato sin decimales innecesarios
-                                    'unidad': a.get('unidad', 'g'),
-                                    'kcal': a['ingrediente'].get('kcal', 0) * a['cantidad_sugerida'] / 100,
-                                    'cho': a['ingrediente'].get('cho', 0) * a['cantidad_sugerida'] / 100,
-                                    'pro': a['ingrediente'].get('pro', 0) * a['cantidad_sugerida'] / 100,
-                                    'fat': a['ingrediente'].get('fat', 0) * a['cantidad_sugerida'] / 100,
-                                    'fibra': a['ingrediente'].get('fibra', 0) * a['cantidad_sugerida'] / 100
-                                }
-                                for a in comida.get('alimentos_sugeridos', [])
-                            ]
-                        }
-                        for tiempo, comida in recomendacion.get('comidas', {}).items()
-                    }
-                }
-            }
-            metas_nutricionales = recomendacion.get('metas_nutricionales', {})
-        except Exception as e:
-            flash(f"Error al generar recomendación: {str(e)}", "error")
-            return redirect(url_for("paciente_dashboard"))
+    # Si no hay plan guardado, NO generar automáticamente
+    # El paciente debe tener un plan asignado por su nutricionista
+    # if not plan_completo:
+    #     # Ya no generamos automáticamente - el paciente debe tener un plan asignado
+    #     pass
     
     return render_template("paciente/mi_plan.html",
                          plan_completo=plan_completo,
                          metas_nutricionales=metas_nutricionales,
-                         paciente_data=paciente_data)
+                         paciente_data=paciente_data,
+                         nutricionista_info=nutricionista_info if plan else None)
 
 @app.route("/paciente/mi-perfil")
 @login_required

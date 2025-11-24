@@ -1,0 +1,163 @@
+{% extends "nutricionista/base_nutricionista.html" %}
+
+{% block title %}Estadísticas del Motor de Recomendación{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-chart-bar text-primary"></i>
+                Estadísticas del Motor de Recomendación
+            </h2>
+            
+            <!-- Métricas Generales -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ estadisticas.total_pacientes }}</h3>
+                            <p class="text-muted">Total Pacientes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ estadisticas.total_planes_generados }}</h3>
+                            <p class="text-muted">Planes Generados</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-info">{{ estadisticas.pacientes_con_datos_recientes }}</h3>
+                            <p class="text-muted">Con Datos Recientes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning">
+                                {% if estadisticas.total_pacientes > 0 %}
+                                    {{ "%.1f"|format((estadisticas.total_planes_generados / estadisticas.total_pacientes) * 100) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </h3>
+                            <p class="text-muted">Tasa de Uso</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingredientes Más Utilizados -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-utensils"></i>
+                        Ingredientes Más Utilizados en Recomendaciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if estadisticas.ingredientes_populares %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Ingrediente</th>
+                                    <th>Veces Utilizado</th>
+                                    <th>Frecuencia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ingrediente in estadisticas.ingredientes_populares %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td><strong>{{ ingrediente[0] }}</strong></td>
+                                    <td>{{ ingrediente[1] }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            {% set max_count = estadisticas.ingredientes_populares[0][1] %}
+                                            {% set percentage = (ingrediente[1] / max_count) * 100 %}
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ percentage }}%" 
+                                                 aria-valuenow="{{ ingrediente[1] }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="{{ max_count }}">
+                                                {{ "%.1f"|format(percentage) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        No hay datos de ingredientes utilizados aún. Las estadísticas se generarán conforme se creen más recomendaciones.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información del Sistema -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Información del Motor de Recomendación
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-cogs text-primary"></i> Características del Motor:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Personalizado para Diabetes Tipo 2</li>
+                                <li><i class="fas fa-check text-success"></i> Considera HbA1c y glucosa en ayunas</li>
+                                <li><i class="fas fa-check text-success"></i> Filtra por alergias y preferencias</li>
+                                <li><i class="fas fa-check text-success"></i> Controla índice glucémico</li>
+                                <li><i class="fas fa-check text-success"></i> Distribuye carbohidratos por comida</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-chart-line text-primary"></i> Parámetros del Algoritmo:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Carbohidratos:</strong> 45-60% del total calórico</li>
+                                <li><strong>Proteínas:</strong> 15-20% del total calórico</li>
+                                <li><strong>Grasas:</strong> 25-35% del total calórico</li>
+                                <li><strong>Fibra:</strong> Mínimo 25g/día</li>
+                                <li><strong>IG máximo:</strong> 70</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success mt-3">
+                        <h6><i class="fas fa-lightbulb"></i> Beneficios del Sistema:</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Personalización:</strong><br>
+                                Cada recomendación se adapta al perfil específico del paciente.
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Seguridad:</strong><br>
+                                Considera alergias, medicamentos y condiciones médicas.
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Eficiencia:</strong><br>
+                                Genera planes nutricionales completos en segundos.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

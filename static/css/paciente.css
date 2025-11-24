@@ -165,6 +165,14 @@ body {
   color: var(--muted);
 }
 
+.who span {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
 .content {
   padding: 22px;
   flex: 1;

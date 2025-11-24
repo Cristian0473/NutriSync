@@ -1,0 +1,1909 @@
+{% extends "nutricionista/base_nutricionista.html" %}
+{% set page_title = "NutriSync · Alimentos" %}
+{% set header_title = "Alimentos" %}
+{% set active_nav = "ingredientes" %}
+
+{% block content %}
+<div class="toolbar" style="justify-content: space-between; gap:10px;">
+  <button id="btnNuevoIng" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Nuevo alimento
+  </button>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <!-- 🔎 Buscador mejorado -->
+        <div class="searchbox" style="min-width:300px;">
+          <i class="fas fa-carrot"></i>
+          <input id="buscarIngredienteInput" type="text" placeholder="Buscar alimento por nombre o grupo...">
+          <button id="btnClearIngrediente" class="clear" title="Limpiar">×</button>
+        </div>
+
+        <!-- 🏷️ Filtro por grupo -->
+        <div class="searchbox searchbox-grupo">
+          <i class="fas fa-filter"></i>
+          <select id="filtroGrupoInput">
+            <option value="">Todos los grupos</option>
+            <option value="GRUPO1_CEREALES">Grupo 1: Cereales, tubérculos y menestras</option>
+            <option value="GRUPO2_VERDURAS">Grupo 2: Verduras</option>
+            <option value="GRUPO3_FRUTAS">Grupo 3: Frutas</option>
+            <option value="GRUPO4_LACTEOS">Grupo 4: Lácteos y derivados</option>
+            <option value="GRUPO5_CARNES">Grupo 5: Carnes, pescados y huevos</option>
+            <option value="GRUPO6_AZUCARES">Grupo 6: Azúcares y derivados</option>
+            <option value="GRUPO7_GRASAS">Grupo 7: Grasas</option>
+          </select>
+          <button id="btnClearGrupo" class="clear" title="Limpiar filtro">×</button>
+        </div>
+  </div>
+</div>
+
+<!-- ===== TARJETAS DE ESTADÍSTICAS ===== -->
+<div class="stats-grid" id="statsCards" style="margin-bottom: 24px;">
+  <div class="stat-card">
+    <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value" id="statActivos">0</div>
+      <div class="stat-label">Alimentos Activos</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
+      <i class="fas fa-carrot"></i>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Total Alimentos</div>
+    </div>
+  </div>
+
+  <div class="stat-card" id="statGrupoCard" style="display: none;">
+    <div class="stat-icon" style="background: #fce7f3; color: #be185d;">
+      <i class="fas fa-layer-group"></i>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value" id="statGrupo">0</div>
+      <div class="stat-label" id="statGrupoLabel">Por Grupo</div>
+    </div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-carrot"></i> Lista de alimentos</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <!-- Tabla dinámica -->
+      <div id="tablaIng"></div>
+      <div id="paginacionIng" class="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CONFIRMACIÓN ELIMINAR ===== -->
+<div class="modal" id="modalConfirmarBorrar" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalConfirmarBorrar"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h3>
+      <button class="modal-close js-close-modal" data-target="#modalConfirmarBorrar" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de eliminar el alimento <strong id="nombreAlimentoBorrar"></strong>?</p>
+      <p class="muted" style="margin-top: 10px;">Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn js-close-modal" data-target="#modalConfirmarBorrar">Cancelar</button>
+      <form id="formConfirmarBorrar" method="post" style="display:inline-block">
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash"></i> Sí, eliminar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal" id="modalIng" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalIng"></div>
+
+  <div class="modal-dialog modal-xl">
+    <div class="modal-header">
+      <h3><i class="fas fa-seedling"></i> <span id="ing_titulo">Nuevo alimento</span></h3>
+      <button class="modal-close js-close-modal" data-target="#modalIng" aria-label="Cerrar">×</button>
+    </div>
+
+    <form id="formIng" onsubmit="return guardarNuevoIngrediente(event)">
+      <div class="modal-body" style="max-height:calc(100vh - 180px); overflow:auto;">
+        <div class="form-grid three-cols">
+          <!-- Col 1 -->
+          <div class="form-col">
+            <div class="form-row">
+              <label for="i_nombre">Nombre</label>
+              <input class="input" type="text" id="i_nombre" name="nombre" required>
+            </div>
+
+            <div class="form-row">
+              <label for="i_grupo">Grupo</label>
+              <select class="input" id="i_grupo" name="grupo" required>
+                {% for g in grupos %}
+                <option value="{{ g }}">{{ g }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label for="i_kcal">Kcal</label>
+              <input class="input" type="number" id="i_kcal" name="kcal" step="0.01" min="0">
+            </div>
+
+            <div class="form-row">
+              <label for="i_cho">CHO</label>
+              <input class="input" type="number" id="i_cho" name="cho" step="0.01" min="0">
+            </div>
+
+            <div class="form-row">
+              <label for="i_pro">PRO</label>
+              <input class="input" type="number" id="i_pro" name="pro" step="0.01" min="0">
+            </div>
+          </div>
+
+          <!-- Col 2 -->
+          <div class="form-col">
+            <div class="form-row">
+              <label for="i_fat">FAT</label>
+              <input class="input" type="number" id="i_fat" name="fat" step="0.01" min="0">
+            </div>
+
+            <div class="form-row">
+              <label for="i_fibra">Fibra</label>
+              <input class="input" type="number" id="i_fibra" name="fibra" step="0.01" min="0">
+            </div>
+
+            <div class="form-row">
+              <label for="i_ig">IG</label>
+              <input class="input" type="number" id="i_ig" name="ig" step="1" min="0">
+            </div>
+
+            <div class="form-row">
+              <label for="i_sodio">Sodio</label>
+              <input class="input" type="number" id="i_sodio" name="sodio" step="0.01" min="0">
+            </div>
+
+            <div class="form-row">
+              <label for="i_costo">Costo</label>
+              <input class="input" type="number" id="i_costo" name="costo" step="0.01" min="0">
+            </div>
+          </div>
+
+          <!-- Col 3 -->
+          <div class="form-col">
+            <div class="form-row">
+              <label for="i_unidad">Unidad base</label>
+              <input class="input" type="text" id="i_unidad" name="unidad_base" placeholder="g, ml...">
+            </div>
+
+            <div class="form-row">
+              <label for="i_porcion">Porción base</label>
+              <input class="input" type="number" id="i_porcion" name="porcion_base" step="0.01" min="0">
+            </div>
+
+            <!-- === TAGS CHIP INPUT === -->
+            <div class="form-row">
+              <label>Tags</label>
+              <div id="tagsEditor" class="tag-editor" aria-label="Editor de etiquetas">
+                <input id="tagsInput" type="text" class="tag-input" placeholder="Escribe y presiona Enter…">
+              </div>
+              <input type="hidden" id="i_tags_json" name="tags_json" value="">
+              <small class="muted">Agrega etiquetas con <b>Enter</b> o <b>,</b>. Se guardan como JSON.</small>
+            </div>
+
+            <div class="form-row inline">
+              <label class="checkbox">
+                <input type="checkbox" id="i_activo" name="activo" checked>
+                <span>Activo</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn js-close-modal" data-target="#modalIng">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .modal-dialog.modal-xl { width:min(1100px, 96vw); }
+  .form-grid.three-cols { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; }
+  .form-col .form-row { margin-bottom:12px; }
+  .input { width:100%; padding:10px 12px; border:1px solid #d6d9df; border-radius:10px; }
+  .form-row.inline .checkbox { display:flex; gap:8px; align-items:center; }
+  .muted { color:#6b7280; font-size:12px; }
+
+  /* ====== Tag editor (chips) ====== */
+  .tag-editor{
+    display:flex; flex-wrap:wrap; gap:6px;
+    min-height:40px; padding:6px; border:1px solid #d6d9df; border-radius:10px; background:#fff;
+  }
+  .tag-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 8px; border-radius:999px; font-size:13px;
+    background:#eef2ff; color:#1e40af; border:1px solid #c7d2fe;
+  }
+  .tag-chip button{
+    appearance:none; border:0; background:transparent; cursor:pointer; font-size:14px; line-height:1;
+    color:#1e40af;
+  }
+  .tag-input{ flex:1; min-width:160px; border:0; outline:0; font:inherit; padding:6px 4px; }
+
+  /* Compacta la tabla */
+  .card-header { padding:10px 14px; }
+  .card-body { padding:12px 14px; }
+  .tbl thead th { font-size:12px; padding:6px 8px; font-weight: 600; }
+  .tbl td { padding:6px 8px; }
+
+  /* Tabla de ingredientes más compacta */
+  .ingredientes-table {
+    font-size: 13px;
+    width: 100%;
+    table-layout: auto;
+  }
+  
+  .ingredientes-table td {
+    padding: 4px 6px;
+    vertical-align: middle;
+    height: 40px;
+    white-space: nowrap;
+  }
+
+  .ingredientes-table thead th {
+    padding: 6px 6px;
+    height: 40px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .ingredientes-table .grupo-cell {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .ingredientes-table .nombre-cell {
+    font-weight: 600;
+    color: #1e40af;
+  }
+  
+  /* Colores por grupo alimenticio - Más suaves */
+  .ingredientes-table .grupo-cell {
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .grupo-cereales { background: #fefce8; color: #a16207; }
+  .grupo-proteinas { background: #fef2f2; color: #b91c1c; }
+  .grupo-verduras { background: #f0fdf4; color: #166534; }
+  .grupo-frutas { background: #fdf2f8; color: #be185d; }
+  .grupo-lacteos { background: #eff6ff; color: #1d4ed8; }
+  .grupo-grasas { background: #fff7ed; color: #ea580c; }
+  .grupo-legumbres { background: #faf5ff; color: #7c3aed; }
+  .grupo-otros { background: #f8fafc; color: #64748b; }
+  
+  .ingredientes-table .kcal-cell {
+    color: #dc2626;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .ingredientes-table .cho-cell {
+    color: #2563eb;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .ingredientes-table .pro-cell {
+    color: #ea580c;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .ingredientes-table .fat-cell {
+    color: #7c3aed;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .ingredientes-table .activo-cell {
+    text-align: center;
+  }
+
+  .ingredientes-table .actions {
+    text-align: center;
+    vertical-align: middle;
+    padding: 4px 2px !important;
+    width: 100px;
+    max-width: 100px;
+    min-width: 100px;
+    line-height: 1;
+  }
+
+  .ingredientes-table .actions-buttons {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
+    margin-top: -4px;
+    line-height: 1;
+  }
+
+  .ingredientes-table .actions-buttons .btn,
+  .ingredientes-table .actions-buttons button {
+    padding: 0;
+    min-width: 28px;
+    width: 28px;
+    height: 28px;
+    max-width: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .ingredientes-table .actions-buttons .btn i,
+  .ingredientes-table .actions-buttons button i {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1;
+    display: block;
+  }
+
+  .ingredientes-table .actions-buttons form {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+    vertical-align: middle;
+    width: 28px;
+    height: 28px;
+  }
+
+  .ingredientes-table .actions-buttons form button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    max-width: 28px;
+    padding: 0;
+  }
+
+  /* Responsive para pantallas pequeñas */
+  @media (max-width: 768px) {
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .ingredientes-table {
+      min-width: 800px;
+    }
+
+    .ingredientes-table .actions {
+      padding: 4px 2px !important;
+      width: 100px;
+      max-width: 100px;
+    }
+
+    .ingredientes-table .actions-buttons {
+      gap: 3px;
+    }
+
+    .ingredientes-table .actions-buttons .btn,
+    .ingredientes-table .actions-buttons button {
+      min-width: 28px;
+      width: 28px;
+      height: 28px;
+      max-width: 28px;
+    }
+
+    .ingredientes-table .actions-buttons .btn i,
+    .ingredientes-table .actions-buttons button i {
+      font-size: 12px;
+    }
+  }
+  
+
+  /* Modal de detalle - Siguiendo el patrón del modal original */
+  .modal-dialog.modal-lg { 
+    width: min(1100px, 96vw); 
+  }
+  
+  .ingrediente-detalle {
+    background: #fff;
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  .detalle-header {
+    background: #f8fafc;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .detalle-header h4 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 24px;
+    font-weight: 700;
+  }
+  
+  .detalle-content {
+    background: #fff;
+    padding: 24px;
+  }
+  
+  .detalle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+  
+  .detalle-section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+  }
+  
+  .detalle-section h5 {
+    margin: 0 0 16px 0;
+    color: #374151;
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 8px;
+  }
+  
+  .detalle-section .form-row {
+    margin-bottom: 12px;
+  }
+  
+  .detalle-section label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 4px;
+  }
+  
+  .detalle-section input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    transition: all 0.2s ease;
+  }
+  
+  .detalle-section input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .detalle-section input[readonly] {
+    background: #f9fafb;
+    color: #6b7280;
+  }
+  
+  .tags-section {
+    grid-column: 1 / -1;
+    margin-top: 16px;
+  }
+  
+  .tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  
+  .tag-chip {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .tag-chip .remove-tag {
+    background: rgba(55, 48, 163, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #3730a3;
+    font-size: 10px;
+  }
+  
+  .tag-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .tag-input-container input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  .btn-add-tag {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-add-tag:hover {
+    background: #059669;
+  }
+
+  /* Estilos adicionales para seguir el patrón del modal original */
+  .detalle-section .form-row {
+    margin-bottom: 12px;
+  }
+  
+  .detalle-section .form-row:last-child {
+    margin-bottom: 0;
+  }
+  
+  .detalle-section label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 4px;
+  }
+  
+  .detalle-section .input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    transition: all 0.2s ease;
+  }
+  
+  .detalle-section .input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .detalle-section .input[readonly],
+  .detalle-section select[readonly],
+  .detalle-section select[disabled] {
+    background: #f9fafb;
+    color: #6b7280;
+  }
+  
+  .detalle-section select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    transition: all 0.2s ease;
+  }
+  
+  .detalle-section select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .tags-section .form-row {
+    margin-bottom: 0;
+  }
+  
+  .tags-section label {
+    margin-bottom: 8px;
+  }
+  
+  .muted {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+  }
+
+  /* Estilos para el filtro de grupo */
+  .searchbox {
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .searchbox-grupo {
+    min-width: 180px;
+    max-width: 200px;
+    flex: 0 0 auto;
+  }
+
+  .searchbox select {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #374151;
+    background: transparent;
+    cursor: pointer;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .searchbox select option {
+    background: #fff;
+    color: #374151;
+  }
+
+  @media (max-width: 768px) {
+    .toolbar > div {
+      flex-wrap: wrap;
+    }
+
+    .searchbox-grupo {
+      min-width: 150px !important;
+      max-width: calc(50% - 5px) !important;
+    }
+  }
+
+  /* Responsive para modal de detalle */
+  @media (max-width: 768px) {
+    .detalle-grid {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+    
+    .detalle-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .detalle-header h4 {
+      font-size: 20px;
+    }
+  }
+
+  /* Paginación */
+  .pagination { text-align:center; margin-top:12px; }
+  .pagination button {
+    margin: 0 3px; padding: 6px 10px; border: 1px solid #ccc;
+    cursor: pointer; background: #fff; border-radius: 6px;
+  }
+  .pagination button.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+  .row-focus { outline: 2px solid #2563eb; background: #eef2ff; }
+
+  /* Stats Grid - Estilo similar al dashboard */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--panel, #fff);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .stat-content {
+    flex: 1;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text, #1e293b);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--muted, #6b7280);
+  }
+
+  @media (max-width: 768px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- Dependencies -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- Toastify -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+<!-- ✅ JSON para que el linter no se queje -->
+<script id="all-rows-json" type="application/json">
+  {{ rows|tojson }}
+</script>
+
+<script>
+  // ====== Datos iniciales desde el servidor ======
+  let ALL_ROWS = JSON.parse(document.getElementById('all-rows-json').textContent); // [{id, nombre, grupo, ...}]
+
+  // URLs base para acciones (se reemplaza el 0 por el id en JS)
+  const TOGGLE_URL_0 = "{{ url_for('admin_ing_toggle', iid=0) }}";   // /admin/ingredientes/0/toggle
+  const DELETE_URL_0 = "{{ url_for('admin_ing_borrar', iid=0) }}";   // /admin/ingredientes/0/borrar
+
+  // ====== Estado de lista ======
+  const perPageIng = 12;
+  let currentPageIng = 1;
+  let currentQueryIng = "";
+  let currentGrupoIng = ""; // Nueva variable para el filtro de grupo
+
+  // ====== BUSCADOR MEJORADO ======
+  $(document).ready(function () {
+      // Configurar el input de búsqueda
+      const buscarInput = document.getElementById('buscarIngredienteInput');
+      const btnClear = document.getElementById('btnClearIngrediente');
+      
+      let searchTimeout;
+      
+      buscarInput.addEventListener('input', function() {
+          clearTimeout(searchTimeout);
+          const query = this.value.trim();
+          
+          if (query.length >= 2) {
+              searchTimeout = setTimeout(() => {
+                  currentQueryIng = query;
+                  currentPageIng = 1;
+                  renderTablaIng();
+              }, 300);
+          } else if (query.length === 0) {
+              currentQueryIng = '';
+              currentPageIng = 1;
+              renderTablaIng();
+          }
+          
+          btnClear.style.visibility = query ? 'visible' : 'hidden';
+      });
+      
+      btnClear.addEventListener('click', function() {
+          buscarInput.value = '';
+          currentQueryIng = '';
+          currentPageIng = 1;
+          renderTablaIng();
+          btnClear.style.visibility = 'hidden';
+          buscarInput.focus();
+      });
+      
+      btnClear.style.visibility = 'hidden';
+
+      // Configurar el filtro de grupo
+      const filtroGrupo = document.getElementById('filtroGrupoInput');
+      const btnClearGrupo = document.getElementById('btnClearGrupo');
+
+      filtroGrupo.addEventListener('change', function() {
+        currentGrupoIng = this.value;
+        currentPageIng = 1;
+        renderTablaIng();
+        btnClearGrupo.style.visibility = this.value ? 'visible' : 'hidden';
+      });
+
+      btnClearGrupo.addEventListener('click', function() {
+        filtroGrupo.value = '';
+        currentGrupoIng = '';
+        currentPageIng = 1;
+        renderTablaIng();
+        btnClearGrupo.style.visibility = 'hidden';
+        filtroGrupo.focus();
+      });
+
+      btnClearGrupo.style.visibility = 'hidden';
+  });
+
+  // ====== Guardar nuevo ingrediente ======
+  async function guardarNuevoIngrediente(event) {
+    event.preventDefault();
+    
+    // Obtener datos del formulario
+    const formData = new FormData(event.target);
+    const datos = {
+      nombre: formData.get('nombre')?.trim() || '',
+      grupo: formData.get('grupo') || 'GRUPO6_AZUCARES',
+      kcal: formData.get('kcal') || '',
+      cho: formData.get('cho') || '',
+      pro: formData.get('pro') || '',
+      fat: formData.get('fat') || '',
+      fibra: formData.get('fibra') || '',
+      ig: formData.get('ig') || '',
+      sodio: formData.get('sodio') || '',
+      costo: formData.get('costo') || '',
+      unidad_base: formData.get('unidad_base')?.trim() || '',
+      porcion_base: formData.get('porcion_base') || '',
+      tags_json: formData.get('tags_json') || '',
+      activo: formData.has('activo') ? 'on' : ''
+    };
+
+    // Validación básica
+    if (!datos.nombre) {
+      Toastify({
+        text: "⚠️ El nombre es obligatorio",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#f59e0b",
+      }).showToast();
+      return false;
+    }
+
+    try {
+      console.log('Enviando nuevo ingrediente:', datos);
+      
+      const response = await fetch('/api/ingredientes/nuevo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(datos)
+      });
+
+      const result = await response.json();
+      console.log('Resultado:', result);
+
+      if (result.ok) {
+        Toastify({
+          text: "✅ Alimento creado correctamente",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#10b981",
+        }).showToast();
+        
+        // Recargar datos y tabla
+        await recargarDatosIngredientes();
+        renderTablaIng();
+        
+        // Cerrar modal y limpiar formulario
+        document.querySelector('#modalIng').classList.remove('open');
+        event.target.reset();
+        tagsEditor.load([]);
+        
+      } else {
+        Toastify({
+          text: `❌ ${result.error}`,
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#ef4444",
+        }).showToast();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      Toastify({
+        text: "❌ Error de conexión",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#ef4444",
+      }).showToast();
+    }
+    
+    return false; // Prevenir envío tradicional del formulario
+  }
+
+  // ====== Recargar datos desde el servidor ======
+  async function recargarDatosIngredientes() {
+    try {
+      console.log('Iniciando recarga de datos...'); // Debug
+      const response = await fetch('/api/ingredientes');
+      console.log('Respuesta recibida:', response.status); // Debug
+      
+      const data = await response.json();
+      console.log('Datos parseados:', data); // Debug
+      
+      if (data.ok) {
+        ALL_ROWS = data.rows;
+        console.log('Datos recargados exitosamente:', data.rows.length, 'alimentos');
+        console.log('Primer ingrediente:', data.rows[0]); // Debug
+        
+        // Si hay un modal abierto, actualizar los datos del ingrediente actual
+        if (window.currentIngredienteId) {
+          const updatedRow = ALL_ROWS.find(r => r.id == window.currentIngredienteId);
+          if (updatedRow) {
+            // Actualizar los datos originales con los datos del servidor
+            if (window.ingredienteOriginal) {
+              window.ingredienteOriginal = {
+                ...window.ingredienteOriginal,
+                ...updatedRow
+              };
+            }
+            
+            // Actualizar los tags desde el servidor
+            // El servidor devuelve tags_full como string separado por comas y tags_json como JSON
+            // Priorizar tags_json si está disponible, sino usar tags_full
+            const tagsFromServer = parseTagsString(updatedRow.tags_json || updatedRow.tags_full || '');
+            if (tagsFromServer && Array.isArray(tagsFromServer) && tagsFromServer.length > 0) {
+              window.currentTags = tagsFromServer;
+              // Actualizar la visualización de tags en el modal
+              updateTagsDisplay();
+              console.log('Tags actualizados desde el servidor:', window.currentTags);
+            } else if (window.currentTags && window.currentTags.length > 0) {
+              // Si no hay tags en el servidor pero tenemos tags locales, mantenerlos
+              console.log('No se encontraron tags en el servidor, manteniendo tags actuales:', window.currentTags);
+              // Actualizar también en ALL_ROWS para que se refleje
+              updatedRow.tags_full = window.currentTags.join(', ');
+              updatedRow.tags_json = JSON.stringify(window.currentTags);
+            } else {
+              // No hay tags ni locales ni en el servidor
+              window.currentTags = [];
+              updateTagsDisplay();
+              console.log('No hay tags disponibles');
+            }
+          }
+        }
+      } else {
+        console.error('Error al recargar datos:', data.error);
+      }
+    } catch (error) {
+      console.error('Error de conexión al recargar:', error);
+    }
+  }
+
+  // ====== Render tabla filtrada + paginación ======
+  function norm(s){ return (s||"").toString().toLowerCase(); }
+
+  function filteredRows(){
+    console.log('Iniciando filteredRows...'); // Debug
+    const q = norm(currentQueryIng);
+    const grupo = currentGrupoIng;
+    
+    console.log('Query actual:', q); // Debug
+    console.log('Grupo actual:', grupo); // Debug
+    console.log('ALL_ROWS en filteredRows:', ALL_ROWS ? ALL_ROWS.length : 'No disponible'); // Debug
+    
+    if (!q && !grupo) {
+      console.log('Sin filtros, devolviendo todos los datos'); // Debug
+      return ALL_ROWS;
+    }
+
+    return ALL_ROWS.filter(r=>{
+      const tags = (r.tags_full||"").toString().toLowerCase();
+      const matchQuery = !q || 
+        norm(r.nombre).includes(q) || 
+        norm(r.grupo).includes(q) || 
+        tags.includes(q);
+      
+      const matchGrupo = !grupo || 
+        norm(r.grupo) === norm(grupo);
+      
+      return matchQuery && matchGrupo;
+    });
+  }
+
+  function renderTablaIng(){
+    console.log('Iniciando renderTablaIng...'); // Debug
+    const wrap = document.getElementById("tablaIng");
+    const rows = filteredRows();
+    console.log('Filas filtradas:', rows.length); // Debug
+    console.log('ALL_ROWS disponible:', ALL_ROWS ? ALL_ROWS.length : 'No disponible'); // Debug
+    
+    if (!rows.length){
+      wrap.innerHTML = "<p class='empty'>No hay alimentos que coincidan.</p>";
+      document.getElementById("paginacionIng").innerHTML = "";
+      actualizarEstadisticas(rows); // actualizar estadísticas incluso sin resultados
+      return;
+    }
+
+    const start = (currentPageIng-1)*perPageIng;
+    const pageRows = rows.slice(start, start+perPageIng);
+
+    let html = `
+      <table class="tbl ingredientes-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Grupo</th>
+            <th>Kcal</th>
+            <th>CHO</th>
+            <th>PRO</th>
+            <th>FAT</th>
+            <th>Activo</th>
+            <th style="width:100px; min-width:100px; max-width:100px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    pageRows.forEach(i=>{
+      const activoBadge = i.activo ? '<span class="badge ok">Sí</span>' : '<span class="badge">No</span>';
+      const toggleUrl = TOGGLE_URL_0.replace('/0/toggle', `/${i.id}/toggle`);
+      const deleteUrl = DELETE_URL_0.replace('/0/borrar', `/${i.id}/borrar`);
+      const toggleTxt = i.activo ? 'Desactivar' : 'Activar';
+      const toggleIco = i.activo ? 'fa-eye-slash' : 'fa-eye';
+
+      // Función para obtener la clase CSS del grupo
+      function getGrupoClass(grupo) {
+        const grupoLower = (grupo || '').toLowerCase();
+        if (grupoLower.includes('cereal')) return 'grupo-cereales';
+        if (grupoLower.includes('proteina') || grupoLower.includes('carne') || grupoLower.includes('pollo') || grupoLower.includes('pescado')) return 'grupo-proteinas';
+        if (grupoLower.includes('verdura') || grupoLower.includes('vegetal')) return 'grupo-verduras';
+        if (grupoLower.includes('fruta')) return 'grupo-frutas';
+        if (grupoLower.includes('lacteo') || grupoLower.includes('leche') || grupoLower.includes('queso') || grupoLower.includes('yogur')) return 'grupo-lacteos';
+        if (grupoLower.includes('grasa') || grupoLower.includes('aceite') || grupoLower.includes('mantequilla')) return 'grupo-grasas';
+        if (grupoLower.includes('legumbre') || grupoLower.includes('frijol') || grupoLower.includes('lenteja')) return 'grupo-legumbres';
+        return 'grupo-otros';
+      }
+
+      html += `
+        <tr>
+          <td class="nombre-cell">${escapeHtml(i.nombre)}</td>
+          <td class="grupo-cell ${getGrupoClass(i.grupo)}">${escapeHtml(i.grupo||'')}</td>
+          <td class="kcal-cell">${i.kcal ?? '-'}</td>
+          <td class="cho-cell">${i.cho ?? '-'}</td>
+          <td class="pro-cell">${i.pro ?? '-'}</td>
+          <td class="fat-cell">${i.fat ?? '-'}</td>
+          <td class="activo-cell">${activoBadge}</td>
+          <td class="actions">
+            <div class="actions-buttons">
+              <button class="btn btn-sm btn-info js-ver-detalle"
+                data-id="${i.id}"
+                data-nombre="${htmlAttr(i.nombre)}"
+                data-grupo="${htmlAttr(i.grupo)}"
+                data-kcal="${i.kcal ?? ''}"
+                data-cho="${i.cho ?? ''}"
+                data-pro="${i.pro ?? ''}"
+                data-fat="${i.fat ?? ''}"
+                data-fibra="${i.fibra ?? ''}"
+                data-ig="${i.ig ?? ''}"
+                data-sodio="${i.sodio ?? ''}"
+                data-costo="${i.costo ?? ''}"
+                data-unidad="${htmlAttr(i.unidad_base ?? '')}"
+                data-porcion="${i.porcion_base ?? ''}"
+                data-tags="${htmlAttr(i.tags_full ?? '')}"
+                data-activo="${i.activo ? '1' : '0'}"
+                title="Ver detalle"
+                style="background: #3b82f6; color: white;">
+                <i class="fas fa-eye"></i>
+              </button>
+
+              <form method="post" action="${toggleUrl}" onsubmit="return confirmarConToast('¿Cambiar estado?', 'toggle')" style="margin: 0; padding: 0; display: flex;">
+                <button type="submit" class="btn btn-sm" title="${toggleTxt}" style="background: #6b7280; color: white;">
+                  <i class="fas ${toggleIco}"></i>
+                </button>
+              </form>
+
+              <button type="button" class="btn btn-sm btn-danger js-confirmar-borrar"
+                      data-id="${i.id}"
+                      data-nombre="${htmlAttr(i.nombre)}"
+                      data-url="${deleteUrl}"
+                      title="Borrar"
+                      style="background: #ef4444; color: white;">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+    });
+
+    html += "</tbody></table>";
+    wrap.innerHTML = html;
+
+    bindVerDetalle(); // re-vincula botones de ver detalle
+    bindConfirmarBorrar(); // re-vincula botones de confirmar borrar
+    renderPaginacionIng(rows.length);
+    actualizarEstadisticas(rows); // actualizar tarjetas de estadísticas
+  }
+
+  function renderPaginacionIng(totalItems){
+    const cont = document.getElementById("paginacionIng");
+    const totalPages = Math.max(1, Math.ceil(totalItems / perPageIng));
+    if (totalPages <= 1){ cont.innerHTML = ""; return; }
+
+    const maxBtns = 7;
+    let start = Math.max(1, currentPageIng - Math.floor(maxBtns/2));
+    let end = Math.min(totalPages, start + maxBtns - 1);
+    if (end - start + 1 < maxBtns) start = Math.max(1, end - maxBtns + 1);
+
+    let html = "";
+    if (currentPageIng > 1) html += `<button data-p="${currentPageIng-1}">‹</button>`;
+    for (let p = start; p <= end; p++){
+      html += `<button data-p="${p}" class="${p===currentPageIng?'active':''}">${p}</button>`;
+    }
+    if (currentPageIng < totalPages) html += `<button data-p="${currentPageIng+1}">›</button>`;
+
+    cont.innerHTML = html;
+    cont.querySelectorAll("button").forEach(b=>{
+      b.addEventListener("click", ()=>{ currentPageIng = parseInt(b.dataset.p); renderTablaIng(); });
+    });
+  }
+
+  // ====== Actualizar estadísticas en las tarjetas ======
+  function actualizarEstadisticas(rowsFiltradas) {
+    // Calcular totales de todos los alimentos (sin filtros)
+    const totalActivos = ALL_ROWS.filter(r => r.activo).length;
+    const totalTodos = ALL_ROWS.length;
+    
+    // Actualizar tarjeta de activos
+    document.getElementById('statActivos').textContent = totalActivos;
+    
+    // Actualizar tarjeta de total
+    document.getElementById('statTotal').textContent = totalTodos;
+    
+    // Si hay filtro de grupo activo, mostrar tarjeta de grupo
+    const grupoCard = document.getElementById('statGrupoCard');
+    if (currentGrupoIng) {
+      const grupoFiltrado = rowsFiltradas.filter(r => norm(r.grupo) === norm(currentGrupoIng)).length;
+      document.getElementById('statGrupo').textContent = grupoFiltrado;
+      
+      // Obtener nombre del grupo para mostrar
+      const grupoSelect = document.getElementById('filtroGrupoInput');
+      const grupoNombre = grupoSelect.options[grupoSelect.selectedIndex]?.text || currentGrupoIng;
+      document.getElementById('statGrupoLabel').textContent = grupoNombre;
+      
+      grupoCard.style.display = 'flex';
+    } else {
+      grupoCard.style.display = 'none';
+    }
+  }
+
+
+  // ===== Utilidad modal =====
+  const openModal = sel => document.querySelector(sel).classList.add('open');
+  const closeModal = sel => document.querySelector(sel).classList.remove('open');
+  document.querySelectorAll('.js-close-modal').forEach(b => {
+    b.addEventListener('click', () => closeModal(b.dataset.target));
+  });
+
+  // ====== TAGS: editor de chips ======
+  const TAGS = [];
+  const tagsEditor = {
+    root: null, input: null, hidden: null,
+    mount(rootId, inputId, hiddenId){
+      this.root   = document.getElementById(rootId);
+      this.input  = document.getElementById(inputId);
+      this.hidden = document.getElementById(hiddenId);
+      this.input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const v = (this.input.value || '').trim();
+          if (v) { this.add(v); this.input.value=''; }
+        } else if (e.key === 'Backspace' && !this.input.value && TAGS.length){
+          this.remove(TAGS[TAGS.length-1]);
+        }
+      });
+      this.input.addEventListener('blur', () => {
+        const v = (this.input.value || '').trim();
+        if (v) { this.add(v); this.input.value=''; }
+      });
+      this.render();
+    },
+    add(txt){
+      const val = txt.replace(/[\s]+/g,' ').trim();
+      if (!val) return;
+      if (!TAGS.includes(val)) TAGS.push(val);
+      this.sync();
+    },
+    remove(txt){
+      const ix = TAGS.indexOf(txt);
+      if (ix >= 0) TAGS.splice(ix,1);
+      this.sync();
+    },
+    load(list){
+      TAGS.splice(0, TAGS.length, ...list.filter(Boolean));
+      this.sync();
+    },
+    render(){
+      [...this.root.querySelectorAll('.tag-chip')].forEach(n => n.remove());
+      TAGS.forEach(t => {
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.innerHTML = `<span>${escapeHtml(t)}</span><button type="button" title="Quitar">×</button>`;
+        chip.querySelector('button').addEventListener('click', () => this.remove(t));
+        this.root.insertBefore(chip, this.input);
+      });
+    },
+    sync(){
+      this.render();
+      this.hidden.value = JSON.stringify(TAGS);
+    }
+  };
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function htmlAttr(s){ return escapeHtml(String(s||'')).replace(/"/g,'&quot;'); }
+
+  function parseTagsString(raw){
+    if (!raw) return [];
+    const t = String(raw).trim();
+    try {
+      const js = JSON.parse(t);
+      if (Array.isArray(js)) return js.map(x => String(x).trim()).filter(Boolean);
+      if (js && typeof js === 'object')
+        return Object.entries(js).filter(([,v])=>!!v).map(([k])=>String(k).trim()).filter(Boolean);
+    } catch(e){}
+    return t.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
+  }
+
+  // ====== Nuevo ======
+  document.getElementById('btnNuevoIng')?.addEventListener('click', () => {
+    const f = document.getElementById('formIng');
+    f.action = "{{ url_for('admin_ing_nuevo') }}";
+    document.getElementById('ing_titulo').innerText = "Nuevo alimento";
+    ['i_nombre','i_kcal','i_cho','i_pro','i_fat','i_fibra','i_ig','i_sodio','i_costo','i_unidad','i_porcion']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+    document.getElementById('i_grupo').value = "{{ grupos[0] if grupos else 'GRUPO6_AZUCARES' }}";
+    document.getElementById('i_activo').checked = true;
+    tagsEditor.load([]);
+    openModal('#modalIng');
+  });
+
+  // ====== Ver detalle (se re-vincula en cada render) ======
+  function bindVerDetalle(){
+    document.querySelectorAll('.js-ver-detalle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        mostrarDetalleIngrediente(btn);
+      });
+    });
+  }
+
+  // ====== Confirmar borrar (se re-vincula en cada render) ======
+  function bindConfirmarBorrar(){
+    document.querySelectorAll('.js-confirmar-borrar').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const nombre = btn.dataset.nombre;
+        const url = btn.dataset.url;
+        
+        document.getElementById('nombreAlimentoBorrar').textContent = nombre;
+        document.getElementById('formConfirmarBorrar').action = url;
+        document.querySelector('#modalConfirmarBorrar').classList.add('open');
+      });
+    });
+  }
+
+  // Función para mostrar el detalle del ingrediente
+  function mostrarDetalleIngrediente(btn) {
+    const ingrediente = {
+      id: btn.dataset.id,
+      nombre: btn.dataset.nombre,
+      grupo: btn.dataset.grupo,
+      kcal: btn.dataset.kcal,
+      cho: btn.dataset.cho,
+      pro: btn.dataset.pro,
+      fat: btn.dataset.fat,
+      fibra: btn.dataset.fibra,
+      ig: btn.dataset.ig,
+      sodio: btn.dataset.sodio,
+      costo: btn.dataset.costo,
+      unidad: btn.dataset.unidad,
+      porcion: btn.dataset.porcion,
+      tags: btn.dataset.tags,
+      activo: btn.dataset.activo === '1'
+    };
+
+    const tagsArray = parseTagsString(ingrediente.tags);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal open';
+    modal.innerHTML = `
+      <div class="modal-backdrop" onclick="this.parentNode.remove()"></div>
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <h3><i class="fas fa-seedling"></i> Detalle del Alimento</h3>
+          <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="ingrediente-detalle">
+            <div class="detalle-header">
+              <h4 id="detalle-nombre">${escapeHtml(ingrediente.nombre)}</h4>
+              <span class="badge ${ingrediente.activo ? 'ok' : 'warn'}" id="detalle-activo">${ingrediente.activo ? 'Activo' : 'Inactivo'}</span>
+            </div>
+            
+            <div class="detalle-content">
+              <div class="detalle-grid">
+                <!-- Columna 1 -->
+                <div class="detalle-section">
+                  <div class="form-row">
+                    <label for="edit-nombre">Nombre</label>
+                    <input class="input" type="text" id="edit-nombre" value="${escapeHtml(ingrediente.nombre)}" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-grupo">Grupo</label>
+                    <select class="input" id="edit-grupo" readonly disabled>
+                      <option value="GRUPO1_CEREALES" ${ingrediente.grupo === 'GRUPO1_CEREALES' ? 'selected' : ''}>Grupo 1: Cereales, tubérculos y menestras</option>
+                      <option value="GRUPO2_VERDURAS" ${ingrediente.grupo === 'GRUPO2_VERDURAS' ? 'selected' : ''}>Grupo 2: Verduras</option>
+                      <option value="GRUPO3_FRUTAS" ${ingrediente.grupo === 'GRUPO3_FRUTAS' ? 'selected' : ''}>Grupo 3: Frutas</option>
+                      <option value="GRUPO4_LACTEOS" ${ingrediente.grupo === 'GRUPO4_LACTEOS' ? 'selected' : ''}>Grupo 4: Lácteos y derivados</option>
+                      <option value="GRUPO5_CARNES" ${ingrediente.grupo === 'GRUPO5_CARNES' ? 'selected' : ''}>Grupo 5: Carnes, pescados y huevos</option>
+                      <option value="GRUPO6_AZUCARES" ${ingrediente.grupo === 'GRUPO6_AZUCARES' ? 'selected' : ''}>Grupo 6: Azúcares y derivados</option>
+                      <option value="GRUPO7_GRASAS" ${ingrediente.grupo === 'GRUPO7_GRASAS' ? 'selected' : ''}>Grupo 7: Grasas</option>
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-porcion">Porción Base</label>
+                    <input class="input" type="number" id="edit-porcion" value="${ingrediente.porcion}" step="0.01" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-unidad">Unidad Base</label>
+                    <input class="input" type="text" id="edit-unidad" value="${escapeHtml(ingrediente.unidad)}" readonly>
+                  </div>
+                </div>
+                
+                <!-- Columna 2 -->
+                <div class="detalle-section">
+                  <div class="form-row">
+                    <label for="edit-costo">Costo</label>
+                    <input class="input" type="number" id="edit-costo" value="${ingrediente.costo}" step="0.01" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-kcal">Kcal</label>
+                    <input class="input" type="number" id="edit-kcal" value="${ingrediente.kcal}" step="0.01" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-cho">CHO</label>
+                    <input class="input" type="number" id="edit-cho" value="${ingrediente.cho}" step="0.01" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-pro">PRO</label>
+                    <input class="input" type="number" id="edit-pro" value="${ingrediente.pro}" step="0.01" readonly>
+                  </div>
+                </div>
+                
+                <!-- Columna 3 -->
+                <div class="detalle-section">
+                  <div class="form-row">
+                    <label for="edit-fat">FAT</label>
+                    <input class="input" type="number" id="edit-fat" value="${ingrediente.fat}" step="0.01" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-fibra">Fibra</label>
+                    <input class="input" type="number" id="edit-fibra" value="${ingrediente.fibra}" step="0.01" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-ig">IG</label>
+                    <input class="input" type="number" id="edit-ig" value="${ingrediente.ig}" step="1" readonly>
+                  </div>
+                  <div class="form-row">
+                    <label for="edit-sodio">Sodio</label>
+                    <input class="input" type="number" id="edit-sodio" value="${ingrediente.sodio}" step="0.01" readonly>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Tags Section -->
+              <div class="tags-section">
+                <div class="form-row">
+                  <label>Tags</label>
+                  <div class="tags-display" id="tags-display">
+                    ${tagsArray.map(tag => `
+                      <span class="tag-chip">
+                        ${escapeHtml(tag)}
+                        <button class="remove-tag" onclick="removeTag('${escapeHtml(tag)}')">×</button>
+                      </span>
+                    `).join('')}
+                  </div>
+                  <div class="tag-input-container">
+                    <input class="input" type="text" id="new-tag-input" placeholder="Agregar nuevo tag..." maxlength="50">
+                    <button class="btn-add-tag" onclick="addTag()">
+                      <i class="fas fa-plus"></i> Agregar
+                    </button>
+                  </div>
+                  <small class="muted">Agrega etiquetas con <b>Enter</b>. Se guardan como JSON.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="btn-cancelar" onclick="this.closest('.modal').remove()">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="btn-editar" onclick="habilitarEdicion()">
+            <i class="fas fa-edit"></i> Editar
+          </button>
+          <button type="button" class="btn btn-success" id="btn-guardar" onclick="guardarCambios(${ingrediente.id})" style="display:none;" data-ingrediente-id="${ingrediente.id}">
+            <i class="fas fa-save"></i> Guardar Cambios
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Guardar datos originales para comparar cambios
+    window.ingredienteOriginal = ingrediente;
+    // Guardar el ID del ingrediente para poder guardar tags
+    window.currentIngredienteId = ingrediente.id;
+    // Inicializar tags asegurándose de que sea un array
+    window.currentTags = Array.isArray(tagsArray) ? [...tagsArray] : [];
+    
+    // Asegurarse de que los tags se muestren correctamente
+    updateTagsDisplay();
+    
+    // Event listener para Enter en el input de tags
+    const tagInput = document.getElementById('new-tag-input');
+    if (tagInput) {
+      tagInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addTag();
+        }
+      });
+    }
+  }
+
+  // Función para habilitar la edición
+  function habilitarEdicion() {
+    // Excluir los elementos de tags del modo edición
+    const inputs = document.querySelectorAll('.ingrediente-detalle input:not(#new-tag-input), .ingrediente-detalle select');
+    inputs.forEach(input => {
+      // Excluir también el campo hidden de tags
+      if (input.id !== 'i_tags_json') {
+        input.removeAttribute('readonly');
+        input.removeAttribute('disabled');
+        input.style.backgroundColor = '#fff';
+      }
+    });
+    
+    document.getElementById('btn-editar').style.display = 'none';
+    document.getElementById('btn-guardar').style.display = 'inline-flex';
+  }
+
+  // Función para agregar un tag
+  function addTag() {
+    const input = document.getElementById('new-tag-input');
+    if (!input) return;
+    
+    const newTag = input.value.trim();
+    
+    if (!newTag) {
+      Toastify({
+        text: "⚠️ Por favor ingresa un tag",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#f59e0b",
+      }).showToast();
+      return;
+    }
+    
+    if (!window.currentTags) {
+      window.currentTags = [];
+    }
+    
+    if (window.currentTags.includes(newTag)) {
+      Toastify({
+        text: "⚠️ Este tag ya existe",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#f59e0b",
+      }).showToast();
+      return;
+    }
+    
+    if (window.currentTags.length >= 10) {
+      Toastify({
+        text: "⚠️ Máximo 10 tags permitidos",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#f59e0b",
+      }).showToast();
+      return;
+    }
+    
+    window.currentTags.push(newTag);
+    updateTagsDisplay();
+    input.value = '';
+    
+    // Guardar tags automáticamente
+    guardarTags();
+    
+    Toastify({
+      text: "✅ Tag agregado correctamente",
+      duration: 3000,
+      gravity: "top",
+      position: "right",
+      backgroundColor: "#10b981",
+    }).showToast();
+  }
+
+  // Función para remover un tag
+  function removeTag(tagToRemove) {
+    if (!window.currentTags) {
+      window.currentTags = [];
+    }
+    
+    window.currentTags = window.currentTags.filter(tag => tag !== tagToRemove);
+    updateTagsDisplay();
+    
+    // Guardar tags automáticamente
+    guardarTags();
+    
+    Toastify({
+      text: "🗑️ Tag eliminado",
+      duration: 3000,
+      gravity: "top",
+      position: "right",
+      backgroundColor: "#ef4444",
+    }).showToast();
+  }
+  
+  // Función para guardar solo los tags (sin entrar en modo edición)
+  async function guardarTags() {
+    // Obtener el ID del ingrediente de la variable global
+    const id = window.currentIngredienteId;
+    
+    if (!id) {
+      console.error('No se pudo obtener el ID del ingrediente para guardar tags');
+      return;
+    }
+    
+    // Asegurarse de que window.currentTags esté inicializado
+    if (!window.currentTags) {
+      window.currentTags = [];
+    }
+    
+    // Obtener todos los datos actuales del ingrediente (usar los valores originales si no están en el formulario)
+    const nombreEl = document.getElementById('edit-nombre');
+    const grupoEl = document.getElementById('edit-grupo');
+    const porcionEl = document.getElementById('edit-porcion');
+    const unidadEl = document.getElementById('edit-unidad');
+    const costoEl = document.getElementById('edit-costo');
+    const kcalEl = document.getElementById('edit-kcal');
+    const choEl = document.getElementById('edit-cho');
+    const proEl = document.getElementById('edit-pro');
+    const fatEl = document.getElementById('edit-fat');
+    const fibraEl = document.getElementById('edit-fibra');
+    const igEl = document.getElementById('edit-ig');
+    const sodioEl = document.getElementById('edit-sodio');
+    
+    const datos = {
+      nombre: nombreEl?.value.trim() || window.ingredienteOriginal?.nombre || '',
+      grupo: grupoEl?.value || window.ingredienteOriginal?.grupo || '',
+      porcion_base: porcionEl?.value || window.ingredienteOriginal?.porcion_base || '',
+      unidad_base: unidadEl?.value.trim() || window.ingredienteOriginal?.unidad_base || '',
+      costo: costoEl?.value || window.ingredienteOriginal?.costo || '',
+      kcal: kcalEl?.value || window.ingredienteOriginal?.kcal || '',
+      cho: choEl?.value || window.ingredienteOriginal?.cho || '',
+      pro: proEl?.value || window.ingredienteOriginal?.pro || '',
+      fat: fatEl?.value || window.ingredienteOriginal?.fat || '',
+      fibra: fibraEl?.value || window.ingredienteOriginal?.fibra || '',
+      ig: igEl?.value || window.ingredienteOriginal?.ig || '',
+      sodio: sodioEl?.value || window.ingredienteOriginal?.sodio || '',
+      tags_json: JSON.stringify(window.currentTags),
+      activo: window.ingredienteOriginal?.activo ? 'on' : ''
+    };
+    
+    console.log('Guardando tags:', window.currentTags, 'para ingrediente:', id);
+    
+    try {
+      const response = await fetch(`/api/ingredientes/${id}/editar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(datos)
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok) {
+        console.log('Tags guardados correctamente');
+        // Actualizar los datos originales para que reflejen los tags guardados
+        if (window.ingredienteOriginal) {
+          window.ingredienteOriginal.tags = window.currentTags;
+          window.ingredienteOriginal.tags_json = JSON.stringify(window.currentTags);
+        }
+        
+        // Actualizar también en ALL_ROWS para que se refleje en la tabla
+        if (ALL_ROWS && window.currentIngredienteId) {
+          const rowIndex = ALL_ROWS.findIndex(r => r.id == window.currentIngredienteId);
+          if (rowIndex !== -1) {
+            // Actualizar tags_full con los tags actuales
+            ALL_ROWS[rowIndex].tags_full = window.currentTags.join(', ');
+            ALL_ROWS[rowIndex].tags_json = JSON.stringify(window.currentTags);
+            console.log('ALL_ROWS actualizado con nuevos tags');
+            
+            // Actualizar también el botón en la tabla si existe
+            const btn = document.querySelector(`.js-ver-detalle[data-id="${window.currentIngredienteId}"]`);
+            if (btn) {
+              btn.setAttribute('data-tags', window.currentTags.join(', '));
+            }
+          }
+        }
+      } else {
+        console.error('Error al guardar tags:', result.error);
+        Toastify({
+          text: `❌ Error al guardar tags: ${result.error}`,
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#ef4444",
+        }).showToast();
+      }
+    } catch (error) {
+      console.error('Error al guardar tags:', error);
+      Toastify({
+        text: `❌ Error de conexión al guardar tags`,
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#ef4444",
+      }).showToast();
+    }
+  }
+
+  // Función para actualizar la visualización de tags
+  function updateTagsDisplay() {
+    const tagsDisplay = document.getElementById('tags-display');
+    if (!tagsDisplay) return; // Si no existe el elemento, salir
+    
+    if (!window.currentTags) {
+      window.currentTags = [];
+    }
+    
+    tagsDisplay.innerHTML = window.currentTags.map(tag => `
+      <span class="tag-chip">
+        ${escapeHtml(tag)}
+        <button class="remove-tag" onclick="removeTag('${escapeHtml(tag)}')">×</button>
+      </span>
+    `).join('');
+    
+    // Actualizar también el campo hidden si existe (para el formulario de nuevo ingrediente)
+    const hiddenTagsInput = document.getElementById('i_tags_json');
+    if (hiddenTagsInput) {
+      hiddenTagsInput.value = JSON.stringify(window.currentTags);
+    }
+  }
+
+
+  // Función para guardar los cambios
+  async function guardarCambios(id) {
+    // Asegurarse de que window.currentTags esté inicializado
+    if (!window.currentTags) {
+      window.currentTags = [];
+    }
+    
+    console.log('Guardando cambios para ingrediente:', id);
+    console.log('Tags actuales:', window.currentTags);
+    
+    const datos = {
+      nombre: document.getElementById('edit-nombre')?.value.trim() || '',
+      grupo: document.getElementById('edit-grupo')?.value || '',
+      porcion_base: document.getElementById('edit-porcion')?.value || '',
+      unidad_base: document.getElementById('edit-unidad')?.value.trim() || '',
+      costo: document.getElementById('edit-costo')?.value || '',
+      kcal: document.getElementById('edit-kcal')?.value || '',
+      cho: document.getElementById('edit-cho')?.value || '',
+      pro: document.getElementById('edit-pro')?.value || '',
+      fat: document.getElementById('edit-fat')?.value || '',
+      fibra: document.getElementById('edit-fibra')?.value || '',
+      ig: document.getElementById('edit-ig')?.value || '',
+      sodio: document.getElementById('edit-sodio')?.value || '',
+      tags_json: JSON.stringify(window.currentTags), // Usar siempre window.currentTags
+      activo: window.ingredienteOriginal?.activo ? 'on' : '' // Mantener el estado activo original
+    };
+    
+    console.log('Datos a enviar:', datos);
+    console.log('tags_json enviado:', datos.tags_json);
+
+    // Validación básica en el frontend
+    if (!datos.nombre) {
+      Toastify({
+        text: "⚠️ El nombre es obligatorio",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#f59e0b",
+      }).showToast();
+      return;
+    }
+
+    if (!datos.grupo) {
+      Toastify({
+        text: "⚠️ El grupo es obligatorio",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#f59e0b",
+      }).showToast();
+      return;
+    }
+
+    try {
+      console.log('Enviando datos:', datos); // Debug
+      
+      const response = await fetch(`/api/ingredientes/${id}/editar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(datos)
+      });
+
+      console.log('Respuesta del servidor:', response.status); // Debug
+
+      const result = await response.json();
+      console.log('Resultado:', result); // Debug
+      console.log('Tags que se enviaron:', window.currentTags); // Debug
+
+      if (result.ok) {
+        // Actualizar los datos originales con los tags guardados
+        if (window.ingredienteOriginal) {
+          window.ingredienteOriginal.tags = window.currentTags;
+          window.ingredienteOriginal.tags_json = JSON.stringify(window.currentTags);
+        }
+        
+        // IMPORTANTE: NO actualizar ALL_ROWS aquí porque se recargará desde el servidor
+        // Solo actualizar el botón en la tabla si existe (temporalmente hasta que se recargue)
+        if (window.currentIngredienteId) {
+          const btn = document.querySelector(`.js-ver-detalle[data-id="${window.currentIngredienteId}"]`);
+          if (btn) {
+            btn.setAttribute('data-tags', window.currentTags.join(', '));
+            console.log('Botón actualizado temporalmente con tags:', window.currentTags.join(', '));
+          }
+        }
+        
+        Toastify({
+          text: "✅ Alimento actualizado correctamente",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#10b981",
+        }).showToast();
+        
+        // Recargar los datos desde el servidor y luego la tabla
+        console.log('Recargando datos desde el servidor...'); // Debug
+        console.log('Tags que se enviaron al servidor:', window.currentTags); // Debug
+        await recargarDatosIngredientes();
+        console.log('Datos recargados, renderizando tabla...'); // Debug
+        
+        // Verificar que los tags se hayan guardado correctamente
+        if (window.currentIngredienteId) {
+          const updatedRow = ALL_ROWS.find(r => r.id == window.currentIngredienteId);
+          if (updatedRow) {
+            const tagsFromServer = parseTagsString(updatedRow.tags_full || '');
+            console.log('Tags después de recargar desde servidor:', tagsFromServer);
+            console.log('Tags que se enviaron:', window.currentTags);
+            
+            // Si los tags del servidor están vacíos pero enviamos tags, actualizar localmente
+            if ((!tagsFromServer || tagsFromServer.length === 0) && window.currentTags && window.currentTags.length > 0) {
+              console.warn('⚠️ Los tags no se guardaron correctamente en el servidor, actualizando localmente');
+              updatedRow.tags_full = window.currentTags.join(', ');
+              updatedRow.tags_json = JSON.stringify(window.currentTags);
+            } else if (tagsFromServer && tagsFromServer.length > 0) {
+              // Los tags se guardaron correctamente, actualizar window.currentTags
+              window.currentTags = tagsFromServer;
+              console.log('Tags actualizados desde el servidor:', window.currentTags);
+            }
+          }
+        }
+        
+        renderTablaIng();
+        console.log('Tabla renderizada'); // Debug
+        
+        // Re-vincular los event listeners de los botones de detalle
+        bindVerDetalle();
+        
+        // Actualizar la visualización de tags en el modal si aún está abierto
+        updateTagsDisplay();
+        
+        // Cerrar modal después de un breve delay para que el usuario vea el mensaje de éxito
+        setTimeout(() => {
+          const modal = document.querySelector('.modal.open');
+          if (modal) {
+            modal.remove();
+          }
+        }, 1500);
+      } else {
+        Toastify({
+          text: `❌ ${result.error}`,
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#ef4444",
+        }).showToast();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      Toastify({
+        text: "❌ Error de conexión",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#ef4444",
+      }).showToast();
+    }
+  }
+
+  // ====== Init ======
+  document.addEventListener('DOMContentLoaded', () => {
+    tagsEditor.mount('tagsEditor','tagsInput','i_tags_json');
+    document.getElementById('formIng').addEventListener('submit', () => {
+      const pending = (tagsEditor.input.value || '').trim();
+      if (pending){ tagsEditor.add(pending); tagsEditor.input.value=''; }
+    });
+
+    renderTablaIng(); // primera carga
+  });
+</script>
+{% endblock %}

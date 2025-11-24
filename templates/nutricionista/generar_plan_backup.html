@@ -1,0 +1,3839 @@
+{% extends "nutricionista/base_nutricionista.html" %}
+{% set page_title = "NutriSync · Generador de plan" %}
+{% set header_title = "Generar plan de alimentación" %}
+{% set active_nav = "generar_plan" %}
+
+{% block content %}
+
+<div class="toolbar" style="justify-content: space-between; gap:10px;">
+    <div style="display:flex; gap:10px; align-items:center;">
+        <div class="searchbox" style="min-width:360px;">
+            <i class="fas fa-user"></i>
+            <input id="qPac" type="text" placeholder="Buscar paciente (DNI, nombre o apellido)…">
+            <button id="btnClearPac" class="clear" title="Limpiar">×</button>
+        </div>
+        <a class="btn btn-primary" href="{{ url_for('admin_pacientes') }}" target="_blank">
+            <i class="fas fa-user-plus"></i> Registrar paciente
+        </a>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+        <button class="btn" id="btnLimpiar">Limpiar</button>
+        <button class="btn" id="btnGuardarBorrador" disabled>Guardar borrador</button>
+        <button class="btn btn-success" id="btnMotorRecomendacion" disabled><i class="fas fa-robot"></i> Motor IA</button>
+        <button class="btn btn-primary" id="btnGenerar" disabled><i class="fas fa-magic"></i> Generar propuesta</button>
+    </div>
+</div>
+
+<!-- ============ PACIENTE: FICHA + EDICIÓN ============ -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="fas fa-id-card"></i> Paciente</h3>
+    </div>
+    <div class="card-body">
+        <form id="formPaciente" method="post">
+            <input type="hidden" id="paciente_id" value="">
+            <div class="form-grid three-cols">
+                <div class="form-col">
+                    <div class="form-row">
+                        <label>DNI</label>
+                        <input class="input" id="p_dni" name="dni" readonly>
+                    </div>
+                    <div class="form-row">
+                        <label>Nombres</label>
+                        <input class="input" id="p_nombres" name="nombres" readonly>
+                    </div>
+                    <div class="form-row">
+                        <label>Apellidos</label>
+                        <input class="input" id="p_apellidos" name="apellidos" readonly>
+                    </div>
+                </div>
+
+                <div class="form-col">
+                    <div class="form-row">
+                        <label>Sexo</label>
+                        <select class="input" id="p_sexo" name="sexo" disabled style="min-width: 80px;">
+                            <option value="">—</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                            <option value="O">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Fecha nac.</label>
+                        <input class="input" id="p_fnac" name="fecha_nac" type="date" readonly>
+                    </div>
+                    <div class="form-row">
+                        <label>Teléfono</label>
+                        <input class="input" id="p_tel" name="telefono" readonly>
+                    </div>
+                </div>
+
+                <div class="form-col">
+                    <div class="form-row">
+                        <label>Email</label>
+                        <input class="input" id="p_email" name="email" type="email" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección de Antropometría -->
+            <div class="form-section">
+                <h4 style="margin: 16px 0 8px 0; color: #2563eb; font-weight: 600;">
+                    <i class="fas fa-weight"></i> Antropometría (Última)
+                </h4>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                    <div class="form-row">
+                            <label>Peso (kg)</label>
+                            <input class="input" id="p_peso" readonly placeholder="—">
+                    </div>
+                    </div>
+                    <div class="form-col">
+                    <div class="form-row">
+                            <label>Talla (cm)</label>
+                            <input class="input" id="p_talla" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Circunferencia Cintura (cm)</label>
+                            <input class="input" id="p_cc" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>IMC</label>
+                            <input class="input" id="p_imc" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Actividad Física</label>
+                            <input class="input" id="p_actividad" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Fecha Medición</label>
+                            <input class="input" id="p_fecha_antropo" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección de Datos Clínicos -->
+            <div class="form-section">
+                <h4 style="margin: 16px 0 8px 0; color: #dc3545; font-weight: 600;">
+                    <i class="fas fa-heartbeat"></i> Datos Clínicos (Últimos)
+                </h4>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>HbA1c (%)</label>
+                            <input class="input" id="p_hba1c" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Glucosa Ayunas (mg/dL)</label>
+                            <input class="input" id="p_glucosa" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>LDL (mg/dL)</label>
+                            <input class="input" id="p_ldl" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid three-cols">
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Presión Arterial Sistólica</label>
+                            <input class="input" id="p_pa_sis" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Presión Arterial Diastólica</label>
+                            <input class="input" id="p_pa_dia" readonly placeholder="—">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-row">
+                            <label>Fecha Medición</label>
+                            <input class="input" id="p_fecha_clinico" readonly placeholder="—">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button type="button" class="btn" id="btnEditarPac" disabled>Editar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarPac" style="display:none;">Guardar cambios</button>
+                <button type="button" class="btn" id="btnCancelarEdit" style="display:none;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============ PREFERENCIAS & ALERGIAS ============ -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="fas fa-heart"></i> Preferencias y alergias</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-grid three-cols">
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Preferir (incluir)</label>
+                    <div class="tag-editor" id="prefInclRoot">
+                        <input id="prefInclInput" class="tag-input" placeholder="Escribe para buscar…">
+                    </div>
+                    <input type="hidden" id="prefInclJSON" value="[]">
+                    <small class="muted">Sugerencia prioritaria del motor.</small>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>No incluir (excluir)</label>
+                    <div class="tag-editor" id="prefExclRoot">
+                        <input id="prefExclInput" class="tag-input" placeholder="Escribe para buscar…">
+                    </div>
+                    <input type="hidden" id="prefExclJSON" value="[]">
+                    <small class="muted">Nunca sugerir (además de alergias).</small>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Alergias (solo lectura)</label>
+                    <div id="alerList" class="muted">—</div>
+                    <small class="muted">Para editar, abre la ficha del paciente.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ METAS & REGLAS ============ -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="fas fa-sliders-h"></i> Metas y reglas</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-grid three-cols">
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Fechas</label>
+                    <div style="display:flex; gap:6px;">
+                        <input class="input" id="r_fi" type="date">
+                        <input class="input" id="r_ff" type="date">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Kcal objetivo (día)</label>
+                    <input class="input" id="r_kcal" type="number" min="800" max="4000" step="10" placeholder="Ej. 1800">
+                </div>
+                <div class="form-row">
+                    <label>Distribución macros (%)</label>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+                        <input class="input" id="r_pct_cho" type="number" min="0" max="100" placeholder="CHO">
+                        <input class="input" id="r_pct_pro" type="number" min="0" max="100" placeholder="PRO">
+                        <input class="input" id="r_pct_fat" type="number" min="0" max="100" placeholder="FAT">
+                    </div>
+                    <small class="muted" id="macroWarn"></small>
+                </div>
+            </div>
+
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Patrón de comidas</label>
+                    <div style="display:grid; grid-template-columns:repeat(5, minmax(60px,1fr)); gap:4px;">
+                        <label class="checkbox" style="display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" class="ckTiempo" value="des" checked>
+                            <span>Des</span>
+                        </label>
+                        <label class="checkbox" style="display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" class="ckTiempo" value="mm" checked>
+                            <span>MM</span>
+                        </label>
+                        <label class="checkbox" style="display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" class="ckTiempo" value="alm" checked>
+                            <span>Alm</span>
+                        </label>
+                        <label class="checkbox" style="display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" class="ckTiempo" value="mt" checked>
+                            <span>MT</span>
+                        </label>
+                        <label class="checkbox" style="display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" class="ckTiempo" value="cena" checked>
+                            <span>Cena</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Días</label>
+                    <input class="input" id="r_dias" type="number" min="1" max="30" value="7">
+                </div>
+                <div class="form-row">
+                    <label>Máx. repeticiones / semana (diversidad)</label>
+                    <input class="input" id="r_repmax" type="number" min="1" max="10" value="2">
+                </div>
+            </div>
+
+            <div class="form-col">
+                <div class="form-row">
+                    <label>Límites</label>
+                    <div style="display:grid; grid-template-columns:1fr; gap:6px;">
+                        <input class="input" id="r_ig_max" type="number" min="0" max="100" value="70" placeholder="IG máx. (opcional)">
+                        <div id="igWarn" style="font-size: 12px; margin-top: 4px;"></div>
+                        <small style="color: #6b7280; font-size: 11px;">Recomendado: 50-70 para diabetes</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Excluir grupos</label>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:4px;">
+                        {% for g in ["GRUPO1_CEREALES","GRUPO2_VERDURAS","GRUPO3_FRUTAS","GRUPO4_LACTEOS","GRUPO5_CARNES","GRUPO6_AZUCARES","GRUPO7_GRASAS"] %}
+                        <label class="checkbox" style="display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" class="ckGrupoExcl" value="{{ g }}">
+                            <span>{{ g }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ PREVISUALIZACIÓN / EDICIÓN DEL PLAN ============ -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="fas fa-calendar-week"></i> Vista previa del plan</h3>
+    </div>
+    <div class="card-body">
+        <div id="previewEmpty" class="muted">Genera una propuesta para ver aquí el plan por días/tiempos.</div>
+        <div id="previewPlan" style="display:none;">
+            <div id="planContainer">
+                <div id="tabsDias" style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;"></div>
+                <div id="viewToggle" style="display:flex; gap:6px; align-items:center; margin: -4px 0 10px;">
+                    <span class="muted">Vista:</span>
+                    <button class="btn btn-sm btn-primary" id="btnVistaLista">Lista</button>
+                    <button class="btn btn-sm" id="btnVistaHorario">Horario</button>
+                    <button class="btn btn-sm" id="btnVistaTabla">Tabla semanal</button>
+                </div>
+                <div id="diaPanel"></div>
+                <hr>
+                <details>
+                    <summary><b>Lista de compras y costo estimado</b></summary>
+                    <div id="shoppingList" style="margin-top:8px;">—</div>
+                </details>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.min.css">
+
+<style>
+    /* ===== ESTILOS MODERNOS PARA GENERAR PLAN ===== */
+    
+    /* Formulario mejorado */
+    .form-grid {
+        display: grid;
+        gap: 20px;
+    }
+    
+    .form-grid.three-cols {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .form-row {
+        margin-bottom: 20px;
+    }
+    
+    .form-row label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #374151;
+        font-size: 14px;
+    }
+    
+    .form-row input,
+    .form-row select,
+    .form-row textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+        background: white;
+        box-sizing: border-box;
+    }
+    
+    .form-row input:focus,
+    .form-row select:focus,
+    .form-row textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-row input:read-only,
+    .form-row input[readonly] {
+        background: #f8fafc;
+        color: #64748b;
+        cursor: not-allowed;
+    }
+    
+    .form-row select:disabled {
+        background: #f8fafc;
+        color: #64748b;
+        cursor: not-allowed;
+    }
+    
+    /* Secciones del formulario */
+    .form-section {
+        margin: 24px 0;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .form-section h4 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-section h4 i {
+        font-size: 18px;
+    }
+    
+    /* Botones modernos */
+    .btn {
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+    
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-success:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn:not(.btn-primary):not(.btn-success) {
+        background: white;
+        color: #374151;
+        border: 2px solid #e5e7eb;
+    }
+    
+    .btn:not(.btn-primary):not(.btn-success):hover:not(:disabled) {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        transform: translateY(-1px);
+    }
+    
+    /* Estilos para el cuadro de búsqueda de pacientes */
+    .searchbox {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 12px 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .searchbox:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .searchbox i {
+        color: #6b7280;
+        margin-right: 12px;
+        font-size: 16px;
+    }
+    
+    .searchbox input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        color: #374151;
+        background: transparent;
+    }
+    
+    .searchbox input::placeholder {
+        color: #9ca3af;
+    }
+    
+    .searchbox .clear {
+        background: #f3f4f6;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #6b7280;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .searchbox .clear:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    
+    /* Estilos para las sugerencias */
+    #sugerencias-pacientes {
+        border: 2px solid #e5e7eb;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        background: #fff;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    #sugerencias-pacientes .item {
+        padding: 16px;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+    }
+    
+    #sugerencias-pacientes .item:hover {
+        background: #f8fafc;
+    }
+    
+    #sugerencias-pacientes .item:last-child {
+        border-bottom: none;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .form-grid.three-cols {
+            grid-template-columns: 1fr;
+        }
+        
+        .toolbar {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .toolbar > div {
+            width: 100%;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    /* ==================== Helper fetch ==================== */
+    async function jget(url) { 
+        const r = await fetch(url); 
+        return r.json(); 
+    }
+    
+    async function jpost(url, body) {
+        const r = await fetch(url, { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify(body) 
+        });
+        return r.json();
+    }
+    
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[m]);
+    }
+    
+    function htmlAttr(s) { 
+        return escapeHtml(String(s || '')).replace(/"/g, '&quot;'); 
+    }
+
+    /* ==================== Selector de paciente ==================== */
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM cargado, inicializando buscador de pacientes...');
+        
+    const qPac = document.getElementById('qPac');
+    const btnClearPac = document.getElementById('btnClearPac');
+        
+        if (!qPac || !btnClearPac) {
+            console.error('Elementos del buscador no encontrados');
+            return;
+        }
+        
+        console.log('Elementos encontrados:', { qPac, btnClearPac });
+
+    let pacOpts = [];
+        
+        qPac.addEventListener('input', async function() {
+            const q = this.value.trim();
+            console.log('Buscando:', q);
+            
+            if (!q) {
+                btnClearPac.style.visibility = 'hidden';
+                pacOpts = [];
+                // Limpiar sugerencias
+                const sugerencias = document.getElementById('sugerencias-pacientes');
+                if (sugerencias) sugerencias.remove();
+                return;
+            }
+            
+        btnClearPac.style.visibility = 'visible';
+            
+            try {
+                const url = `{{ url_for('api_pacientes_buscar') }}?q=${encodeURIComponent(q)}`;
+                console.log('URL:', url);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                console.log('Respuesta:', data);
+                
+                pacOpts = data.results || [];
+                console.log('Pacientes encontrados:', pacOpts.length);
+                
+                mostrarSugerencias();
+            } catch (error) {
+                console.error('Error:', error);
+                pacOpts = [];
+            }
+        });
+        
+        function mostrarSugerencias() {
+            // Limpiar anteriores
+            const existente = document.getElementById('sugerencias-pacientes');
+            if (existente) existente.remove();
+            
+            if (pacOpts.length === 0) return;
+            
+            // Crear contenedor
+            const div = document.createElement('div');
+            div.id = 'sugerencias-pacientes';
+            div.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                border: 1px solid #ddd;
+                border-top: none;
+                border-radius: 0 0 8px 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                max-height: 200px;
+                overflow-y: auto;
+            `;
+            
+            pacOpts.forEach(paciente => {
+                const item = document.createElement('div');
+                item.style.cssText = `
+                    padding: 12px 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #f0f0f0;
+                `;
+                item.innerHTML = `
+                    <div style="font-weight: 500;">${paciente.text}</div>
+                    <div style="font-size: 12px; color: #666;">${paciente.nombres || ''} ${paciente.apellidos || ''} • ${paciente.dni}</div>
+                `;
+                
+                item.addEventListener('click', function() {
+                    qPac.value = `${paciente.text} (DNI: ${paciente.dni})`;
+                    document.getElementById('paciente_id').value = paciente.id;
+        document.getElementById('btnGenerar').disabled = false;
+                    document.getElementById('btnMotorRecomendacion').disabled = false;
+        document.getElementById('btnEditarPac').disabled = false;
+        document.getElementById('btnGuardarBorrador').disabled = false;
+
+                    // Limpiar sugerencias
+                    div.remove();
+                    
+                    // Cargar datos del paciente
+                    cargarDatosPaciente(paciente.id);
+                });
+                
+                div.appendChild(item);
+            });
+            
+            // Insertar
+            const searchbox = document.querySelector('.searchbox');
+            searchbox.style.position = 'relative';
+            searchbox.appendChild(div);
+        }
+        
+        btnClearPac.addEventListener('click', function() {
+            qPac.value = '';
+            this.style.visibility = 'hidden';
+            pacOpts = [];
+            const sugerencias = document.getElementById('sugerencias-pacientes');
+            if (sugerencias) sugerencias.remove();
+        });
+        
+        // Función para cargar datos del paciente
+        async function cargarDatosPaciente(pacienteId) {
+            try {
+                const deta = await fetch(`{{ url_for('api_paciente_detalle', pid=0) }}`.replace('/0', '/' + pacienteId));
+                const data = await deta.json();
+                
+                if (data.ok) {
+                    const d = data.paciente;
+                    
+                    // Datos personales
+                    document.getElementById('p_dni').value = d.dni || '';
+                    document.getElementById('p_nombres').value = d.nombres || '';
+                    document.getElementById('p_apellidos').value = d.apellidos || '';
+                    document.getElementById('p_sexo').value = d.sexo || '';
+                    document.getElementById('p_fnac').value = d.fecha_nac || '';
+                    document.getElementById('p_tel').value = d.telefono || '';
+                    document.getElementById('p_email').value = d.usuario_email || '';
+                    
+                    // Datos de antropometría
+                    if (d.antropometria) {
+                        document.getElementById('p_peso').value = d.antropometria.peso || '—';
+                        document.getElementById('p_talla').value = d.antropometria.talla || '—';
+                        document.getElementById('p_cc').value = d.antropometria.cc || '—';
+                        document.getElementById('p_actividad').value = d.antropometria.actividad || '—';
+                        document.getElementById('p_fecha_antropo').value = d.antropometria.fecha_medicion || '—';
+                        
+                        // Calcular IMC si tenemos peso y talla
+                        if (d.antropometria.peso && d.antropometria.talla) {
+                            const imc = (d.antropometria.peso / Math.pow(d.antropometria.talla / 100, 2)).toFixed(1);
+                            document.getElementById('p_imc').value = imc;
+                        } else {
+                            document.getElementById('p_imc').value = '—';
+                        }
+                    } else {
+                        // Limpiar campos si no hay datos
+                        ['p_peso', 'p_talla', 'p_cc', 'p_imc', 'p_actividad', 'p_fecha_antropo'].forEach(id => {
+                            document.getElementById(id).value = '—';
+                        });
+                    }
+                    
+                    // Datos clínicos
+                    if (d.clinico) {
+                        document.getElementById('p_hba1c').value = d.clinico.hba1c || '—';
+                        document.getElementById('p_glucosa').value = d.clinico.glucosa_ayunas || '—';
+                        document.getElementById('p_ldl').value = d.clinico.ldl || '—';
+                        document.getElementById('p_pa_sis').value = d.clinico.pa_sis || '—';
+                        document.getElementById('p_pa_dia').value = d.clinico.pa_dia || '—';
+                        document.getElementById('p_fecha_clinico').value = d.clinico.fecha_medicion || '—';
+                    } else {
+                        // Limpiar campos si no hay datos
+                        ['p_hba1c', 'p_glucosa', 'p_ldl', 'p_pa_sis', 'p_pa_dia', 'p_fecha_clinico'].forEach(id => {
+                            document.getElementById(id).value = '—';
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+            }
+        }
+    });
+
+    /* ==================== Variables globales para el plan ==================== */
+    let planActual = null;
+    let vistaActual = 'lista'; // 'lista', 'horario', 'tabla'
+    let diaActual = null;
+
+    /* ==================== Funciones de utilidad ==================== */
+    function obtenerColorGrupo(grupo) {
+        const coloresGrupos = {
+            'GRUPO1_CEREALES': '#f59e0b',      // Amarillo/naranja
+            'GRUPO5_CARNES': '#ef4444',    // Rojo
+            'GRUPO2_VERDURAS': '#10b981',     // Verde
+            'GRUPO3_FRUTAS': '#f97316',       // Naranja
+            'GRUPO4_LACTEOS': '#3b82f6',      // Azul
+            'GRUPO7_GRASAS': '#8b5cf6',      // Púrpura
+            'GRUPO6_AZUCARES': '#6b7280'         // Gris
+        };
+        return coloresGrupos[grupo] || '#6b7280';
+    }
+
+    function obtenerColorFondoGrupo(grupo) {
+        const coloresFondo = {
+            'GRUPO1_CEREALES': '#fef3c7',      // Amarillo claro
+            'GRUPO5_CARNES': '#fee2e2',    // Rojo claro
+            'GRUPO2_VERDURAS': '#d1fae5',     // Verde claro
+            'GRUPO3_FRUTAS': '#fed7aa',       // Naranja claro
+            'GRUPO4_LACTEOS': '#dbeafe',      // Azul claro
+            'GRUPO7_GRASAS': '#e9d5ff',      // Púrpura claro
+            'GRUPO6_AZUCARES': '#f3f4f6'         // Gris claro
+        };
+        return coloresFondo[grupo] || '#f3f4f6';
+    }
+
+    /* ==================== Motor IA y Generar Recomendación ==================== */
+    document.addEventListener('DOMContentLoaded', function() {
+        // Botón Motor IA
+        document.getElementById('btnMotorRecomendacion').addEventListener('click', async function() {
+            const pacienteId = document.getElementById('paciente_id').value;
+            if (!pacienteId) {
+                Toastify({
+                    text: "⚠️ Selecciona un paciente primero",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#f59e0b"
+                }).showToast();
+                return;
+            }
+
+            try {
+                // Mostrar loading
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
+                const response = await fetch(`/api/recomendacion/${pacienteId}`, {
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Auto-completar campos con las metas nutricionales
+                if (data.metas_nutricionales) {
+                    const metas = data.metas_nutricionales;
+                    
+                    document.getElementById('r_kcal').value = Math.round(metas.calorias_diarias);
+                    document.getElementById('r_pct_cho').value = Math.round(metas.carbohidratos_porcentaje);
+                    document.getElementById('r_pct_pro').value = Math.round(metas.proteinas_porcentaje);
+                    document.getElementById('r_pct_fat').value = Math.round(metas.grasas_porcentaje);
+                    
+                    // Validar macros
+                    document.getElementById('r_pct_cho').dispatchEvent(new Event('input'));
+                    
+                    Toastify({
+                        text: "✅ Metas nutricionales generadas por IA",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#10b981"
+                    }).showToast();
+        } else {
+                    Toastify({
+                        text: "⚠️ No se pudieron generar metas automáticas",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#f59e0b"
+                    }).showToast();
+                }
+
+            } catch (error) {
+                console.error('Error del motor IA:', error);
+                Toastify({
+                    text: `❌ Error del motor IA: ${error.message}`,
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#ef4444"
+                }).showToast();
+            } finally {
+                // Restaurar botón
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-robot"></i> Motor IA';
+            }
+        });
+
+        // Botón Generar Recomendación
+        document.getElementById('btnGenerar').addEventListener('click', async function() {
+            const pacienteId = document.getElementById('paciente_id').value;
+            if (!pacienteId) {
+                Toastify({
+                    text: "⚠️ Selecciona un paciente primero",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#f59e0b"
+                }).showToast();
+                return;
+            }
+
+            // Validar campos requeridos
+            const kcal = document.getElementById('r_kcal').value;
+            const dias = document.getElementById('r_dias').value;
+            
+            if (!kcal || !dias) {
+                Toastify({
+                    text: "⚠️ Completa las calorías y días del plan",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#f59e0b"
+                }).showToast();
+                return;
+            }
+
+            try {
+                // Mostrar loading
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
+                // Recopilar filtros del formulario
+                const filtros = recopilarFiltros();
+                console.log(`Solicitando recomendación para paciente ${pacienteId}, días: ${dias}, filtros:`, filtros);
+                
+                // Construir URL con parámetros
+                const params = new URLSearchParams({
+                    dias: dias.toString(),
+                    ...filtros
+                });
+                
+                console.log('DEBUG: URL generada:', `/api/recomendacion/${pacienteId}?${params}`);
+                console.log('DEBUG: Parámetros enviados:', Object.fromEntries(params));
+                
+                const response = await fetch(`/api/recomendacion/${pacienteId}?${params}`, {
+                    credentials: 'same-origin'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Respuesta recibida:', data);
+                console.log('DEBUG: Tipo de respuesta:', typeof data);
+                console.log('DEBUG: Claves de la respuesta:', Object.keys(data));
+                console.log('DEBUG: data.plan_completo existe:', !!data.plan_completo);
+                console.log('DEBUG: data.plan_completo tipo:', typeof data.plan_completo);
+                console.log('DEBUG: data.plan_completo contenido:', data.plan_completo);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Verificar que tenemos los datos necesarios
+                console.log('DEBUG: Verificando datos recibidos');
+                
+                if (!data.plan_completo) {
+                    console.error('ERROR: No se encontró plan_completo en la respuesta');
+                    console.error('DEBUG: Datos completos recibidos:', data);
+                    throw new Error('El servidor no devolvió un plan válido. Verifica que los filtros no sean demasiado restrictivos.');
+                }
+
+                // Mostrar la recomendación generada
+                console.log('DEBUG: Llamando a mostrarRecomendacion');
+                mostrarRecomendacion(data);
+
+                Toastify({
+                    text: "✅ Recomendación generada exitosamente",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#10b981"
+                }).showToast();
+
+            } catch (error) {
+                console.error('Error al generar recomendación:', error);
+                
+                // Mostrar mensaje de error más específico
+                let errorMessage = error.message;
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Error de conexión con el servidor';
+                } else if (error.message.includes('HTTP')) {
+                    errorMessage = 'Error del servidor: ' + error.message;
+                }
+                
+                Toastify({
+                    text: `❌ Error al generar el plan: ${errorMessage}`,
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#ef4444"
+                }).showToast();
+                
+                // Mostrar mensaje de error en la interfaz también
+                const previewEmpty = document.getElementById('previewEmpty');
+                previewEmpty.style.display = 'block';
+                previewEmpty.textContent = `Error: ${errorMessage}`;
+                
+            } finally {
+                // Restaurar botón
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-magic"></i> Generar propuesta';
+            }
+        });
+
+        // Función para mostrar la recomendación
+        function mostrarRecomendacion(data) {
+            console.log('=== MOSTRAR RECOMENDACION ===');
+            console.log('Datos recibidos:', data);
+            
+            // Elementos HTML
+            const previewEmpty = document.getElementById('previewEmpty');
+            const previewPlan = document.getElementById('previewPlan');
+            const diaPanel = document.getElementById('diaPanel');
+            
+            // Ocultar mensaje vacío y mostrar plan
+            if (previewEmpty) previewEmpty.style.display = 'none';
+            if (previewPlan) previewPlan.style.display = 'block';
+            
+            // Verificar que tenemos plan_completo
+            if (!data.plan_completo) {
+                console.error('ERROR: No hay plan_completo en los datos');
+                if (diaPanel) diaPanel.innerHTML = '<div style="color: red; padding: 20px;">Error: No se encontró el plan en la respuesta del servidor</div>';
+                return;
+            }
+            
+            console.log('✅ plan_completo encontrado');
+            
+            // Guardar datos globalmente
+            window.planData = data;
+            console.log('✅ Datos guardados en window.planData');
+            
+            // MOSTRAR RECOMENDACIÓN INMEDIATAMENTE
+            mostrarRecomendacionCompleta(data.plan_completo);
+        }
+        
+        // Función para mostrar la recomendación completa inmediatamente
+        function mostrarRecomendacionCompleta(planCompleto) {
+            console.log('=== MOSTRAR RECOMENDACION COMPLETA ===');
+            console.log('planCompleto:', planCompleto);
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) {
+                console.error('ERROR: No se encontró el elemento diaPanel');
+                return;
+            }
+            
+            // Obtener la primera semana disponible
+            const semanas = Object.keys(planCompleto);
+            if (semanas.length === 0) {
+                console.error('ERROR: No hay semanas disponibles');
+                return;
+            }
+            
+            const primeraSemana = semanas[0];
+            const semana = planCompleto[primeraSemana];
+            console.log('Primera semana:', primeraSemana);
+            console.log('Datos de la semana:', semana);
+            
+            // Generar HTML completo de la recomendación
+            let html = '<div style="padding: 20px;">';
+            html += '<h3 style="color: #1e40af; margin-bottom: 20px; text-align: center;">🍽️ Plan Nutricional Completo</h3>';
+            
+            const nombresDias = {
+                'lunes': 'Lunes',
+                'martes': 'Martes', 
+                'miercoles': 'Miércoles',
+                'jueves': 'Jueves',
+                'viernes': 'Viernes',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana',
+                'alm': 'Almuerzo', 
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            // Obtener el orden de días basado en el día de inicio calculado
+            const elementoDias = document.getElementById('r_dias');
+            const diaInicio = elementoDias ? parseInt(elementoDias.getAttribute('data-dia-inicio')) : 0;
+            const nombresDiasArray = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            
+            // Crear el orden correcto empezando desde el día de inicio seleccionado
+            const ordenDias = [];
+            for (let i = 0; i < 7; i++) {
+                const indice = (diaInicio + i) % 7;
+                ordenDias.push(nombresDiasArray[indice]);
+            }
+            
+            console.log(`DEBUG: Día de inicio seleccionado: ${diaInicio}`);
+            console.log(`DEBUG: Orden de días calculado: ${ordenDias}`);
+            
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            
+            // Mostrar cada día
+            ordenDias.forEach(dia => {
+                const diaData = semana[dia];
+                if (diaData && typeof diaData === 'object') {
+                    html += `<div style="margin: 20px 0; padding: 20px; border: 2px solid #e5e7eb; border-radius: 12px; background: #fafafa;">`;
+                    html += `<h4 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">${nombresDias[dia]}</h4>`;
+                    
+                    // Mostrar cada comida del día
+                    ordenComidas.forEach(comida => {
+                        const datosComida = diaData[comida];
+                        if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                            html += `<div style="margin: 15px 0; padding: 15px; border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;">`;
+                            html += `<h5 style="margin: 0 0 10px 0; color: #374151; font-size: 16px;">${nombresComidas[comida]}</h5>`;
+                            
+                            // Mostrar alimentos
+                            html += `<div style="margin-bottom: 10px;">`;
+                            datosComida.alimentos.forEach(alimento => {
+                                const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                                const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                                html += `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 6px 12px; border-radius: 12px; margin: 3px; font-size: 13px; font-weight: 500;">${alimento.nombre} (${alimento.cantidad}${alimento.unidad})</span>`;
+                            });
+                            html += `</div>`;
+                            
+                            // Calcular y mostrar totales nutricionales
+                            const totales = datosComida.alimentos.reduce((acc, alimento) => ({
+                                kcal: acc.kcal + (alimento.kcal || 0),
+                                cho: acc.cho + (alimento.cho || 0),
+                                pro: acc.pro + (alimento.pro || 0),
+                                fat: acc.fat + (alimento.fat || 0),
+                                fibra: acc.fibra + (alimento.fibra || 0)
+                            }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+                            
+                            html += `<div style="font-size: 13px; color: #374151; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">`;
+                            html += `<strong>Totales:</strong> Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g | Fibra: ${totales.fibra.toFixed(1)}g`;
+                            html += `</div>`;
+                            
+                            html += `</div>`;
+                        }
+                    });
+                    
+                    html += `</div>`;
+                }
+            });
+            
+            html += '</div>';
+            
+            // Guardar datos globalmente para las vistas
+            window.planData = { plan_completo: planCompleto };
+            window.vistaActual = 'lista';
+            console.log('✅ Datos guardados en window.planData');
+            
+            // Mostrar información básica primero
+            diaPanel.innerHTML = html;
+            console.log('✅ Información básica mostrada');
+            
+            // Después de mostrar la info básica, mostrar el plan completo
+            setTimeout(() => {
+                console.log('🔄 Mostrando plan completo...');
+                mostrarTodasLasComidasDeLaSemana(semana);
+                configurarBotonesVista();
+            }, 100);
+        }
+            
+            const nombresDias = {
+                'lunes': 'Lunes',
+                'martes': 'Martes', 
+                'miercoles': 'Miércoles',
+                'jueves': 'Jueves',
+                'viernes': 'Viernes',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana',
+                'alm': 'Almuerzo', 
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            // Obtener el orden de días basado en el día de inicio calculado
+            const elementoDias = document.getElementById('r_dias');
+            const diaInicio = elementoDias ? parseInt(elementoDias.getAttribute('data-dia-inicio')) : 0;
+            const nombresDiasArray = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            
+            // Crear el orden correcto empezando desde el día de inicio seleccionado
+            const ordenDias = [];
+            for (let i = 0; i < 7; i++) {
+                const indice = (diaInicio + i) % 7;
+                ordenDias.push(nombresDiasArray[indice]);
+            }
+            
+            console.log(`DEBUG: Día de inicio seleccionado: ${diaInicio}`);
+            console.log(`DEBUG: Orden de días calculado: ${ordenDias}`);
+            
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            
+            // Mostrar cada día
+            ordenDias.forEach(dia => {
+                const diaData = semana[dia];
+                if (diaData && typeof diaData === 'object') {
+                    html += `<div style="margin: 20px 0; padding: 20px; border: 2px solid #e5e7eb; border-radius: 12px; background: #fafafa;">`;
+                    html += `<h4 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">${nombresDias[dia]}</h4>`;
+                    
+                    // Mostrar cada comida del día
+                    ordenComidas.forEach(comida => {
+                        const datosComida = diaData[comida];
+                        if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                            html += `<div style="margin: 15px 0; padding: 15px; border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;">`;
+                            html += `<h5 style="margin: 0 0 10px 0; color: #374151; font-size: 16px;">${nombresComidas[comida]}</h5>`;
+                            
+                            // Mostrar alimentos
+                            html += `<div style="margin-bottom: 10px;">`;
+                            datosComida.alimentos.forEach(alimento => {
+                                const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                                const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                                html += `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 6px 12px; border-radius: 12px; margin: 3px; font-size: 13px; font-weight: 500;">${alimento.nombre} (${alimento.cantidad}${alimento.unidad})</span>`;
+                            });
+                            html += `</div>`;
+                            
+                            // Calcular y mostrar totales nutricionales
+                            const totales = datosComida.alimentos.reduce((acc, alimento) => ({
+                                kcal: acc.kcal + (alimento.kcal || 0),
+                                cho: acc.cho + (alimento.cho || 0),
+                                pro: acc.pro + (alimento.pro || 0),
+                                fat: acc.fat + (alimento.fat || 0),
+                                fibra: acc.fibra + (alimento.fibra || 0)
+                            }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+                            
+                            html += `<div style="font-size: 13px; color: #374151; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">`;
+                            html += `<strong>Totales:</strong> Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g | Fibra: ${totales.fibra.toFixed(1)}g`;
+                            html += `</div>`;
+                            
+                            html += `</div>`;
+                        }
+                    });
+                    
+                    html += `</div>`;
+                }
+            });
+            
+            html += '</div>';
+            
+            // Insertar HTML en el panel
+            diaPanel.innerHTML = html;
+            console.log('✅ Recomendación completa mostrada');
+            
+            // Configurar botones de vista
+            configurarBotonesVista();
+        }
+        
+        // Función para configurar los botones de vista
+        function configurarBotonesVista() {
+            const btnLista = document.getElementById('btnVistaLista');
+            const btnHorario = document.getElementById('btnVistaHorario');
+            const btnTabla = document.getElementById('btnVistaTabla');
+            
+            if (btnLista) {
+                btnLista.onclick = () => cambiarVista('lista');
+            }
+            
+            if (btnHorario) {
+                btnHorario.onclick = () => cambiarVista('horario');
+            }
+            
+            if (btnTabla) {
+                btnTabla.onclick = () => cambiarVista('tabla');
+            }
+            
+            // Establecer vista lista como activa por defecto
+            if (btnLista) btnLista.className = 'btn btn-sm btn-primary';
+            if (btnHorario) btnHorario.className = 'btn btn-sm';
+            if (btnTabla) btnTabla.className = 'btn btn-sm';
+        }
+        
+        // Función simple para mostrar los datos directamente
+        function mostrarDatosDirectos(planCompleto) {
+            console.log('=== MOSTRAR DATOS DIRECTOS ===');
+            console.log('planCompleto recibido:', planCompleto);
+            console.log('Tipo de planCompleto:', typeof planCompleto);
+            console.log('Claves de planCompleto:', Object.keys(planCompleto));
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) {
+                console.error('ERROR: No se encontró el elemento diaPanel');
+                return;
+            }
+            console.log('✅ Elemento diaPanel encontrado');
+            
+            if (!planCompleto) {
+                console.error('ERROR: planCompleto está vacío');
+                diaPanel.innerHTML = '<div style="color: red; padding: 20px;">Error: No hay datos del plan</div>';
+                return;
+            }
+            
+            console.log('✅ planCompleto válido');
+            
+            // Obtener la primera semana disponible
+            const semanas = Object.keys(planCompleto);
+            console.log('Semanas disponibles:', semanas);
+            
+            if (semanas.length === 0) {
+                console.error('ERROR: No hay semanas disponibles');
+                diaPanel.innerHTML = '<div style="color: red; padding: 20px;">Error: No se encontraron semanas en el plan</div>';
+                return;
+            }
+            
+            const primeraSemana = semanas[0];
+            const semana = planCompleto[primeraSemana];
+            console.log('Primera semana:', primeraSemana);
+            console.log('Datos de la semana:', semana);
+            console.log('Tipo de semana:', typeof semana);
+            console.log('Claves de la semana:', Object.keys(semana));
+            
+            // PRUEBA SIMPLE: Mostrar información básica de la semana
+            let html = '<div style="padding: 20px; background: #f0f9ff; border-radius: 8px; margin: 10px 0;">';
+            html += '<h3 style="color: #1e40af; margin-bottom: 15px;">📅 Plan Nutricional - ' + primeraSemana + '</h3>';
+            html += '<p><strong>Días disponibles:</strong> ' + Object.keys(semana).join(', ') + '</p>';
+            
+            // Contar comidas con alimentos
+            let totalComidas = 0;
+            Object.keys(semana).forEach(dia => {
+                const diaData = semana[dia];
+                if (diaData && typeof diaData === 'object') {
+                    Object.keys(diaData).forEach(comida => {
+                        const comidaData = diaData[comida];
+                        if (comidaData && comidaData.alimentos && Array.isArray(comidaData.alimentos) && comidaData.alimentos.length > 0) {
+                            totalComidas++;
+                        }
+                    });
+                }
+            });
+            
+            html += '<p><strong>Total de comidas con alimentos:</strong> ' + totalComidas + '</p>';
+            html += '</div>';
+            
+            // Guardar datos globalmente para las vistas
+            window.planData = { plan_completo: planCompleto };
+            window.vistaActual = 'lista';
+            console.log('✅ Datos guardados en window.planData');
+            
+            // Mostrar información básica primero
+            diaPanel.innerHTML = html;
+            console.log('✅ Información básica mostrada');
+            
+            // Después de mostrar la info básica, mostrar el plan completo
+            setTimeout(() => {
+                console.log('🔄 Mostrando plan completo...');
+                mostrarVistaLista();
+            }, 2000);
+        }
+        
+        // Función para mostrar vista de lista
+        function mostrarVistaLista() {
+            console.log('=== MOSTRAR VISTA LISTA ===');
+            console.log('window.planData:', window.planData);
+            
+            if (!window.planData || !window.planData.plan_completo) {
+                console.error('ERROR: No hay planData o plan_completo');
+                console.error('window.planData:', window.planData);
+                return;
+            }
+            
+            console.log('✅ planData y plan_completo encontrados');
+            
+            // Obtener la primera semana disponible
+            const semanas = Object.keys(window.planData.plan_completo);
+            console.log('Semanas disponibles:', semanas);
+            
+            if (semanas.length === 0) {
+                console.error('ERROR: No hay semanas disponibles');
+                return;
+            }
+            
+            const primeraSemana = semanas[0];
+            const semana = window.planData.plan_completo[primeraSemana];
+            
+            console.log('Primera semana:', primeraSemana);
+            console.log('Datos de la semana:', semana);
+            console.log('Tipo de semana:', typeof semana);
+            console.log('Claves de la semana:', Object.keys(semana));
+            
+            // Mostrar todas las comidas disponibles usando la misma lógica que las otras vistas
+            console.log('🔄 Llamando a mostrarTodasLasComidasDeLaSemana...');
+            mostrarTodasLasComidasDeLaSemana(semana);
+            
+            // Configurar botones de vista
+            console.log('🔄 Configurando botones de vista...');
+            configurarBotonesVista();
+            console.log('✅ Botones de vista configurados');
+        }
+        
+        // Función para crear controles de días después de los controles de semana
+        function crearControlesDiasDespuesDeSemana(diasOrdenados, semana) {
+            const tabsDias = document.getElementById('tabsDias');
+            if (!tabsDias) return;
+            
+            let html = `
+                <div style="margin: 15px 0; padding: 12px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
+                        <button id="btnDiaAnterior" style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            ← Día Anterior
+                        </button>
+                        <div style="text-align: center;">
+                            <span id="nombreDiaActual" style="font-weight: 600; color: #0c4a6e; font-size: 16px;">
+                                ${capitalizarPrimeraLetra(diasOrdenados[0] || 'Día')}
+                            </span>
+                        </div>
+                        <button id="btnDiaSiguiente" style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            Día Siguiente →
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            tabsDias.innerHTML = html;
+            
+            // Configurar eventos de navegación
+            const btnAnterior = document.getElementById('btnDiaAnterior');
+            const btnSiguiente = document.getElementById('btnDiaSiguiente');
+            
+            if (btnAnterior) {
+                btnAnterior.onclick = () => {
+                    if (window.diaActual > 0) {
+                        window.diaActual--;
+                        const diaActual = diasOrdenados[window.diaActual];
+                        mostrarDia(diaActual, semana[diaActual]);
+                        actualizarControlesDias(diasOrdenados);
+                    }
+                };
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.onclick = () => {
+                    if (window.diaActual < diasOrdenados.length - 1) {
+                        window.diaActual++;
+                        const diaActual = diasOrdenados[window.diaActual];
+                        mostrarDia(diaActual, semana[diaActual]);
+                        actualizarControlesDias(diasOrdenados);
+                    }
+                };
+            }
+        }
+        
+        function actualizarControlesDias(diasOrdenados) {
+            const btnAnterior = document.getElementById('btnDiaAnterior');
+            const btnSiguiente = document.getElementById('btnDiaSiguiente');
+            const nombreDiaActual = document.getElementById('nombreDiaActual');
+            
+            if (btnAnterior) {
+                btnAnterior.disabled = window.diaActual === 0;
+                btnAnterior.style.opacity = window.diaActual === 0 ? '0.5' : '1';
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.disabled = window.diaActual === diasOrdenados.length - 1;
+                btnSiguiente.style.opacity = window.diaActual === diasOrdenados.length - 1 ? '0.5' : '1';
+            }
+            
+            if (nombreDiaActual) {
+                nombreDiaActual.textContent = capitalizarPrimeraLetra(diasOrdenados[window.diaActual]);
+            }
+        }
+        
+        
+        
+        // Función auxiliar para capitalizar primera letra
+        function capitalizarPrimeraLetra(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+        
+        function mostrarTodasLasComidasDeLaSemana(semana) {
+            console.log('=== MOSTRAR TODAS LAS COMIDAS DE LA SEMANA ===');
+            console.log('semana recibida:', semana);
+            console.log('Tipo de semana:', typeof semana);
+            console.log('Claves de semana:', Object.keys(semana));
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) {
+                console.error('ERROR: No se encontró el elemento diaPanel');
+                return;
+            }
+            console.log('✅ Elemento diaPanel encontrado');
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            const nombresDias = {
+                'lunes': 'Lunes',
+                'martes': 'Martes',
+                'miercoles': 'Miércoles',
+                'jueves': 'Jueves',
+                'viernes': 'Viernes',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+            
+            let html = '<h3 style="margin-bottom: 20px; color: #374151;">Plan Nutricional Completo - Semana</h3>';
+            
+            const ordenDias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            let comidasMostradas = 0;
+            
+            ordenDias.forEach(dia => {
+                console.log(`Procesando día: ${dia}`);
+                const diaData = semana[dia];
+                
+                if (diaData && typeof diaData === 'object') {
+                    console.log(`✅ ${dia} tiene datos`);
+                    
+                    html += `<div style="margin: 20px 0; padding: 20px; border: 2px solid #e5e7eb; border-radius: 12px; background: #fafafa;">`;
+                    html += `<h4 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">${nombresDias[dia]}</h4>`;
+                    
+                    ordenComidas.forEach(comida => {
+                        console.log(`Procesando comida: ${comida} del día ${dia}`);
+                        const datosComida = diaData[comida];
+                        console.log(`Datos de ${comida}:`, datosComida);
+                        
+                        if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                            console.log(`✅ ${comida} tiene ${datosComida.alimentos.length} alimentos`);
+                            comidasMostradas++;
+                            
+                            // Calcular totales nutricionales
+                            const totales = datosComida.alimentos.reduce((acc, alimento) => ({
+                                kcal: acc.kcal + (alimento.kcal || 0),
+                                cho: acc.cho + (alimento.cho || 0),
+                                pro: acc.pro + (alimento.pro || 0),
+                                fat: acc.fat + (alimento.fat || 0),
+                                fibra: acc.fibra + (alimento.fibra || 0)
+                            }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+                            
+                            html += `<div style="margin: 15px 0; padding: 15px; border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff;">`;
+                            html += `<h5 style="margin: 0 0 10px 0; color: #374151; font-size: 16px;">${nombresComidas[comida]}</h5>`;
+                            
+                            // Mostrar alimentos
+                            html += `<div style="margin-bottom: 10px;">`;
+                            datosComida.alimentos.forEach(alimento => {
+                                const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                                const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                                html += `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 6px 12px; border-radius: 12px; margin: 3px; font-size: 13px; font-weight: 500;">${alimento.nombre} (${alimento.cantidad}${alimento.unidad})</span>`;
+                            });
+                            html += `</div>`;
+                            
+                            // Mostrar totales nutricionales
+                            html += `<div style="font-size: 13px; color: #374151; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">`;
+                            html += `<strong>Totales:</strong> Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g | Fibra: ${totales.fibra.toFixed(1)}g`;
+                            html += `</div>`;
+                            
+                            html += `</div>`;
+                        } else {
+                            console.log(`⚠️ ${comida} del día ${dia} no tiene alimentos válidos`);
+                        }
+                    });
+                    
+                    html += `</div>`;
+                } else {
+                    console.log(`⚠️ ${dia} no tiene datos válidos`);
+                }
+            });
+            
+            console.log(`Total de comidas mostradas: ${comidasMostradas}`);
+            
+            if (comidasMostradas === 0) {
+                html += '<div style="color: #9ca3af; font-style: italic; text-align: center; padding: 20px;">No se encontraron comidas con alimentos en esta semana</div>';
+            }
+            
+            console.log('🔄 Insertando HTML en diaPanel...');
+            diaPanel.innerHTML = html;
+            console.log('✅ HTML insertado exitosamente');
+            console.log('=== FIN MOSTRAR TODAS LAS COMIDAS DE LA SEMANA ===');
+            
+            // PRUEBA: Verificar que el HTML se insertó correctamente
+            setTimeout(() => {
+                console.log('🔍 Verificando HTML insertado...');
+                console.log('Contenido de diaPanel:', diaPanel.innerHTML.substring(0, 200) + '...');
+            }, 100);
+        }
+        
+        function mostrarTodasLasComidas(semana) {
+            console.log('=== MOSTRAR TODAS LAS COMIDAS ===');
+            console.log('semana recibida:', semana);
+            console.log('Tipo de semana:', typeof semana);
+            console.log('Claves de semana:', Object.keys(semana));
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) {
+                console.error('ERROR: No se encontró el elemento diaPanel');
+                return;
+            }
+            console.log('✅ Elemento diaPanel encontrado');
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            let html = '<h3 style="margin-bottom: 20px; color: #374151;">Plan Nutricional Completo</h3>';
+            
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            let comidasMostradas = 0;
+            
+            ordenComidas.forEach(comida => {
+                console.log(`Procesando comida: ${comida}`);
+                const datosComida = semana[comida];
+                console.log(`Datos de ${comida}:`, datosComida);
+                
+                if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                    console.log(`✅ ${comida} tiene ${datosComida.alimentos.length} alimentos`);
+                    comidasMostradas++;
+                    
+                    // Calcular totales nutricionales
+                    const totales = datosComida.alimentos.reduce((acc, alimento) => ({
+                        kcal: acc.kcal + (alimento.kcal || 0),
+                        cho: acc.cho + (alimento.cho || 0),
+                        pro: acc.pro + (alimento.pro || 0),
+                        fat: acc.fat + (alimento.fat || 0),
+                        fibra: acc.fibra + (alimento.fibra || 0)
+                    }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+                    
+                    html += `<div style="margin: 15px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa;">`;
+                    html += `<h4 style="margin: 0 0 10px 0; color: #374151; font-size: 16px;">${nombresComidas[comida]}</h4>`;
+                    
+                    // Mostrar alimentos
+                    html += `<div style="margin-bottom: 10px;">`;
+                    datosComida.alimentos.forEach(alimento => {
+                        const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                        const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                        html += `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 6px 12px; border-radius: 12px; margin: 3px; font-size: 13px; font-weight: 500;">${alimento.nombre} (${alimento.cantidad}${alimento.unidad})</span>`;
+                    });
+                    html += `</div>`;
+                    
+                    // Mostrar totales nutricionales
+                    html += `<div style="font-size: 13px; color: #374151; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">`;
+                    html += `<strong>Totales:</strong> Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g | Fibra: ${totales.fibra.toFixed(1)}g`;
+                    html += `</div>`;
+                    
+                    html += `</div>`;
+                } else {
+                    console.log(`⚠️ ${comida} no tiene alimentos válidos`);
+                }
+            });
+            
+            console.log(`Total de comidas mostradas: ${comidasMostradas}`);
+            
+            if (comidasMostradas === 0) {
+                html += '<div style="color: #9ca3af; font-style: italic; text-align: center; padding: 20px;">No se encontraron comidas con alimentos en esta semana</div>';
+            }
+            
+            console.log('🔄 Insertando HTML en diaPanel...');
+            diaPanel.innerHTML = html;
+            console.log('✅ HTML insertado exitosamente');
+            console.log('=== FIN MOSTRAR TODAS LAS COMIDAS ===');
+        }
+        
+        // Función para mostrar un día específico
+        function mostrarDia(dia, datosDia) {
+            console.log('=== MOSTRAR DIA ===');
+            console.log('Día:', dia);
+            console.log('Datos del día:', datosDia);
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) return;
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            const nombresDias = {
+                'lunes': 'Lunes',
+                'martes': 'Martes',
+                'miercoles': 'Miércoles',
+                'jueves': 'Jueves',
+                'viernes': 'Viernes',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+            
+            let html = `<h3 style="margin-bottom: 20px; color: #374151;">${nombresDias[dia] || dia}</h3>`;
+            
+            if (datosDia && typeof datosDia === 'object') {
+                const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+                let tieneComidas = false;
+                
+                ordenComidas.forEach(comida => {
+                    const datosComida = datosDia[comida];
+                    
+                    if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                        tieneComidas = true;
+                        
+                        // Calcular totales nutricionales
+                        const totales = datosComida.alimentos.reduce((acc, alimento) => ({
+                            kcal: acc.kcal + (alimento.kcal || 0),
+                            cho: acc.cho + (alimento.cho || 0),
+                            pro: acc.pro + (alimento.pro || 0),
+                            fat: acc.fat + (alimento.fat || 0),
+                            fibra: acc.fibra + (alimento.fibra || 0)
+                        }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+                        
+                        html += `<div style="margin: 15px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa;">`;
+                        html += `<h4 style="margin: 0 0 10px 0; color: #374151; font-size: 16px;">${nombresComidas[comida]}</h4>`;
+                        
+                        // Mostrar alimentos
+                        html += `<div style="margin-bottom: 10px;">`;
+                        datosComida.alimentos.forEach(alimento => {
+                            const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                            const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                            html += `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 6px 12px; border-radius: 12px; margin: 3px; font-size: 13px; font-weight: 500;">${alimento.nombre} (${alimento.cantidad}${alimento.unidad})</span>`;
+                        });
+                        html += `</div>`;
+                        
+                        // Mostrar totales nutricionales
+                        html += `<div style="font-size: 13px; color: #374151; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">`;
+                        html += `<strong>Totales:</strong> Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g | Fibra: ${totales.fibra.toFixed(1)}g`;
+                        html += `</div>`;
+                        
+                        html += `</div>`;
+                    }
+                });
+                
+                if (!tieneComidas) {
+                    html += `<div style="color: #9ca3af; font-style: italic; text-align: center; padding: 20px;">No hay comidas programadas para este día</div>`;
+                }
+            } else {
+                html += `<div style="color: #9ca3af; font-style: italic; text-align: center; padding: 20px;">No hay datos disponibles para este día</div>`;
+            }
+            
+            diaPanel.innerHTML = html;
+            console.log('=== FIN MOSTRAR DIA ===');
+        }
+        
+        function crearBotonesNavegacion(semana) {
+            const tabsDias = document.getElementById('tabsDias');
+            if (!tabsDias) return;
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            const comidasDisponibles = ordenComidas.filter(comida => 
+                semana[comida] && Array.isArray(semana[comida]) && semana[comida].length > 0
+            );
+            
+            let html = '<div style="margin: 15px 0; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">';
+            html += '<div style="text-align: center; margin-bottom: 10px;"><strong>Navegación por Comidas</strong></div>';
+            html += '<div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">';
+            
+            comidasDisponibles.forEach((comida, index) => {
+                const nombreComida = nombresComidas[comida];
+                html += `<button onclick="irAComida('${comida}')" class="btn btn-sm ${index === 0 ? 'btn-primary' : ''}" style="margin: 2px; padding: 8px 16px;">${nombreComida}</button>`;
+            });
+            
+            html += '</div></div>';
+            tabsDias.innerHTML = html;
+        }
+        
+        function irAComida(comida) {
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel || !window.planData) return;
+            
+            const semanas = Object.keys(window.planData.plan_completo);
+            const semana = window.planData.plan_completo[semanas[0]];
+            const datosComida = semana[comida];
+            
+            if (!datosComida || !datosComida.alimentos || !Array.isArray(datosComida.alimentos) || datosComida.alimentos.length === 0) return;
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            // Calcular totales nutricionales
+            const totales = datosComida.alimentos.reduce((acc, alimento) => ({
+                kcal: acc.kcal + (alimento.kcal || 0),
+                cho: acc.cho + (alimento.cho || 0),
+                pro: acc.pro + (alimento.pro || 0),
+                fat: acc.fat + (alimento.fat || 0),
+                fibra: acc.fibra + (alimento.fibra || 0)
+            }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+            
+            let html = `<h3 style="margin-bottom: 20px; color: #374151;">${nombresComidas[comida]}</h3>`;
+            
+            html += `<div style="margin: 15px 0; padding: 20px; border: 2px solid #e5e7eb; border-radius: 12px; background: #fafafa;">`;
+            
+            // Mostrar alimentos
+            html += `<div style="margin-bottom: 15px;">`;
+            datosComida.alimentos.forEach(alimento => {
+                const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                html += `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 8px 15px; border-radius: 15px; margin: 4px; font-size: 14px; font-weight: 500;">${alimento.nombre} (${alimento.cantidad}${alimento.unidad})</span>`;
+            });
+            html += `</div>`;
+            
+            // Mostrar totales nutricionales
+            html += `<div style="font-size: 14px; color: #374151; background: #f0f9ff; padding: 12px; border-radius: 8px; border: 1px solid #bae6fd;">`;
+            html += `<strong>Totales:</strong> Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g | Fibra: ${totales.fibra.toFixed(1)}g`;
+            html += `</div>`;
+            
+            html += `</div>`;
+            
+            // Botón para volver a vista completa
+            html += `<div style="text-align: center; margin-top: 20px;">`;
+            html += `<button onclick="mostrarTodasLasComidas(window.planData.plan_completo[Object.keys(window.planData.plan_completo)[0]])" class="btn btn-secondary" style="padding: 10px 20px;">Ver Plan Completo</button>`;
+            html += `</div>`;
+            
+            diaPanel.innerHTML = html;
+            
+            // Actualizar botones activos
+            const botones = document.querySelectorAll('#tabsDias button');
+            botones.forEach(btn => btn.className = 'btn btn-sm');
+            event.target.className = 'btn btn-sm btn-primary';
+        }
+        
+        function mostrarDiaSimple(dia, datosDia) {
+            console.log('=== MOSTRAR DIA SIMPLE ===');
+            console.log('Día:', dia);
+            console.log('Datos:', datosDia);
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) {
+                console.error('No se encontró diaPanel');
+                return;
+            }
+            
+            let html = `<h3>Plan para ${dia.charAt(0).toUpperCase() + dia.slice(1)}</h3>`;
+            
+            if (datosDia && typeof datosDia === 'object') {
+                const comidas = {
+                    'des': 'Desayuno',
+                    'mm': 'Media Mañana', 
+                    'alm': 'Almuerzo',
+                    'mt': 'Media Tarde',
+                    'cena': 'Cena'
+                };
+                
+                Object.keys(comidas).forEach(tiempo => {
+                    const comida = datosDia[tiempo];
+                    html += `<div style="margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">`;
+                    html += `<h4>${comidas[tiempo]}</h4>`;
+                    
+                    if (comida && Array.isArray(comida) && comida.length > 0) {
+                        comida.forEach(alimento => {
+                            html += `<div style="margin: 5px 0; padding: 8px; background: #f9f9f9; border-radius: 4px;">`;
+                            html += `<strong>${alimento.nombre}</strong> - ${alimento.porcion}`;
+                            if (alimento.kcal) html += ` (${alimento.kcal} kcal)`;
+                            html += `</div>`;
+                        });
+                    } else {
+                        html += `<div style="color: #666; font-style: italic;">No hay alimentos sugeridos</div>`;
+                    }
+                    
+                    html += `</div>`;
+                });
+            } else {
+                html += '<div style="color: red;">No hay datos disponibles para este día</div>';
+            }
+            
+            console.log('HTML generado, insertando...');
+            diaPanel.innerHTML = html;
+            console.log('=== FIN MOSTRAR DIA SIMPLE ===');
+        }
+        
+        function crearBotonesDias(diasDisponibles) {
+            console.log('Creando botones para días:', diasDisponibles);
+            const tabsDias = document.getElementById('tabsDias');
+            if (!tabsDias) return;
+            
+            let html = '<div style="margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 6px;">';
+            html += '<div style="display: flex; gap: 8px; flex-wrap: wrap;">';
+            
+            diasDisponibles.forEach((dia, index) => {
+                const nombreDia = dia.charAt(0).toUpperCase() + dia.slice(1);
+                html += `<button onclick="cambiarDia('${dia}')" class="btn btn-sm ${index === 0 ? 'btn-primary' : ''}" style="margin: 2px;">${nombreDia}</button>`;
+            });
+            
+            html += '</div></div>';
+            tabsDias.innerHTML = html;
+        }
+        
+        function crearBotonesComidas(comidasDisponibles) {
+            console.log('Creando botones para comidas:', comidasDisponibles);
+            const tabsDias = document.getElementById('tabsDias');
+            if (!tabsDias) return;
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            // Ordenar comidas según el orden correcto
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            const comidasOrdenadas = ordenComidas.filter(comida => comidasDisponibles.includes(comida));
+            
+            console.log('Comidas ordenadas:', comidasOrdenadas);
+            
+            let html = '<div style="margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 6px;">';
+            html += '<div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">';
+            
+            comidasOrdenadas.forEach((comida, index) => {
+                const nombreComida = nombresComidas[comida] || comida;
+                html += `<button onclick="cambiarComida('${comida}')" class="btn btn-sm ${index === 0 ? 'btn-primary' : ''}" style="margin: 2px;">${nombreComida}</button>`;
+            });
+            
+            html += '</div></div>';
+            tabsDias.innerHTML = html;
+            
+            console.log('Botones de comidas creados exitosamente');
+        }
+        
+        function cambiarDia(dia) {
+            console.log('Cambiando a día:', dia);
+            if (!window.planData || !window.planData.plan_completo) return;
+            
+            const semanas = Object.keys(window.planData.plan_completo);
+            const semana = window.planData.plan_completo[semanas[0]];
+            
+            if (semana && semana[dia]) {
+                mostrarDiaSimple(dia, semana[dia]);
+                
+                // Actualizar botones activos
+                const botones = document.querySelectorAll('#tabsDias button');
+                botones.forEach(btn => btn.className = 'btn btn-sm');
+                event.target.className = 'btn btn-sm btn-primary';
+            }
+        }
+        
+        function cambiarComida(comida) {
+            console.log('Cambiando a comida:', comida);
+            if (!window.planData || !window.planData.plan_completo) return;
+            
+            const semanas = Object.keys(window.planData.plan_completo);
+            const semana = window.planData.plan_completo[semanas[0]];
+            
+            if (semana && semana[comida]) {
+                mostrarDatosAlternativos(comida, semana[comida]);
+                
+                // Actualizar botones activos
+                const botones = document.querySelectorAll('#tabsDias button');
+                botones.forEach(btn => btn.className = 'btn btn-sm');
+                event.target.className = 'btn btn-sm btn-primary';
+            }
+        }
+        
+        function mostrarDatosAlternativos(clave, datos) {
+            console.log('=== MOSTRAR DATOS ALTERNATIVOS ===');
+            console.log('Clave:', clave);
+            console.log('Datos:', datos);
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) return;
+            
+            // Mapear claves a nombres de comidas
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            let html = `<h3 style="margin-bottom: 20px; color: #374151;">${nombresComidas[clave] || clave}</h3>`;
+            
+            if (Array.isArray(datos) && datos.length > 0) {
+                // Calcular totales nutricionales
+                const totales = datos.reduce((acc, alimento) => ({
+                    kcal: acc.kcal + (alimento.kcal || 0),
+                    cho: acc.cho + (alimento.cho || 0),
+                    pro: acc.pro + (alimento.pro || 0),
+                    fat: acc.fat + (alimento.fat || 0),
+                    fibra: acc.fibra + (alimento.fibra || 0)
+                }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+                
+                html += `<div style="margin: 15px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px;">`;
+                
+                // Mostrar alimentos
+                html += `<div style="margin-bottom: 12px;">`;
+                datos.forEach(alimento => {
+                    const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                    const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                    html += `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 6px 12px; border-radius: 12px; margin: 3px; font-size: 13px; font-weight: 500;">${alimento.nombre} (${alimento.porcion})</span>`;
+                });
+                html += `</div>`;
+                
+                // Mostrar totales nutricionales
+                html += `<div style="font-size: 13px; color: #374151; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">`;
+                html += `<strong>Totales nutricionales:</strong> Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g | Fibra: ${totales.fibra.toFixed(1)}g`;
+                html += `</div>`;
+                
+                html += `</div>`;
+            } else {
+                html += `<div style="color: #666; font-style: italic; padding: 20px; text-align: center;">No hay alimentos sugeridos para este tiempo</div>`;
+            }
+            
+            diaPanel.innerHTML = html;
+            console.log('=== FIN MOSTRAR DATOS ALTERNATIVOS ===');
+        }
+        
+        // Función simplificada para crear controles básicos
+        function crearControlesBasicos(diasDisponibles) {
+            const tabsDias = document.getElementById('tabsDias');
+            if (!tabsDias) return;
+            
+            let html = '<div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 6px;">';
+            html += '<div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">';
+            
+            diasDisponibles.forEach((dia, index) => {
+                const nombreDia = dia.charAt(0).toUpperCase() + dia.slice(1);
+                html += `<button onclick="mostrarDiaSeleccionado('${dia}')" class="btn btn-sm ${index === 0 ? 'btn-primary' : ''}" style="margin: 2px;">${nombreDia}</button>`;
+            });
+            
+            html += '</div></div>';
+            tabsDias.innerHTML = html;
+        }
+        
+        // Función para mostrar día seleccionado
+        function mostrarDiaSeleccionado(dia) {
+            if (!window.planData || !window.semanasDisponibles) return;
+            
+            const semanaKey = window.semanasDisponibles[window.semanaActual];
+            const semana = window.planData.plan_completo[semanaKey];
+            
+            if (semana && semana[dia]) {
+                mostrarDia(dia, semana[dia]);
+                
+                // Actualizar botones activos
+                const botones = document.querySelectorAll('#tabsDias button');
+                botones.forEach(btn => {
+                    btn.className = 'btn btn-sm';
+                });
+                event.target.className = 'btn btn-sm btn-primary';
+            }
+        }
+        
+        // Funciones auxiliares para colores de grupos
+        function obtenerColorGrupo(grupo) {
+            const colores = {
+                'GRUPO1_CEREALES': '#8b5cf6',
+                'GRUPO2_VERDURAS': '#10b981',
+                'GRUPO3_FRUTAS': '#f59e0b',
+                'GRUPO4_LACTEOS': '#06b6d4',
+                'GRUPO5_CARNES': '#ef4444',
+                'GRUPO6_LEGUMINOSAS': '#f97316',
+                'GRUPO7_GRASAS': '#f59e0b',
+                'GRUPO8_AZUCARES': '#ec4899',
+                'GRUPO9_OTROS': '#6b7280',
+                // Fallbacks para nombres antiguos
+                'cereales': '#8b5cf6',
+                'verduras': '#10b981',
+                'frutas': '#f59e0b',
+                'proteinas': '#ef4444',
+                'lacteos': '#06b6d4',
+                'grasas': '#f97316',
+                'otros': '#6b7280'
+            };
+            return colores[grupo] || '#6b7280';
+        }
+        
+        function obtenerColorFondoGrupo(grupo) {
+            const colores = {
+                'GRUPO1_CEREALES': '#f3f4f6',
+                'GRUPO2_VERDURAS': '#f0fdf4',
+                'GRUPO3_FRUTAS': '#fffbeb',
+                'GRUPO4_LACTEOS': '#f0f9ff',
+                'GRUPO5_CARNES': '#fef2f2',
+                'GRUPO6_LEGUMINOSAS': '#fff7ed',
+                'GRUPO7_GRASAS': '#fffbeb',
+                'GRUPO8_AZUCARES': '#fdf2f8',
+                'GRUPO9_OTROS': '#f9fafb',
+                // Fallbacks para nombres antiguos
+                'cereales': '#f3f4f6',
+                'verduras': '#f0fdf4',
+                'frutas': '#fffbeb',
+                'proteinas': '#fef2f2',
+                'lacteos': '#f0f9ff',
+                'grasas': '#fff7ed',
+                'otros': '#f9fafb'
+            };
+            return colores[grupo] || '#f9fafb';
+        }
+
+        // Función para mostrar plan con paginación por semanas
+        function mostrarPlanConPaginacion(data) {
+            console.log('Mostrando plan con paginación:', data);
+            
+            const previewEmpty = document.getElementById('previewEmpty');
+            const previewPlan = document.getElementById('previewPlan');
+            const planContainer = document.getElementById('planContainer');
+            
+            if (!planContainer) {
+                console.error('No se encontró el elemento planContainer');
+                return;
+            }
+            
+            // Ocultar mensaje vacío y mostrar plan
+            previewEmpty.style.display = 'none';
+            previewPlan.style.display = 'block';
+            
+            // Obtener semanas disponibles
+            const semanas = Object.keys(data.plan_completo).sort();
+            console.log('Semanas disponibles:', semanas);
+            
+            if (semanas.length === 0) {
+                console.warn('No hay semanas disponibles');
+                return;
+            }
+            
+            // Crear interfaz de paginación
+            let html = '<div class="plan-pagination-container">';
+            
+            // Controles de paginación
+            html += '<div class="pagination-controls">';
+            html += '<button id="btnSemanaAnterior" class="btn btn-sm" disabled><i class="fas fa-chevron-left"></i> Anterior</button>';
+            html += `<span id="infoSemana" class="pagination-info">Semana 1 de ${semanas.length}</span>`;
+            html += '<button id="btnSemanaSiguiente" class="btn btn-sm">Siguiente <i class="fas fa-chevron-right"></i></button>';
+            html += '</div>';
+            
+            // Contenedor para el contenido de la semana
+            html += '<div id="contenidoSemana" class="semana-content"></div>';
+            
+            html += '</div>';
+            
+            planContainer.innerHTML = html;
+            
+            // Variables globales para paginación
+            window.semanasDisponibles = semanas;
+            window.semanaActual = 0;
+            window.planData = data;
+            
+            // Mostrar primera semana
+            mostrarSemana(0);
+            
+            // Configurar eventos de paginación
+            configurarPaginacion();
+        }
+
+        // Función para mostrar una semana específica
+        function mostrarSemana(indiceSemana) {
+            if (!window.semanasDisponibles || indiceSemana < 0 || indiceSemana >= window.semanasDisponibles.length) {
+                return;
+            }
+            
+            const semanaKey = window.semanasDisponibles[indiceSemana];
+            const semana = window.planData.plan_completo[semanaKey];
+            const validacionesSemana = window.planData.validaciones[semanaKey] || {};
+            
+            console.log(`Mostrando ${semanaKey}:`, semana);
+            
+            const contenidoSemana = document.getElementById('contenidoSemana');
+            if (!contenidoSemana) return;
+            
+            // Obtener día de inicio para ordenar correctamente
+            const fechaInicio = document.getElementById('r_fi').value;
+            const diaInicio = fechaInicio ? new Date(fechaInicio + 'T12:00:00').getDay() : 1; // 1 = lunes por defecto
+            const diaInicioAjustado = diaInicio === 0 ? 6 : diaInicio - 1; // Convertir domingo=0 a domingo=6
+            
+            // Ordenar días según el día de inicio
+            const nombresDias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const diasOrdenados = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const indiceDia = (diaInicioAjustado + i) % 7;
+                const nombreDia = nombresDias[indiceDia];
+                if (semana[nombreDia]) {
+                    diasOrdenados.push(nombreDia);
+                }
+            }
+            
+            console.log('Días ordenados:', diasOrdenados);
+            
+            // Crear contenido de la semana
+            let html = '<div class="semana-actual">';
+            
+            // Título de la semana
+            html += `<h4>${semanaKey.replace('_', ' ').toUpperCase()}</h4>`;
+            
+            // Resumen diario
+            html += '<div class="daily-summary">';
+            diasOrdenados.forEach(dia => {
+                const validacion = validacionesSemana[dia];
+                if (validacion) {
+                    const totalCalorias = validacion.calorias ? validacion.calorias.actual : 0;
+                    const objetivoCalorias = validacion.calorias ? validacion.calorias.objetivo : 2000;
+                    const porcentajeCHO = validacion.macros && validacion.macros.cho ? validacion.macros.cho.porcentaje : 0;
+                    const porcentajePRO = validacion.macros && validacion.macros.pro ? validacion.macros.pro.porcentaje : 0;
+                    const porcentajeFAT = validacion.macros && validacion.macros.fat ? validacion.macros.fat.porcentaje : 0;
+                    
+                    html += `
+                        <div class="day-summary" data-dia="${dia}">
+                            <div class="day-name">${capitalizarPrimeraLetra(dia)}</div>
+                            <div class="progress-bars">
+                                <div class="progress-bar red" style="width: ${Math.min(porcentajeCHO, 100)}%">
+                                    <span class="progress-label">${porcentajeCHO}%</span>
+                                </div>
+                                <div class="progress-bar blue" style="width: ${Math.min(porcentajePRO, 100)}%">
+                                    <span class="progress-label">${porcentajePRO}%</span>
+                                </div>
+                                <div class="progress-bar yellow" style="width: ${Math.min(porcentajeFAT, 100)}%">
+                                    <span class="progress-label">${porcentajeFAT}%</span>
+                                </div>
+                            </div>
+                            <div class="calories-pill ${totalCalorias >= objetivoCalorias * 0.9 ? 'good' : 'warning'}">
+                                ${totalCalorias}/${objetivoCalorias} kcal
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            html += '</div>';
+            
+            // Tabla de comidas
+            html += '<div class="meals-table">';
+            html += '<table class="meals-grid">';
+            html += '<thead><tr><th>Comida</th>';
+            
+            diasOrdenados.forEach(dia => {
+                html += `<th>${capitalizarPrimeraLetra(dia)}</th>`;
+            });
+            
+            html += '</tr></thead><tbody>';
+            
+            // Filas de comidas
+            const tiemposComida = ['des', 'mm', 'alm', 'mt', 'cena'];
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Merienda',
+                'cena': 'Cena'
+            };
+            const horariosComidas = {
+                'des': '7:30 AM',
+                'mm': '11:00 AM',
+                'alm': '1:00 PM', 
+                'mt': '4:00 PM',
+                'cena': '7:00 PM'
+            };
+            
+            tiemposComida.forEach(tiempo => {
+                // Calcular totales nutricionales para este tiempo
+                let totalKcal = 0;
+                let totalCho = 0;
+                let totalPro = 0;
+                
+                diasOrdenados.forEach(dia => {
+                    const comida = semana[dia][tiempo];
+                    if (comida && comida.alimentos && comida.alimentos.length > 0) {
+                        comida.alimentos.forEach(alimento => {
+                            totalKcal += alimento.kcal || 0;
+                            totalCho += alimento.cho || 0;
+                            totalPro += alimento.pro || 0;
+                        });
+                    }
+                });
+                
+                // Promedio por día
+                const promedioKcal = Math.round(totalKcal / diasOrdenados.length);
+                const promedioCho = Math.round(totalCho / diasOrdenados.length);
+                const promedioPro = Math.round(totalPro / diasOrdenados.length);
+                
+                html += `<tr><td class="meal-time">${nombresComidas[tiempo]}<br><small>${horariosComidas[tiempo]}</small><br><strong style="color: #1f2937; font-size: 12px;">Kcal: ${promedioKcal} | CHO: ${promedioCho}g | PRO: ${promedioPro}g</strong></td>`;
+                
+                diasOrdenados.forEach(dia => {
+                    const comida = semana[dia][tiempo];
+                    if (comida && comida.alimentos && comida.alimentos.length > 0) {
+                        html += '<td class="meal-content">';
+                        comida.alimentos.forEach(alimento => {
+                            const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                            html += `
+                                <div class="food-item" style="background-color: ${colorGrupo}20; border-left: 3px solid ${colorGrupo};">
+                                    <span class="food-name">${alimento.nombre}</span>
+                                    <span class="food-quantity">${alimento.cantidad} ${alimento.unidad}</span>
+                                </div>
+                            `;
+                        });
+                        html += '</td>';
+                    } else {
+                        html += '<td class="meal-content empty">-</td>';
+                    }
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            html += '</div>';
+            
+            html += '</div>';
+            
+            contenidoSemana.innerHTML = html;
+            
+            // Actualizar controles de paginación
+            actualizarControlesPaginacion();
+        }
+
+        // Función para configurar eventos de paginación
+        function configurarPaginacion() {
+            const btnAnterior = document.getElementById('btnSemanaAnterior');
+            const btnSiguiente = document.getElementById('btnSemanaSiguiente');
+            
+            if (btnAnterior) {
+                btnAnterior.onclick = () => {
+                    if (window.semanaActual > 0) {
+                        window.semanaActual--;
+                        mostrarSemana(window.semanaActual);
+                    }
+                };
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.onclick = () => {
+                    if (window.semanaActual < window.semanasDisponibles.length - 1) {
+                        window.semanaActual++;
+                        mostrarSemana(window.semanaActual);
+                    }
+                };
+            }
+        }
+
+        // Función para actualizar controles de paginación
+        function actualizarControlesPaginacion() {
+            const btnAnterior = document.getElementById('btnSemanaAnterior');
+            const btnSiguiente = document.getElementById('btnSemanaSiguiente');
+            const infoSemana = document.getElementById('infoSemana');
+            
+            if (btnAnterior) {
+                btnAnterior.disabled = window.semanaActual === 0;
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.disabled = window.semanaActual === window.semanasDisponibles.length - 1;
+            }
+            
+            if (infoSemana) {
+                infoSemana.textContent = `Semana ${window.semanaActual + 1} de ${window.semanasDisponibles.length}`;
+            }
+        }
+
+        // Función para mostrar un día específico
+        function mostrarDia(dia, datosDia) {
+            console.log('=== INICIANDO mostrarDia ===');
+            console.log('Mostrando día:', dia, datosDia);
+            const diaPanel = document.getElementById('diaPanel');
+            
+            console.log('DEBUG: diaPanel encontrado:', !!diaPanel);
+            
+            if (!diaPanel) {
+                console.error('No se encontró el elemento diaPanel');
+                return;
+            }
+            
+            let html = `<h4>Plan para ${dia.charAt(0).toUpperCase() + dia.slice(1)}</h4>`;
+            
+            if (datosDia && typeof datosDia === 'object') {
+                console.log('DEBUG: datosDia es válido, procesando comidas...');
+                
+                // Definir orden correcto de comidas
+                const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+                const nombresComidas = {
+                    'des': 'Desayuno',
+                    'mm': 'Media Mañana',
+                    'alm': 'Almuerzo',
+                    'mt': 'Media Tarde',
+                    'cena': 'Cena'
+                };
+                
+                // Mostrar comidas en orden correcto
+                ordenComidas.forEach(tiempo => {
+                    const comida = datosDia[tiempo];
+                    console.log('Comida:', tiempo, comida);
+                    
+                    if (comida && Array.isArray(comida)) {
+                        console.log('DEBUG: Procesando comida', tiempo, 'con', comida.length, 'alimentos');
+                        
+                        // Calcular totales nutricionales
+                        const totales = comida.reduce((acc, alimento) => ({
+                            kcal: acc.kcal + (alimento.kcal || 0),
+                            cho: acc.cho + (alimento.cho || 0),
+                            pro: acc.pro + (alimento.pro || 0),
+                            fat: acc.fat + (alimento.fat || 0)
+                        }), { kcal: 0, cho: 0, pro: 0, fat: 0 });
+                        
+                        html += `
+                            <div style="margin: 15px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                                <h5 style="margin: 0 0 10px 0; color: #374151;">${nombresComidas[tiempo]}</h5>
+                                <div style="margin-bottom: 8px;">
+                                    ${comida.map(alimento => {
+                                        const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                                        const colorFondo = obtenerColorFondoGrupo(alimento.grupo);
+                                        return `<span style="display: inline-block; background: ${colorFondo}; color: ${colorGrupo}; border: 1px solid ${colorGrupo}; padding: 4px 8px; border-radius: 12px; margin: 2px; font-size: 12px; font-weight: 500;">${alimento.nombre} (${alimento.porcion})</span>`;
+                                    }).join('')}
+                                </div>
+                                <div style="font-size: 12px; color: #666;">
+                                    Kcal: ${totales.kcal.toFixed(1)} | CHO: ${totales.cho.toFixed(1)}g | PRO: ${totales.pro.toFixed(1)}g | FAT: ${totales.fat.toFixed(1)}g
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        console.log('DEBUG: No hay alimentos para', tiempo);
+                        html += `
+                            <div style="margin: 15px 0; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                                <h5 style="margin: 0 0 10px 0; color: #374151;">${nombresComidas[tiempo]}</h5>
+                                <div style="color: #666; font-style: italic;">No hay alimentos sugeridos para este tiempo</div>
+                            </div>
+                        `;
+                    }
+                });
+            } else {
+                console.log('DEBUG: No hay datos válidos para el día');
+                html += '<div style="color: #666; font-style: italic;">No hay datos disponibles para este día</div>';
+            }
+            
+            console.log('DEBUG: HTML generado, insertando en diaPanel');
+            diaPanel.innerHTML = html;
+            console.log('=== FINALIZANDO mostrarDia ===');
+        }
+
+        // Función para configurar los botones de vista
+        // Función para configurar botones de vista con controles de paginación
+        
+        // Función para agregar controles de paginación
+        function agregarControlesPaginacion() {
+            const previewPlan = document.getElementById('previewPlan');
+            if (!previewPlan) return;
+            
+            // Verificar si ya existen los controles
+            if (document.getElementById('controlesPaginacion')) return;
+            
+            const controlesHTML = `
+                <div id="controlesPaginacion" style="margin: 15px 0; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
+                        <button id="btnSemanaAnterior" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            ← Semana Anterior
+                        </button>
+                        <div style="text-align: center;">
+                            <span id="infoSemana" style="font-weight: 600; color: #374151; font-size: 16px;">
+                                Semana 1 de ${window.semanasDisponibles.length}
+                            </span>
+                            <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+                                Navegar entre semanas del plan
+                            </div>
+                        </div>
+                        <button id="btnSemanaSiguiente" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            Semana Siguiente →
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Insertar controles DESPUÉS de los botones de vista
+            const botonesVista = document.querySelector('.btn-group');
+            if (botonesVista) {
+                botonesVista.insertAdjacentHTML('afterend', controlesHTML);
+            } else {
+                previewPlan.insertAdjacentHTML('afterbegin', controlesHTML);
+            }
+            
+            // Configurar eventos de paginación
+            configurarEventosPaginacion();
+        }
+        
+        // Función para configurar eventos de paginación
+        function configurarEventosPaginacion() {
+            const btnAnterior = document.getElementById('btnSemanaAnterior');
+            const btnSiguiente = document.getElementById('btnSemanaSiguiente');
+            
+            if (btnAnterior) {
+                btnAnterior.addEventListener('click', () => {
+                    if (window.semanaActual > 0) {
+                        window.semanaActual--;
+                        actualizarVistaActual();
+                        actualizarControlesPaginacion();
+                    }
+                });
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.addEventListener('click', () => {
+                    if (window.semanaActual < window.semanasDisponibles.length - 1) {
+                        window.semanaActual++;
+                        actualizarVistaActual();
+                        actualizarControlesPaginacion();
+                    }
+                });
+            }
+        }
+        
+        // Función para actualizar la vista actual
+        function actualizarVistaActual() {
+            // Reiniciar día actual al cambiar de semana
+            window.diaActual = 0;
+            
+            if (window.vistaActual === 'lista') {
+                mostrarVistaLista();
+            } else if (window.vistaActual === 'horario') {
+                mostrarVistaHorario();
+            } else if (window.vistaActual === 'tabla') {
+                mostrarVistaTabla();
+            }
+            
+            // Actualizar visibilidad de tabs según la vista
+            const tabsDias = document.getElementById('tabsDias');
+            if (tabsDias) {
+                tabsDias.style.display = window.vistaActual === 'lista' ? 'flex' : 'none';
+            }
+        }
+        
+        // Función para actualizar controles de paginación
+        function actualizarControlesPaginacion() {
+            const btnAnterior = document.getElementById('btnSemanaAnterior');
+            const btnSiguiente = document.getElementById('btnSemanaSiguiente');
+            const infoSemana = document.getElementById('infoSemana');
+            
+            if (btnAnterior) {
+                btnAnterior.disabled = window.semanaActual === 0;
+                btnAnterior.style.opacity = window.semanaActual === 0 ? '0.5' : '1';
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.disabled = window.semanaActual === window.semanasDisponibles.length - 1;
+                btnSiguiente.style.opacity = window.semanaActual === window.semanasDisponibles.length - 1 ? '0.5' : '1';
+            }
+            
+            if (infoSemana) {
+                infoSemana.textContent = `Semana ${window.semanaActual + 1} de ${window.semanasDisponibles.length}`;
+            }
+        }
+
+        // Función para cambiar la vista
+        function cambiarVista(nuevaVista) {
+            window.vistaActual = nuevaVista;
+            
+            // Actualizar estilos de botones
+            document.getElementById('btnVistaLista').className = 'btn btn-sm' + (nuevaVista === 'lista' ? ' btn-primary' : '');
+            document.getElementById('btnVistaHorario').className = 'btn btn-sm' + (nuevaVista === 'horario' ? ' btn-primary' : '');
+            document.getElementById('btnVistaTabla').className = 'btn btn-sm' + (nuevaVista === 'tabla' ? ' btn-primary' : '');
+            
+            // Mostrar/ocultar tabs de días según la vista
+            const tabsDias = document.getElementById('tabsDias');
+            if (nuevaVista === 'lista') {
+                tabsDias.style.display = 'flex';
+            } else {
+                tabsDias.style.display = 'none';
+            }
+            
+            // Mostrar contenido según la vista
+            if (nuevaVista === 'lista') {
+                mostrarRecomendacionCompleta(window.planData.plan_completo);
+            } else if (nuevaVista === 'horario') {
+                mostrarVistaHorario();
+            } else if (nuevaVista === 'tabla') {
+                mostrarVistaTabla();
+            }
+        }
+
+        // Función auxiliar para capitalizar primera letra
+        function capitalizarPrimeraLetra(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+        
+        // Función para mostrar vista de lista
+        function mostrarVistaLista() {
+            console.log('DEBUG: Iniciando mostrarVistaLista');
+            console.log('DEBUG: window.planData:', window.planData);
+            console.log('DEBUG: window.semanasDisponibles:', window.semanasDisponibles);
+            console.log('DEBUG: window.semanaActual:', window.semanaActual);
+            
+            if (!window.planData || !window.semanasDisponibles || window.semanaActual === undefined) {
+                console.error('DEBUG: Faltan datos para mostrar vista de lista');
+                return;
+            }
+            
+            const semanaKey = window.semanasDisponibles[window.semanaActual];
+            const semana = window.planData.plan_completo[semanaKey];
+            
+            console.log('DEBUG: semanaKey:', semanaKey);
+            console.log('DEBUG: semana:', semana);
+            
+            if (!semana) {
+                console.error('DEBUG: No se encontró semana');
+                return;
+            }
+            
+            // Obtener día de inicio para ordenar correctamente
+            const fechaInicio = document.getElementById('r_fi').value;
+            const diaInicio = fechaInicio ? new Date(fechaInicio + 'T12:00:00').getDay() : 1;
+            const diaInicioAjustado = diaInicio === 0 ? 6 : diaInicio - 1;
+            
+            // Ordenar días según el día de inicio
+            const nombresDias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const diasOrdenados = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const indiceDia = (diaInicioAjustado + i) % 7;
+                const nombreDia = nombresDias[indiceDia];
+                if (semana[nombreDia]) {
+                    diasOrdenados.push(nombreDia);
+                }
+            }
+            
+            console.log('DEBUG: diasOrdenados:', diasOrdenados);
+            
+            // Crear controles de navegación de días
+            crearControlesDiasDespuesDeSemana(diasOrdenados, semana);
+            
+            // Inicializar día actual si no está definido
+            if (window.diaActual === undefined) {
+                window.diaActual = 0;
+            }
+            
+            // Mostrar el día actual
+            if (diasOrdenados.length > 0) {
+                const diaActual = diasOrdenados[window.diaActual];
+                console.log('DEBUG: Mostrando día actual:', diaActual);
+                mostrarDia(diaActual, semana[diaActual]);
+            }
+        }
+        
+        // Función para crear controles de días después de los controles de semana
+        function crearControlesDiasDespuesDeSemana(diasOrdenados, semana) {
+            const tabsDias = document.getElementById('tabsDias');
+            if (!tabsDias) return;
+            
+            let html = `
+                <div style="margin: 15px 0; padding: 12px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
+                        <button id="btnDiaAnterior" style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            ← Día Anterior
+                        </button>
+                        <div style="text-align: center;">
+                            <span id="nombreDiaActual" style="font-weight: 600; color: #0c4a6e; font-size: 16px;">
+                                ${capitalizarPrimeraLetra(diasOrdenados[0] || '')}
+                            </span>
+                            <div style="font-size: 12px; color: #0369a1; margin-top: 2px;">
+                                Día ${(window.diaActual || 0) + 1} de ${diasOrdenados.length}
+                            </div>
+                        </div>
+                        <button id="btnDiaSiguiente" style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            Día Siguiente →
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Solo insertar en tabsDias, no duplicar
+            tabsDias.innerHTML = html;
+            
+            // Configurar eventos de navegación
+            configurarEventosDias(diasOrdenados, semana);
+        }
+        
+        // Función para configurar eventos de navegación de días
+        function configurarEventosDias(diasOrdenados, semana) {
+            const btnAnterior = document.getElementById('btnDiaAnterior');
+            const btnSiguiente = document.getElementById('btnDiaSiguiente');
+            
+            if (btnAnterior) {
+                btnAnterior.addEventListener('click', () => {
+                    if (window.diaActual > 0) {
+                        window.diaActual--;
+                        const diaActual = diasOrdenados[window.diaActual];
+                        mostrarDia(diaActual, semana[diaActual]);
+                        actualizarControlesDias(diasOrdenados);
+                    }
+                });
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.addEventListener('click', () => {
+                    if (window.diaActual < diasOrdenados.length - 1) {
+                        window.diaActual++;
+                        const diaActual = diasOrdenados[window.diaActual];
+                        mostrarDia(diaActual, semana[diaActual]);
+                        actualizarControlesDias(diasOrdenados);
+                    }
+                });
+            }
+        }
+        
+        // Función para actualizar controles de días
+        function actualizarControlesDias(diasOrdenados) {
+            const btnAnterior = document.getElementById('btnDiaAnterior');
+            const btnSiguiente = document.getElementById('btnDiaSiguiente');
+            const nombreDiaActual = document.getElementById('nombreDiaActual');
+            
+            if (btnAnterior) {
+                btnAnterior.disabled = window.diaActual === 0;
+                btnAnterior.style.opacity = window.diaActual === 0 ? '0.5' : '1';
+            }
+            
+            if (btnSiguiente) {
+                btnSiguiente.disabled = window.diaActual === diasOrdenados.length - 1;
+                btnSiguiente.style.opacity = window.diaActual === diasOrdenados.length - 1 ? '0.5' : '1';
+            }
+            
+            if (nombreDiaActual) {
+                const diaActual = diasOrdenados[window.diaActual];
+                nombreDiaActual.textContent = capitalizarPrimeraLetra(diaActual);
+                
+                // Actualizar contador de días
+                const contadorDias = nombreDiaActual.nextElementSibling;
+                if (contadorDias) {
+                    contadorDias.textContent = `Día ${window.diaActual + 1} de ${diasOrdenados.length}`;
+                }
+            }
+        }
+
+        // Función para mostrar vista de horario
+        function mostrarVistaHorario() {
+            console.log('=== MOSTRAR VISTA HORARIO ===');
+            
+            if (!window.planData || !window.planData.plan_completo) {
+                console.error('ERROR: No hay planData disponible');
+                return;
+            }
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) {
+                console.error('ERROR: No se encontró el elemento diaPanel');
+                return;
+            }
+            
+            // Obtener la primera semana disponible
+            const semanas = Object.keys(window.planData.plan_completo);
+            if (semanas.length === 0) {
+                console.error('ERROR: No hay semanas disponibles');
+                return;
+            }
+            
+            const primeraSemana = semanas[0];
+            const semana = window.planData.plan_completo[primeraSemana];
+            console.log('Mostrando horario para:', primeraSemana);
+            
+            // Generar HTML para vista de horario semanal (como en la imagen)
+            let html = '<div style="padding: 20px;">';
+            html += '<h3 style="color: #1e40af; margin-bottom: 20px; text-align: center;">⏰ Horario Semanal</h3>';
+            
+            // Crear tabla semanal con días como columnas
+            html += '<div style="overflow-x: auto;">';
+            html += '<table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+            
+            // Encabezados de días
+            html += '<thead style="background: #1e40af; color: white;">';
+            html += '<tr>';
+            html += '<th style="padding: 15px; text-align: left; border: 1px solid #1e40af; font-weight: 600;">Comida</th>';
+            
+            const nombresDias = {
+                'lunes': 'Lunes',
+                'martes': 'Martes',
+                'miercoles': 'Miércoles',
+                'jueves': 'Jueves',
+                'viernes': 'Viernes',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+            
+            // Obtener el orden de días basado en el día de inicio calculado
+            const elementoDias = document.getElementById('r_dias');
+            const diaInicio = elementoDias ? parseInt(elementoDias.getAttribute('data-dia-inicio')) : 0;
+            const nombresDiasArray = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            
+            // Crear el orden correcto empezando desde el día de inicio seleccionado
+            const ordenDias = [];
+            for (let i = 0; i < 7; i++) {
+                const indice = (diaInicio + i) % 7;
+                ordenDias.push(nombresDiasArray[indice]);
+            }
+            
+            console.log(`DEBUG: Día de inicio seleccionado: ${diaInicio}`);
+            console.log(`DEBUG: Orden de días calculado: ${ordenDias}`);
+            
+            ordenDias.forEach(dia => {
+                html += `<th style="padding: 15px; text-align: center; border: 1px solid #1e40af; font-weight: 600;">${nombresDias[dia]}</th>`;
+            });
+            
+            html += '</tr>';
+            html += '</thead>';
+            
+            html += '<tbody>';
+            
+            // Horarios de las comidas
+            const horarios = {
+                'des': '7:30 AM',
+                'mm': '11:00 AM', 
+                'alm': '1:00 PM',
+                'mt': '4:00 PM',
+                'cena': '7:00 PM'
+            };
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Merienda',
+                'cena': 'Cena'
+            };
+            
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            
+            // Filas de comidas
+            ordenComidas.forEach(comida => {
+                // Calcular totales nutricionales para esta comida
+                let totalKcal = 0;
+                let totalCho = 0;
+                let totalPro = 0;
+                
+                ordenDias.forEach(dia => {
+                    const datosComida = semana[dia] && semana[dia][comida];
+                    if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                        datosComida.alimentos.forEach(alimento => {
+                            totalKcal += alimento.kcal || 0;
+                            totalCho += alimento.cho || 0;
+                            totalPro += alimento.pro || 0;
+                        });
+                    }
+                });
+                
+                // Promedio por día
+                const promedioKcal = Math.round(totalKcal / ordenDias.length);
+                const promedioCho = Math.round(totalCho / ordenDias.length);
+                const promedioPro = Math.round(totalPro / ordenDias.length);
+                
+                html += '<tr style="border-bottom: 1px solid #e5e7eb;">';
+                
+                // Columna de nombre de comida con horario
+                html += `<td style="padding: 15px; border: 1px solid #e5e7eb; font-weight: 600; color: #1f2937; background: #f9fafb; width: 120px;">`;
+                html += `${nombresComidas[comida]}<br>`;
+                html += `<small style="color: #6b7280; font-weight: 400;">${horarios[comida]}</small><br>`;
+                html += `<strong style="color: #1f2937; font-size: 11px;">Kcal: ${promedioKcal} | CHO: ${promedioCho}g | PRO: ${promedioPro}g</strong>`;
+                html += '</td>';
+                
+                // Columnas de días
+                ordenDias.forEach(dia => {
+                    const datosComida = semana[dia] && semana[dia][comida];
+                    
+                    html += '<td style="padding: 12px; border: 1px solid #e5e7eb; vertical-align: top;">';
+                    
+                    if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                        // Mostrar cada alimento
+                        datosComida.alimentos.forEach(alimento => {
+                            const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                            html += `<div style="font-size: 11px; margin-bottom: 3px; padding: 4px 6px; background: ${colorGrupo}20; border-radius: 4px; border-left: 3px solid ${colorGrupo}; color: ${colorGrupo}; font-weight: 500;">`;
+                            html += `• ${alimento.nombre} - ${alimento.cantidad}${alimento.unidad}`;
+                            html += '</div>';
+                        });
+                    } else {
+                        html += '<div style="font-size: 11px; color: #9ca3af; font-style: italic; text-align: center;">Sin alimentos</div>';
+                    }
+                    
+                    html += '</td>';
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            html += '</div>';
+            
+            diaPanel.innerHTML = html;
+            console.log('✅ Vista de horario semanal mostrada correctamente');
+        }
+
+        // Función para mostrar vista de tabla semanal
+        function mostrarVistaTabla() {
+            console.log('=== MOSTRAR VISTA TABLA ===');
+            
+            if (!window.planData || !window.planData.plan_completo) {
+                console.error('ERROR: No hay planData disponible');
+                return;
+            }
+            
+            const diaPanel = document.getElementById('diaPanel');
+            if (!diaPanel) {
+                console.error('ERROR: No se encontró el elemento diaPanel');
+                return;
+            }
+            
+            // Obtener la primera semana disponible
+            const semanas = Object.keys(window.planData.plan_completo);
+            if (semanas.length === 0) {
+                console.error('ERROR: No hay semanas disponibles');
+                return;
+            }
+            
+            const primeraSemana = semanas[0];
+            const semana = window.planData.plan_completo[primeraSemana];
+            console.log('Mostrando tabla para:', primeraSemana);
+            
+            // Generar HTML para vista de tabla semanal (columnas = comidas, filas = días)
+            let html = '<div style="padding: 20px;">';
+            html += '<h3 style="color: #1e40af; margin-bottom: 20px; text-align: center;">📊 Tabla Semanal Nutricional</h3>';
+            
+            // Crear tabla semanal
+            html += '<div style="overflow-x: auto;">';
+            html += '<table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+            
+            // Encabezados de comidas
+            html += '<thead style="background: #1e40af; color: white;">';
+            html += '<tr>';
+            html += '<th style="padding: 15px; text-align: left; border: 1px solid #1e40af; font-weight: 600;">Día</th>';
+            
+            const nombresComidas = {
+                'des': 'Desayuno',
+                'mm': 'Media Mañana', 
+                'alm': 'Almuerzo',
+                'mt': 'Media Tarde',
+                'cena': 'Cena'
+            };
+            
+            const ordenComidas = ['des', 'mm', 'alm', 'mt', 'cena'];
+            
+            ordenComidas.forEach(comida => {
+                html += `<th style="padding: 15px; text-align: center; border: 1px solid #1e40af; font-weight: 600;">${nombresComidas[comida]}</th>`;
+            });
+            
+            html += '</tr>';
+            html += '</thead>';
+            
+            html += '<tbody>';
+            
+            const nombresDias = {
+                'lunes': 'Lunes',
+                'martes': 'Martes',
+                'miercoles': 'Miércoles',
+                'jueves': 'Jueves',
+                'viernes': 'Viernes',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+            
+            // Obtener el orden de días basado en el día de inicio calculado
+            const elementoDias = document.getElementById('r_dias');
+            const diaInicio = elementoDias ? parseInt(elementoDias.getAttribute('data-dia-inicio')) : 0;
+            const nombresDiasArray = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            
+            // Crear el orden correcto empezando desde el día de inicio seleccionado
+            const ordenDias = [];
+            for (let i = 0; i < 7; i++) {
+                const indice = (diaInicio + i) % 7;
+                ordenDias.push(nombresDiasArray[indice]);
+            }
+            
+            console.log(`DEBUG: Día de inicio seleccionado: ${diaInicio}`);
+            console.log(`DEBUG: Orden de días calculado: ${ordenDias}`);
+            
+            // Filas de días
+            ordenDias.forEach(dia => {
+                const diaData = semana[dia];
+                
+                html += '<tr style="border-bottom: 1px solid #e5e7eb;">';
+                
+                // Columna de día
+                html += `<td style="padding: 15px; border: 1px solid #e5e7eb; font-weight: 600; color: #1f2937; background: #f9fafb; width: 100px;">${nombresDias[dia]}</td>`;
+                
+                // Columnas de comidas
+                ordenComidas.forEach(comida => {
+                    const datosComida = diaData && diaData[comida];
+                    
+                    html += '<td style="padding: 12px; border: 1px solid #e5e7eb; vertical-align: top;">';
+                    
+                    if (datosComida && datosComida.alimentos && Array.isArray(datosComida.alimentos) && datosComida.alimentos.length > 0) {
+                        // Calcular totales nutricionales
+                        const totales = datosComida.alimentos.reduce((acc, alimento) => ({
+                            kcal: acc.kcal + (alimento.kcal || 0),
+                            cho: acc.cho + (alimento.cho || 0),
+                            pro: acc.pro + (alimento.pro || 0),
+                            fat: acc.fat + (alimento.fat || 0),
+                            fibra: acc.fibra + (alimento.fibra || 0)
+                        }), { kcal: 0, cho: 0, pro: 0, fat: 0, fibra: 0 });
+                        
+                        // Mostrar alimentos
+                        datosComida.alimentos.forEach(alimento => {
+                            const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                            html += `<div style="font-size: 10px; margin-bottom: 2px; padding: 3px 5px; background: ${colorGrupo}20; border-radius: 3px; border-left: 2px solid ${colorGrupo}; color: ${colorGrupo}; font-weight: 500;">`;
+                            html += `${alimento.nombre} - ${alimento.cantidad}${alimento.unidad}`;
+                            html += '</div>';
+                        });
+                        
+                        // Mostrar totales nutricionales
+                        html += `<div style="font-size: 9px; color: #6b7280; margin-top: 5px; padding: 3px; background: #f9fafb; border-radius: 3px; border: 1px solid #e5e7eb;">`;
+                        html += `<strong>Kcal:</strong> ${totales.kcal.toFixed(0)} | <strong>CHO:</strong> ${totales.cho.toFixed(0)}g | <strong>PRO:</strong> ${totales.pro.toFixed(0)}g`;
+                        html += '</div>';
+                    } else {
+                        html += '<div style="font-size: 10px; color: #9ca3af; font-style: italic; text-align: center;">Sin alimentos</div>';
+                    }
+                    
+                    html += '</td>';
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            html += '</div>';
+            
+            diaPanel.innerHTML = html;
+            console.log('✅ Vista de tabla semanal mostrada correctamente');
+        }
+    });
+
+    /* ==================== Validación de macros y filtros ==================== */
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validar que los macros sumen 100%
+        function validarMacros() {
+            const cho = parseFloat(document.getElementById('r_pct_cho').value) || 0;
+            const pro = parseFloat(document.getElementById('r_pct_pro').value) || 0;
+            const fat = parseFloat(document.getElementById('r_pct_fat').value) || 0;
+            const total = cho + pro + fat;
+            
+            const macroWarn = document.getElementById('macroWarn');
+            
+            if (total === 0) {
+                macroWarn.textContent = '';
+                macroWarn.style.color = '';
+            } else if (Math.abs(total - 100) <= 1) {
+                macroWarn.textContent = `✅ Total: ${total.toFixed(1)}%`;
+                macroWarn.style.color = '#10b981';
+            } else {
+                macroWarn.textContent = `⚠️ Total: ${total.toFixed(1)}% (debe ser ~100%)`;
+                macroWarn.style.color = '#f59e0b';
+            }
+        }
+        
+        // Calcular días automáticamente basado en fechas
+        function calcularDiasAutomatico() {
+            console.log('=== CALCULAR DIAS AUTOMATICO ===');
+            const fechaInicio = document.getElementById('r_fi').value;
+            const fechaFin = document.getElementById('r_ff').value;
+            console.log(`Fechas: inicio=${fechaInicio}, fin=${fechaFin}`);
+            
+            if (fechaInicio && fechaFin) {
+                // Corregir el problema de zona horaria agregando 'T12:00:00' para evitar cambios de día
+                const inicio = new Date(fechaInicio + 'T12:00:00');
+                const fin = new Date(fechaFin + 'T12:00:00');
+                
+                if (fin >= inicio) {
+                    const diferenciaTiempo = fin.getTime() - inicio.getTime();
+                    const dias = Math.ceil(diferenciaTiempo / (1000 * 3600 * 24)) + 1;
+                    
+                    // Permitir hasta 30 días (más de 4 semanas)
+                    if (dias >= 1 && dias <= 30) {
+                        document.getElementById('r_dias').value = dias;
+                        console.log(`Calculados ${dias} días desde ${fechaInicio} hasta ${fechaFin}`);
+                        
+                        // Calcular día de inicio de la semana (0=lunes, 6=domingo)
+                        const diaSemana = inicio.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+                        const diaInicio = diaSemana === 0 ? 6 : diaSemana - 1; // Convertir a 0=lunes, 6=domingo
+                        
+                        console.log(`DEBUG: Cálculo del día de inicio:`);
+                        console.log(`  - diaSemana (getDay()): ${diaSemana}`);
+                        console.log(`  - diaInicio calculado: ${diaInicio}`);
+                        console.log(`  - Día correspondiente: ${['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'][diaInicio]}`);
+                        
+                        // Guardar el día de inicio para enviarlo al backend
+                        document.getElementById('r_dias').setAttribute('data-dia-inicio', diaInicio);
+                        console.log(`Fecha seleccionada: ${inicio.toDateString()}`);
+                        console.log(`Día de la semana (JS): ${diaSemana} (0=domingo, 1=lunes, ..., 6=sábado)`);
+                        console.log(`Día de inicio calculado: ${diaInicio} (0=lunes, 1=martes, ..., 6=domingo)`);
+                        console.log(`Nombre del día: ${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][diaInicio]}`);
+                    } else if (dias > 30) {
+                        console.warn(`Rango de ${dias} días excede el límite de 30 días`);
+                        document.getElementById('r_dias').value = 30;
+                    }
+                } else {
+                    console.warn('La fecha de fin debe ser posterior a la fecha de inicio');
+                }
+            } else {
+                console.log('No se pueden calcular días: faltan fechas');
+            }
+            console.log('=== FIN CALCULAR DIAS AUTOMATICO ===');
+        }
+        
+        // Agregar event listeners a los campos de macros
+        ['r_pct_cho', 'r_pct_pro', 'r_pct_fat'].forEach(id => {
+            document.getElementById(id).addEventListener('input', validarMacros);
+        });
+        
+        // Agregar event listeners a los campos de fechas
+        document.getElementById('r_fi').addEventListener('change', calcularDiasAutomatico);
+        document.getElementById('r_ff').addEventListener('change', calcularDiasAutomatico);
+        
+        // Validar inicialmente
+        validarMacros();
+        
+        // Validar límite de IG
+        function validarIGMax() {
+            const igMax = parseInt(document.getElementById('r_ig_max').value);
+            const igWarn = document.getElementById('igWarn');
+            
+            if (igMax < 10) {
+                igWarn.textContent = '⚠️ IG muy bajo (<10). Recomendado: 50-70';
+                igWarn.style.color = '#ef4444';
+            } else if (igMax < 30) {
+                igWarn.textContent = '⚠️ IG bajo (<30). Muy restrictivo';
+                igWarn.style.color = '#f59e0b';
+            } else if (igMax >= 30 && igMax <= 70) {
+                igWarn.textContent = '✅ IG adecuado para diabetes';
+                igWarn.style.color = '#10b981';
+            } else if (igMax > 70) {
+                igWarn.textContent = '⚠️ IG alto (>70). No recomendado para diabetes';
+                igWarn.style.color = '#f59e0b';
+            } else {
+                igWarn.textContent = '';
+                igWarn.style.color = '';
+            }
+        }
+        
+        // Agregar event listener para validar IG
+        document.getElementById('r_ig_max').addEventListener('input', validarIGMax);
+        
+        // Validar IG inicialmente
+        validarIGMax();
+    });
+
+    /* ==================== Funciones de filtros ==================== */
+    function recopilarFiltros() {
+        const filtros = {};
+        
+        // Calorías objetivo
+        const kcal = document.getElementById('r_kcal').value;
+        if (kcal) filtros.kcal = kcal;
+        
+        // Porcentajes de macros
+        const choPct = document.getElementById('r_pct_cho').value;
+        if (choPct) filtros.cho_pct = choPct;
+        
+        const proPct = document.getElementById('r_pct_pro').value;
+        if (proPct) filtros.pro_pct = proPct;
+        
+        const fatPct = document.getElementById('r_pct_fat').value;
+        if (fatPct) filtros.fat_pct = fatPct;
+        
+        // Límite de IG
+        const igMax = document.getElementById('r_ig_max').value;
+        if (igMax) filtros.ig_max = igMax;
+        
+        // Grupos excluir
+        const gruposExcluir = Array.from(document.querySelectorAll('.ckGrupoExcl:checked'))
+            .map(cb => cb.value);
+        if (gruposExcluir.length > 0) {
+            filtros.grupos_excluir = gruposExcluir.join(',');
+        }
+        
+        // Patrón de comidas
+        const patronComidas = Array.from(document.querySelectorAll('.ckTiempo:checked'))
+            .map(cb => cb.value);
+        if (patronComidas.length > 0) {
+            filtros.patron_comidas = patronComidas.join(',');
+        }
+        
+        // Día de inicio
+        const elementoDias = document.getElementById('r_dias');
+        console.log(`DEBUG: Elemento r_dias encontrado:`, elementoDias);
+        console.log(`DEBUG: Atributos del elemento r_dias:`, elementoDias ? elementoDias.attributes : 'No encontrado');
+        
+        const diaInicio = elementoDias ? elementoDias.getAttribute('data-dia-inicio') : null;
+        console.log(`DEBUG: diaInicio obtenido del atributo: ${diaInicio}`);
+        console.log(`DEBUG: diaInicio es null?: ${diaInicio === null}`);
+        console.log(`DEBUG: diaInicio es undefined?: ${diaInicio === undefined}`);
+        
+        if (diaInicio !== null && diaInicio !== undefined) {
+            filtros.dia_inicio = parseInt(diaInicio);
+            console.log(`DEBUG: Enviando dia_inicio al backend: ${filtros.dia_inicio} (tipo: ${typeof filtros.dia_inicio})`);
+        console.log(`DEBUG: Filtros completos que se enviarán:`, filtros);
+        } else {
+            console.log(`DEBUG: No se enviará dia_inicio (valor: ${diaInicio})`);
+        }
+        
+        return filtros;
+    }
+
+    function mostrarValidaciones(validaciones) {
+        console.log('Validaciones:', validaciones);
+        
+        if (!validaciones || typeof validaciones !== 'object') {
+            console.warn('No se encontraron validaciones válidas');
+            return;
+        }
+        
+        // Mostrar validaciones en cada día
+        Object.keys(validaciones).forEach(semanaKey => {
+            const semana = validaciones[semanaKey];
+            if (semana && typeof semana === 'object') {
+                Object.keys(semana).forEach(dia => {
+                    const validacion = semana[dia];
+                    if (validacion) {
+                        mostrarValidacionDia(dia, validacion);
+                    }
+                });
+            }
+        });
+    }
+
+    function mostrarValidacionDia(dia, validacion) {
+        // Buscar el panel del día y agregar las validaciones
+        const diaPanel = document.getElementById('diaPanel');
+        
+        if (!diaPanel) {
+            console.error('No se encontró el elemento diaPanel');
+            return;
+        }
+        
+        if (!validacion || typeof validacion !== 'object') {
+            console.warn(`Validación inválida para ${dia}:`, validacion);
+            return;
+        }
+        
+        const contenidoActual = diaPanel.innerHTML;
+        
+        // Crear indicadores de validación
+        let indicadores = '<div style="margin: 10px 0; padding: 10px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6;">';
+        indicadores += '<h6 style="margin: 0 0 8px 0; color: #374151; font-weight: 600;">📊 Cumplimiento de Metas</h6>';
+        
+        // Calorías
+        const caloriasCumple = validacion.calorias ? validacion.calorias.cumple : false;
+        const colorCalorias = caloriasCumple ? '#10b981' : '#ef4444';
+        const iconoCalorias = caloriasCumple ? '✅' : '❌';
+        const caloriasActual = validacion.calorias ? validacion.calorias.actual : 0;
+        const caloriasObjetivo = validacion.calorias ? validacion.calorias.objetivo : 2000;
+        const caloriasPorcentaje = validacion.calorias ? validacion.calorias.porcentaje : 0;
+        
+        indicadores += `<div style="font-size: 12px; margin-bottom: 4px;">
+            ${iconoCalorias} <strong>Calorías:</strong> ${caloriasActual}/${caloriasObjetivo} kcal (${caloriasPorcentaje}%)
+        </div>`;
+        
+        // Macros
+        const choActual = validacion.macros && validacion.macros.cho ? validacion.macros.cho.actual : 0;
+        const choPorcentaje = validacion.macros && validacion.macros.cho ? validacion.macros.cho.porcentaje : 0;
+        const proActual = validacion.macros && validacion.macros.pro ? validacion.macros.pro.actual : 0;
+        const proPorcentaje = validacion.macros && validacion.macros.pro ? validacion.macros.pro.porcentaje : 0;
+        const fatActual = validacion.macros && validacion.macros.fat ? validacion.macros.fat.actual : 0;
+        const fatPorcentaje = validacion.macros && validacion.macros.fat ? validacion.macros.fat.porcentaje : 0;
+        
+        indicadores += `<div style="font-size: 12px; margin-bottom: 4px;">
+            📊 <strong>Macros:</strong> CHO: ${choActual}g (${choPorcentaje}%) | 
+            PRO: ${proActual}g (${proPorcentaje}%) | 
+            FAT: ${fatActual}g (${fatPorcentaje}%)
+        </div>`;
+        
+        // IG
+        const igCumple = validacion.ig ? validacion.ig.cumple : true;
+        const iconoIG = igCumple ? '✅' : '❌';
+        const igMaximo = validacion.ig ? validacion.ig.maximo : 0;
+        const igLimite = validacion.ig ? validacion.ig.limite : 70;
+        
+        indicadores += `<div style="font-size: 12px; margin-bottom: 4px;">
+            ${iconoIG} <strong>IG máximo:</strong> ${igMaximo}/${igLimite}
+        </div>`;
+        
+        // Grupos excluidos
+        const gruposCumple = validacion.grupos_excluidos ? validacion.grupos_excluidos.cumple : true;
+        const iconoGrupos = gruposCumple ? '✅' : '❌';
+        const gruposUsados = validacion.grupos_excluidos && validacion.grupos_excluidos.grupos_usados ? 
+            validacion.grupos_excluidos.grupos_usados.join(', ') : 'N/A';
+        
+        indicadores += `<div style="font-size: 12px; margin-bottom: 4px;">
+            ${iconoGrupos} <strong>Grupos excluidos:</strong> ${gruposUsados}
+        </div>`;
+        
+        indicadores += '</div>';
+        
+        // Insertar indicadores al inicio del contenido
+        diaPanel.innerHTML = indicadores + contenidoActual;
+    }
+
+    function mostrarPlanVisual(data) {
+        console.log('Mostrando plan visual:', data);
+        
+        // Crear interfaz visual como en la imagen
+        const planContainer = document.getElementById('planContainer');
+        
+        if (!planContainer) {
+            console.error('No se encontró el elemento planContainer');
+            return;
+        }
+        
+        if (!data.plan_completo) {
+            console.warn('No se encontró plan_completo en la respuesta');
+            return;
+        }
+        
+        let html = '<div class="plan-visual-container">';
+        
+        // Título del plan
+        const pacienteNombre = data.perfil ? `${data.perfil.nombres} ${data.perfil.apellidos}` : 'Paciente';
+        const fechaInicio = document.getElementById('r_fi').value;
+        const fechaFin = document.getElementById('r_ff').value;
+        
+        html += `
+            <div class="plan-header">
+                <div class="plan-title">
+                    <h3>Dieta para ${pacienteNombre}</h3>
+                    <span class="plan-dates">(${formatearFecha(fechaInicio)} - ${formatearFecha(fechaFin)})</span>
+                </div>
+                <div class="plan-controls">
+                    <button class="btn-icon" title="Configuración"><i class="fas fa-cog"></i></button>
+                    <button class="btn-icon" title="Estadísticas"><i class="fas fa-chart-bar"></i></button>
+                    <button class="btn-icon" title="Vista previa"><i class="fas fa-eye"></i></button>
+                    <button class="btn-icon" title="Generar"><i class="fas fa-magic"></i></button>
+                </div>
+            </div>
+        `;
+        
+        // Resumen diario con barras de progreso
+        html += '<div class="daily-summary">';
+        
+        // Procesar cada semana
+        Object.keys(data.plan_completo).forEach(semanaKey => {
+            const semana = data.plan_completo[semanaKey];
+            const validacionesSemana = data.validaciones && data.validaciones[semanaKey] ? data.validaciones[semanaKey] : {};
+            
+            Object.keys(semana).forEach(dia => {
+                const validacion = validacionesSemana[dia];
+                if (!validacion) {
+                    console.warn(`No se encontraron validaciones para ${dia}`);
+                    return;
+                }
+                
+                const totalCalorias = validacion.calorias ? validacion.calorias.actual : 0;
+                const objetivoCalorias = validacion.calorias ? validacion.calorias.objetivo : 2000;
+                const porcentajeCalorias = validacion.calorias ? validacion.calorias.porcentaje : 0;
+                
+                // Calcular porcentajes de macros
+                const porcentajeCHO = validacion.macros && validacion.macros.cho ? validacion.macros.cho.porcentaje : 0;
+                const porcentajePRO = validacion.macros && validacion.macros.pro ? validacion.macros.pro.porcentaje : 0;
+                const porcentajeFAT = validacion.macros && validacion.macros.fat ? validacion.macros.fat.porcentaje : 0;
+                
+                html += `
+                    <div class="day-summary" data-dia="${dia}">
+                        <div class="day-name">${capitalizarPrimeraLetra(dia)}</div>
+                        <div class="progress-bars">
+                            <div class="progress-bar red" style="width: ${Math.min(porcentajeCHO, 100)}%">
+                                <span class="progress-label">${porcentajeCHO}%</span>
+                            </div>
+                            <div class="progress-bar blue" style="width: ${Math.min(porcentajePRO, 100)}%">
+                                <span class="progress-label">${porcentajePRO}%</span>
+                            </div>
+                            <div class="progress-bar yellow" style="width: ${Math.min(porcentajeFAT, 100)}%">
+                                <span class="progress-label">${porcentajeFAT}%</span>
+                            </div>
+                        </div>
+                        <div class="calories-pill ${totalCalorias >= objetivoCalorias * 0.9 ? 'good' : 'warning'}">
+                            ${totalCalorias}/${objetivoCalorias} kcal
+                        </div>
+                    </div>
+                `;
+            });
+        });
+        
+        html += '</div>';
+        
+        // Tabla de comidas
+        html += '<div class="meals-table">';
+        html += '<table class="meals-grid">';
+        html += '<thead><tr><th>Comida</th>';
+        
+        // Encabezados de días
+        Object.keys(data.plan_completo).forEach(semanaKey => {
+            const semana = data.plan_completo[semanaKey];
+            Object.keys(semana).forEach(dia => {
+                html += `<th>${capitalizarPrimeraLetra(dia)}</th>`;
+            });
+        });
+        
+        html += '</tr></thead><tbody>';
+        
+        // Filas de comidas
+        const tiemposComida = ['des', 'mm', 'alm', 'mt', 'cena'];
+        const nombresComidas = {
+            'des': 'Desayuno',
+            'mm': 'Media mañana', 
+            'alm': 'Almuerzo',
+            'mt': 'Merienda',
+            'cena': 'Cena'
+        };
+        const horariosComidas = {
+            'des': '7:30 AM',
+            'mm': '11:00 AM',
+            'alm': '1:00 PM', 
+            'mt': '4:00 PM',
+            'cena': '7:00 PM'
+        };
+        
+        tiemposComida.forEach(tiempo => {
+            // Calcular totales nutricionales para este tiempo
+            let totalKcal = 0;
+            let totalCho = 0;
+            let totalPro = 0;
+            let totalDias = 0;
+            
+            Object.keys(data.plan_completo).forEach(semanaKey => {
+                const semana = data.plan_completo[semanaKey];
+                Object.keys(semana).forEach(dia => {
+                    const comida = semana[dia][tiempo];
+                    if (comida && comida.alimentos && comida.alimentos.length > 0) {
+                        totalDias++;
+                        comida.alimentos.forEach(alimento => {
+                            totalKcal += alimento.kcal || 0;
+                            totalCho += alimento.cho || 0;
+                            totalPro += alimento.pro || 0;
+                        });
+                    }
+                });
+            });
+            
+            // Promedio por día
+            const promedioKcal = totalDias > 0 ? Math.round(totalKcal / totalDias) : 0;
+            const promedioCho = totalDias > 0 ? Math.round(totalCho / totalDias) : 0;
+            const promedioPro = totalDias > 0 ? Math.round(totalPro / totalDias) : 0;
+            
+            html += `<tr><td class="meal-time">${nombresComidas[tiempo]}<br><small>${horariosComidas[tiempo]}</small><br><strong style="color: #1f2937; font-size: 12px;">Kcal: ${promedioKcal} | CHO: ${promedioCho}g | PRO: ${promedioPro}g</strong></td>`;
+            
+            Object.keys(data.plan_completo).forEach(semanaKey => {
+                const semana = data.plan_completo[semanaKey];
+                Object.keys(semana).forEach(dia => {
+                    const comida = semana[dia][tiempo];
+                    if (comida && comida.alimentos && comida.alimentos.length > 0) {
+                        html += '<td class="meal-content">';
+                        comida.alimentos.forEach(alimento => {
+                            const colorGrupo = obtenerColorGrupo(alimento.grupo);
+                            html += `
+                                <div class="food-item" style="background-color: ${colorGrupo}20; border-left: 3px solid ${colorGrupo};">
+                                    <span class="food-name">${alimento.nombre}</span>
+                                    <span class="food-quantity">${alimento.cantidad} ${alimento.unidad}</span>
+                                </div>
+                            `;
+                        });
+                        html += '</td>';
+                    } else {
+                        html += '<td class="meal-content empty">-</td>';
+                    }
+                });
+            });
+            
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        html += '</div>';
+        
+        html += '</div>';
+        
+        planContainer.innerHTML = html;
+        
+        // Agregar estilos CSS para la interfaz visual
+        agregarEstilosPlanVisual();
+    }
+
+    function formatearFecha(fecha) {
+        if (!fecha) return '';
+        const date = new Date(fecha);
+        return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+
+    function capitalizarPrimeraLetra(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function agregarEstilosPlanVisual() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .plan-visual-container {
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                margin: 20px 0;
+            }
+            
+            .plan-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #e5e7eb;
+            }
+            
+            .plan-title h3 {
+                margin: 0;
+                color: #1f2937;
+                font-size: 24px;
+                font-weight: 600;
+            }
+            
+            .plan-dates {
+                color: #6b7280;
+                font-size: 14px;
+                margin-left: 10px;
+            }
+            
+            .plan-controls {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .btn-icon {
+                width: 36px;
+                height: 36px;
+                border: none;
+                border-radius: 8px;
+                background: #f3f4f6;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+            }
+            
+            .btn-icon:hover {
+                background: #e5e7eb;
+                color: #374151;
+            }
+            
+            .daily-summary {
+                display: flex;
+                gap: 15px;
+                margin-bottom: 25px;
+                padding: 15px;
+                background: #f9fafb;
+                border-radius: 10px;
+            }
+            
+            .day-summary {
+                flex: 1;
+                text-align: center;
+            }
+            
+            .day-name {
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 8px;
+                font-size: 14px;
+            }
+            
+            .progress-bars {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                margin-bottom: 8px;
+            }
+            
+            .progress-bar {
+                height: 6px;
+                border-radius: 3px;
+                position: relative;
+                transition: width 0.3s ease;
+            }
+            
+            .progress-bar.red { background: #ef4444; }
+            .progress-bar.blue { background: #3b82f6; }
+            .progress-bar.yellow { background: #eab308; }
+            
+            .progress-label {
+                position: absolute;
+                right: -30px;
+                top: -2px;
+                font-size: 10px;
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            .calories-pill {
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                color: white;
+            }
+            
+            .calories-pill.good { background: #10b981; }
+            .calories-pill.warning { background: #f59e0b; }
+            
+            .meals-table {
+                overflow-x: auto;
+            }
+            
+            .meals-grid {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            
+            .meals-grid th {
+                background: #f8fafc;
+                color: #374151;
+                font-weight: 600;
+                padding: 12px 8px;
+                text-align: center;
+                border-bottom: 2px solid #e5e7eb;
+            }
+            
+            .meals-grid td {
+                padding: 8px;
+                border-bottom: 1px solid #f3f4f6;
+                vertical-align: top;
+            }
+            
+            .meal-time {
+                background: #f8fafc;
+                font-weight: 600;
+                color: #374151;
+                text-align: left;
+                min-width: 120px;
+            }
+            
+            .meal-content {
+                min-width: 150px;
+                max-width: 200px;
+            }
+            
+            .meal-content.empty {
+                text-align: center;
+                color: #9ca3af;
+                font-style: italic;
+            }
+            
+            .food-item {
+                margin-bottom: 4px;
+                padding: 6px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            
+            .food-name {
+                display: block;
+                font-weight: 500;
+                color: #374151;
+                margin-bottom: 2px;
+            }
+            
+            .food-quantity {
+                display: block;
+                color: #6b7280;
+                font-size: 11px;
+            }
+        `;
+        
+        if (!document.getElementById('plan-visual-styles')) {
+            style.id = 'plan-visual-styles';
+            document.head.appendChild(style);
+        }
+        
+        // Agregar estilos para paginación
+        const paginationStyle = document.createElement('style');
+        paginationStyle.textContent = `
+            .plan-pagination-container {
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                margin: 20px 0;
+            }
+            
+            .pagination-controls {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                padding: 15px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .pagination-controls button {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
+            
+            .pagination-controls button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            
+            .pagination-info {
+                font-weight: 600;
+                color: #374151;
+                font-size: 14px;
+            }
+            
+            .semana-content {
+                min-height: 400px;
+            }
+            
+            .semana-actual h4 {
+                margin: 0 0 20px 0;
+                color: #1f2937;
+                font-size: 20px;
+                font-weight: 600;
+                text-align: center;
+                padding: 10px;
+                background: #f3f4f6;
+                border-radius: 8px;
+            }
+        `;
+        
+        if (!document.getElementById('pagination-styles')) {
+            paginationStyle.id = 'pagination-styles';
+            document.head.appendChild(paginationStyle);
+        }
+    }
+
+    /* ==================== Editar ficha paciente ==================== */
+    function setReadOnlyPaciente(lock) {
+        ['p_dni', 'p_nombres', 'p_apellidos', 'p_fnac', 'p_tel', 'p_email'].forEach(id => {
+            const el = document.getElementById(id); 
+            el.readOnly = lock;
+        });
+        document.getElementById('p_sexo').disabled = lock;
+        document.getElementById('btnEditarPac').style.display = lock ? '' : 'none';
+        document.getElementById('btnGuardarPac').style.display = lock ? 'none' : '';
+        document.getElementById('btnCancelarEdit').style.display = lock ? 'none' : '';
+    }
+    
+    document.getElementById('btnEditarPac').addEventListener('click', () => setReadOnlyPaciente(false));
+    document.getElementById('btnCancelarEdit').addEventListener('click', () => setReadOnlyPaciente(true));
+    
+    document.getElementById('btnGuardarPac').addEventListener('click', async () => {
+        const pid = document.getElementById('paciente_id').value;
+        const fd = new FormData();
+        fd.append('dni', document.getElementById('p_dni').value || '');
+        fd.append('nombres', document.getElementById('p_nombres').value || '');
+        fd.append('apellidos', document.getElementById('p_apellidos').value || '');
+        fd.append('sexo', document.getElementById('p_sexo').value || '');
+        fd.append('fecha_nac', document.getElementById('p_fnac').value || '');
+        fd.append('telefono', document.getElementById('p_tel').value || '');
+        fd.append('email', document.getElementById('p_email').value || '');
+        
+        try {
+            const r = await fetch(`{{ url_for('admin_paciente_editar', pid=0) }}`.replace('/0', '/' + pid), {
+                method: 'POST',
+                body: fd
+            });
+            const data = await r.json();
+            if (data.ok) {
+                Toastify({ 
+                    text: "✅ Paciente actualizado", 
+                    duration: 3000, 
+                    gravity: "top", 
+                    position: "right", 
+                    backgroundColor: "#10b981" 
+                }).showToast();
+                setReadOnlyPaciente(true);
+            } else {
+                Toastify({ 
+                    text: `❌ ${data.error}`, 
+                    duration: 3000, 
+                    gravity: "top", 
+                    position: "right", 
+                    backgroundColor: "#ef4444" 
+                }).showToast();
+            }
+        } catch (error) {
+            Toastify({ 
+                text: "❌ Error de conexión", 
+                duration: 3000, 
+                gravity: "top", 
+                position: "right", 
+                backgroundColor: "#ef4444" 
+            }).showToast();
+        }
+    });
+
+    // Auto-seleccionar paciente si viene en la URL
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pacienteIdInicial = urlParams.get('paciente_id');
+        
+        if (pacienteIdInicial) {
+            try {
+                // Buscar el paciente por ID
+                const pacienteData = await jget(`{{ url_for('api_paciente_detalle', pid=0) }}`.replace('/0', '/' + pacienteIdInicial));
+                
+                if (pacienteData.ok) {
+                    const paciente = {
+                        id: pacienteData.paciente.id,
+                        dni: pacienteData.paciente.dni,
+                        text: `${pacienteData.paciente.nombres || ''} ${pacienteData.paciente.apellidos || ''}`.trim() || `DNI: ${pacienteData.paciente.dni}`
+                    };
+                    
+                    // Auto-seleccionar el paciente
+                    document.getElementById('qPac').value = `${paciente.text} (DNI: ${paciente.dni})`;
+                    document.getElementById('paciente_id').value = paciente.id;
+                    document.getElementById('btnGenerar').disabled = false;
+                    document.getElementById('btnMotorRecomendacion').disabled = false;
+                    document.getElementById('btnEditarPac').disabled = false;
+                    document.getElementById('btnGuardarBorrador').disabled = false;
+                    
+                    // Cargar datos del paciente
+                    cargarDatosPaciente(paciente.id);
+                }
+            } catch (error) {
+                console.error('Error auto-seleccionando paciente:', error);
+            }
+        }
+    });
+</script>
+
+{% endblock %}

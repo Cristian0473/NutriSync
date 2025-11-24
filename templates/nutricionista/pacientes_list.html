@@ -917,7 +917,11 @@
         const pacientesConFechas = await Promise.all(
           data.results.map(async (p) => {
             try {
-              const fechaRes = await fetch(`/api/pacientes/${p.id}/fechas`);
+              const fechaTimestamp = new Date().getTime();
+              const fechaRes = await fetch(`/api/pacientes/${p.id}/fechas?_t=${fechaTimestamp}`, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+              });
               const fechaData = await fechaRes.json();
               return {
                 id: p.id,
@@ -1058,18 +1062,31 @@
 
   // ==== DETALLE VISUAL (Mejorado y Profesional) ====
   async function verDetalle(id) {
-    // Cargar fechas disponibles del paciente
-    const fechasRes = await fetch(`/api/pacientes/${id}/fechas`);
+    // Cargar fechas disponibles del paciente - evitar caché
+    const fechasTimestamp = new Date().getTime();
+    const fechasRes = await fetch(`/api/pacientes/${id}/fechas?_t=${fechasTimestamp}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     const fechasData = await fechasRes.json();
     
     let fechaSeleccionada = fechasData.fecha_mas_reciente || null;
     
-    // Cargar datos de la fecha más reciente por defecto
+    // Cargar datos de la fecha más reciente por defecto - evitar caché
+    const timestamp = new Date().getTime();
     const url = fechaSeleccionada 
-      ? `/api/pacientes/${id}/detalle?fecha=${fechaSeleccionada}`
-      : `/api/pacientes/${id}/detalle`;
+      ? `/api/pacientes/${id}/detalle?fecha=${fechaSeleccionada}&_t=${timestamp}`
+      : `/api/pacientes/${id}/detalle?_t=${timestamp}`;
     
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      cache: 'no-store'
+    });
     const data = await res.json();
     if (!data.ok) {
       mostrarAlerta("Error cargando detalle.", "Error");
@@ -1078,10 +1095,18 @@
 
     const p = data.paciente;
     
-    // Cargar medicamentos y alergias
+    // Cargar medicamentos y alergias - evitar caché
+    const medsTimestamp = new Date().getTime();
+    const alergiasTimestamp = new Date().getTime();
     const [medsRes, alergiasRes] = await Promise.all([
-      fetch(`/api/paciente/${id}/medicamentos`).then(r => r.ok ? r.json() : { data: [] }),
-      fetch(`/api/paciente/${id}/alergias`).then(r => r.ok ? r.json() : { data: [] })
+      fetch(`/api/paciente/${id}/medicamentos?_t=${medsTimestamp}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      }).then(r => r.ok ? r.json() : { data: [] }),
+      fetch(`/api/paciente/${id}/alergias?_t=${alergiasTimestamp}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      }).then(r => r.ok ? r.json() : { data: [] })
     ]);
     
     const medicamentos = medsRes.data || [];
@@ -1309,12 +1334,21 @@
         modalBody.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #3b82f6;"></i><p style="margin-top: 16px;">Cargando datos...</p></div>';
       }
       
-      // Cargar datos de la nueva fecha
+      // Cargar datos de la nueva fecha - agregar timestamp para evitar caché
+      const timestamp = new Date().getTime();
       const url = fecha 
-        ? `/api/pacientes/${id}/detalle?fecha=${fecha}`
-        : `/api/pacientes/${id}/detalle`;
+        ? `/api/pacientes/${id}/detalle?fecha=${fecha}&_t=${timestamp}`
+        : `/api/pacientes/${id}/detalle?_t=${timestamp}`;
       
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        cache: 'no-store'
+      });
       const data = await res.json();
       if (!data.ok) {
         mostrarAlerta("Error cargando detalle.", "Error");
@@ -1323,10 +1357,18 @@
 
       const p = data.paciente;
       
-      // Cargar medicamentos y alergias (no cambian con la fecha)
+      // Cargar medicamentos y alergias (no cambian con la fecha) - evitar caché
+      const medsTimestamp = new Date().getTime();
+      const alergiasTimestamp = new Date().getTime();
       const [medsRes, alergiasRes] = await Promise.all([
-        fetch(`/api/paciente/${id}/medicamentos`).then(r => r.ok ? r.json() : { data: [] }),
-        fetch(`/api/paciente/${id}/alergias`).then(r => r.ok ? r.json() : { data: [] })
+        fetch(`/api/paciente/${id}/medicamentos?_t=${medsTimestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        }).then(r => r.ok ? r.json() : { data: [] }),
+        fetch(`/api/paciente/${id}/alergias?_t=${alergiasTimestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        }).then(r => r.ok ? r.json() : { data: [] })
       ]);
       
       const medicamentos = medsRes.data || [];
@@ -1799,8 +1841,12 @@ async function editarPaciente(id) {
     document.getElementById("selector-paciente-container").style.display = "none";
     document.getElementById("selector-fecha-container").style.display = "block";
     
-    // Cargar fechas disponibles del paciente
-    const fechasRes = await fetch(`/api/pacientes/${id}/fechas`);
+    // Cargar fechas disponibles del paciente - evitar caché
+    const fechasTimestamp = new Date().getTime();
+    const fechasRes = await fetch(`/api/pacientes/${id}/fechas?_t=${fechasTimestamp}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     const fechasData = await fechasRes.json();
     
     if (fechasData.ok && fechasData.fechas && fechasData.fechas.length > 0) {
@@ -1860,11 +1906,21 @@ async function cargarDatosPacientePorFecha(pacienteId, fecha) {
   try {
     console.log(`🔄 Cargando datos del paciente ${pacienteId} para la fecha: ${fecha || 'más reciente'}`);
     
+    // Agregar timestamp para evitar caché
+    const timestamp = new Date().getTime();
     const url = fecha 
-      ? `/api/pacientes/${pacienteId}/detalle?fecha=${fecha}`
-      : `/api/pacientes/${pacienteId}/detalle`;
+      ? `/api/pacientes/${pacienteId}/detalle?fecha=${fecha}&_t=${timestamp}`
+      : `/api/pacientes/${pacienteId}/detalle?_t=${timestamp}`;
     
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      cache: 'no-store'
+    });
     const data = await res.json();
     
     if (!data.ok) {

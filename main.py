@@ -743,16 +743,22 @@ def api_paciente_fechas(pid):
     
     fechas_ordenadas = sorted(todas_fechas, reverse=True)
     
-    return jsonify({
+    response = jsonify({
         "ok": True,
         "fechas": fechas_ordenadas,
         "fecha_mas_reciente": fechas_ordenadas[0] if fechas_ordenadas else None
     })
+    # Agregar headers para evitar caché
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route("/api/pacientes/<int:pid>/detalle")
 @admin_required
 def api_paciente_detalle(pid):
     """Obtiene datos de un paciente, opcionalmente de una fecha específica"""
+    from flask import Response
     fecha_param = request.args.get("fecha")  # Fecha opcional en formato YYYY-MM-DD
     
     p = fetch_one("""
@@ -817,30 +823,38 @@ def api_paciente_detalle(pid):
         except:
             pass
     
-    return {"ok": True, "paciente": {
-        "id": p[0], "dni": p[1], "sexo": p[2], "fecha_nac": p[3],
-        "telefono": p[4], "usuario_email": p[5],
-        "nombres": p[6], "apellidos": p[7],
-        "edad": edad,
-        "antropometria": {
-            "peso": float(antropo[0]) if antropo and antropo[0] else None,
-            "talla": float(antropo[1]) if antropo and antropo[1] else None,
-            "cc": float(antropo[2]) if antropo and antropo[2] else None,
-            "bf_pct": float(antropo[3]) if antropo and antropo[3] else None,
-            "actividad": antropo[4] if antropo else None,
-            "fecha_medicion": antropo[5] if antropo else None,
-            "imc": imc
-        },
-        "clinico": {
-            "hba1c": float(clinico[0]) if clinico and clinico[0] else None,
-            "glucosa_ayunas": float(clinico[1]) if clinico and clinico[1] else None,
-            "ldl": float(clinico[2]) if clinico and clinico[2] else None,
-            "trigliceridos": float(clinico[3]) if clinico and clinico[3] else None,
-            "pa_sis": int(clinico[4]) if clinico and clinico[4] else None,
-            "pa_dia": int(clinico[5]) if clinico and clinico[5] else None,
-            "fecha_medicion": clinico[6] if clinico else None
+    response = jsonify({
+        "ok": True, 
+        "paciente": {
+            "id": p[0], "dni": p[1], "sexo": p[2], "fecha_nac": p[3],
+            "telefono": p[4], "usuario_email": p[5],
+            "nombres": p[6], "apellidos": p[7],
+            "edad": edad,
+            "antropometria": {
+                "peso": float(antropo[0]) if antropo and antropo[0] else None,
+                "talla": float(antropo[1]) if antropo and antropo[1] else None,
+                "cc": float(antropo[2]) if antropo and antropo[2] else None,
+                "bf_pct": float(antropo[3]) if antropo and antropo[3] else None,
+                "actividad": antropo[4] if antropo else None,
+                "fecha_medicion": antropo[5] if antropo else None,
+                "imc": imc
+            },
+            "clinico": {
+                "hba1c": float(clinico[0]) if clinico and clinico[0] else None,
+                "glucosa_ayunas": float(clinico[1]) if clinico and clinico[1] else None,
+                "ldl": float(clinico[2]) if clinico and clinico[2] else None,
+                "trigliceridos": float(clinico[3]) if clinico and clinico[3] else None,
+                "pa_sis": int(clinico[4]) if clinico and clinico[4] else None,
+                "pa_dia": int(clinico[5]) if clinico and clinico[5] else None,
+                "fecha_medicion": clinico[6] if clinico else None
+            }
         }
-    }}
+    })
+    # Agregar headers para evitar caché
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route("/api/pacientes/page")
@@ -2584,7 +2598,12 @@ def api_paciente_meds(pid):
         "frecuencia": r[3],
         "activo": bool(r[4])
     } for r in rows]
-    return {"ok": True, "data": data}
+    response = jsonify({"ok": True, "data": data})
+    # Agregar headers para evitar caché
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route("/api/paciente/<int:pid>/alergias", methods=["GET"])
@@ -2606,7 +2625,12 @@ def api_paciente_alergias(pid):
         "ingrediente_nombre": r[2],
         "descripcion": r[3]
     } for r in rows]
-    return {"ok": True, "data": data}
+    response = jsonify({"ok": True, "data": data})
+    # Agregar headers para evitar caché
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 

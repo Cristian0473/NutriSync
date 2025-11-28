@@ -28,6 +28,18 @@ function bindAccionesRoles() {
         const esReservado = ['admin','paciente'].includes((btn.dataset.nombre || '').toLowerCase());
         document.getElementById('r_nombre').readOnly = esReservado;
 
+        // Limpiar errores
+        const errorNombre = document.getElementById('errorNombre');
+        const errorDescripcion = document.getElementById('errorDescripcion');
+        if (errorNombre) {
+          errorNombre.style.display = 'none';
+          errorNombre.textContent = '';
+        }
+        if (errorDescripcion) {
+          errorDescripcion.style.display = 'none';
+          errorDescripcion.textContent = '';
+        }
+
         console.log('Abriendo modal para editar...');
         modal.classList.add('open');
         console.log('Modal classes:', modal.className);
@@ -37,7 +49,7 @@ function bindAccionesRoles() {
     });
   });
 
-  // Borrar con confirmación moderna
+  // Borrar con modal de confirmación
   document.querySelectorAll('.js-borrar').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
@@ -46,60 +58,22 @@ function bindAccionesRoles() {
       const nombre = btn.dataset.nombre;
       const usuarios = parseInt(btn.dataset.usuarios);
       
-      let mensaje = `¿Estás seguro de borrar el rol "${nombre}"?`;
+      // Configurar el modal
+      document.getElementById('nombreRolBorrar').textContent = nombre;
+      const usuariosText = document.getElementById('usuariosRolBorrar');
       if (usuarios > 0) {
-        mensaje += `\n\nEste rol tiene ${usuarios} usuario(s) asignado(s).`;
+        usuariosText.textContent = `Este rol tiene ${usuarios} usuario(s) asignado(s).`;
+        usuariosText.style.display = 'block';
+      } else {
+        usuariosText.textContent = '';
+        usuariosText.style.display = 'none';
       }
       
-      // Mostrar confirmación con Toastify
-      Toastify({
-        text: mensaje,
-        duration: 0, // Sin duración automática
-        gravity: "top",
-        position: "center",
-        backgroundColor: "#ef4444",
-        stopOnFocus: true,
-        onClick: async function() {
-          // Confirmar borrado
-          try {
-            const response = await fetch(`/admin/roles/${rid}/borrar`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              }
-            });
-            
-            if (response.ok) {
-              Toastify({
-                text: "✅ Rol borrado correctamente",
-                duration: 3000,
-                gravity: "top",
-                position: "right",
-                backgroundColor: "#10b981",
-              }).showToast();
-              
-              // Recargar la página para actualizar datos
-              window.location.reload();
-            } else {
-              Toastify({
-                text: "❌ Error al borrar el rol",
-                duration: 3000,
-                gravity: "top",
-                position: "right",
-                backgroundColor: "#ef4444",
-              }).showToast();
-            }
-          } catch (error) {
-            Toastify({
-              text: "❌ Error de conexión",
-              duration: 3000,
-              gravity: "top",
-              position: "right",
-              backgroundColor: "#ef4444",
-            }).showToast();
-          }
-        }
-      }).showToast();
+      const form = document.getElementById('formConfirmarBorrarRol');
+      form.action = `/admin/roles/${rid}/borrar`;
+      
+      // Mostrar el modal
+      document.querySelector('#modalConfirmarBorrarRol').classList.add('open');
     });
   });
 }

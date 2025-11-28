@@ -12,10 +12,6 @@
     <input class="input" type="text" name="q" value="{{ filtro or '' }}" placeholder="Ej: 12345678 o correo@dominio.com">
     <button class="btn"><i class="fas fa-search"></i> Buscar</button>
   </form>
-
-  <button id="btnNuevoToken" class="btn btn-primary">
-    <i class="fas fa-plus"></i> Generar token
-  </button>
 </div>
 
 <!-- ===== Tabla ===== -->
@@ -99,37 +95,6 @@
   </div>
 </div>
 
-<!-- ===== Modal nuevo token ===== -->
-<div class="modal" id="modalToken" aria-hidden="true">
-  <div class="modal-backdrop js-close-modal" data-target="#modalToken"></div>
-
-  <div class="modal-dialog">
-    <div class="modal-header">
-      <h3><i class="fas fa-plus-circle"></i> Generar token</h3>
-      <button class="modal-close js-close-modal" data-target="#modalToken" aria-label="Cerrar">×</button>
-    </div>
-
-    <form method="post" action="{{ url_for('admin_activaciones_nuevo') }}">
-      <div class="modal-body">
-        <div class="form-row">
-          <label for="t_dni">DNI</label>
-          <input id="t_dni" class="input" name="dni" maxlength="8" required placeholder="DNI (8)">
-        </div>
-        <div class="form-row">
-          <label for="t_horas">Validez (horas)</label>
-          <input id="t_horas" class="input" type="number" name="horas" min="1" value="{{ horas_default }}">
-          <small class="form-help">Se calculará la fecha/hora de vencimiento desde ahora.</small>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn js-close-modal" data-target="#modalToken">Cancelar</button>
-        <button class="btn btn-primary" type="submit">Generar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <style>
   .toolbar { display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .toolbar-form { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
@@ -151,18 +116,7 @@
 </style>
 
 <script>
-  const openModal = sel => document.querySelector(sel).classList.add('open');
-  const closeModal = sel => document.querySelector(sel).classList.remove('open');
-
-  document.getElementById('btnNuevoToken')?.addEventListener('click', () => {
-    document.getElementById('t_dni').value = '';
-    document.getElementById('t_horas').value = '{{ horas_default }}';
-    openModal('#modalToken');
-  });
-
-  document.querySelectorAll('.js-close-modal').forEach(b => {
-    b.addEventListener('click', () => closeModal(b.dataset.target));
-  });
+  // Scripts removidos - botón de generar token eliminado
 </script>
 
 {% endblock %}

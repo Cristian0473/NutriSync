@@ -45,13 +45,15 @@
           <div class="form-row">
             <label for="r_nombre">Nombre</label>
             <input type="text" id="r_nombre" name="nombre" required maxlength="40" placeholder="ej.: recepcion">
+            <div id="errorNombre" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
           </div>
           <div class="form-row full">
             <label for="r_desc">Descripción</label>
             <input type="text" id="r_desc" name="descripcion" maxlength="140" placeholder="Opcional">
+            <div id="errorDescripcion" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
           </div>
         </div>
-        <small class="form-help">Evita duplicados. Los roles reservados <code>admin</code> y <code>paciente</code> no pueden borrarse.</small>
+        <small class="form-help">Evita duplicados. Los roles reservados <code>admin</code> y <code>paciente</code> no pueden borrarse. No se permiten números.</small>
       </div>
 
       <div class="modal-footer">
@@ -59,6 +61,29 @@
         <button type="submit" class="btn btn-primary">Guardar</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ===== MODAL: CONFIRMAR ELIMINAR ROL ===== -->
+<div class="modal" id="modalConfirmarBorrarRol" aria-hidden="true">
+  <div class="modal-backdrop js-close-modal" data-target="#modalConfirmarBorrarRol"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h3>
+      <button class="modal-close js-close-modal" data-target="#modalConfirmarBorrarRol" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de eliminar el rol <strong id="nombreRolBorrar"></strong>?</p>
+      <p class="muted" id="usuariosRolBorrar" style="margin-top: 10px; color: #6b7280;"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn js-close-modal" data-target="#modalConfirmarBorrarRol">Cancelar</button>
+      <form id="formConfirmarBorrarRol" method="post" style="display:inline-block">
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash"></i> Sí, eliminar
+        </button>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -453,6 +478,18 @@
           document.getElementById('r_nombre').readOnly = false;
           document.getElementById('r_desc').value = "";
           
+          // Limpiar errores
+          const errorNombre = document.getElementById('errorNombre');
+          const errorDescripcion = document.getElementById('errorDescripcion');
+          if (errorNombre) {
+            errorNombre.style.display = 'none';
+            errorNombre.textContent = '';
+          }
+          if (errorDescripcion) {
+            errorDescripcion.style.display = 'none';
+            errorDescripcion.textContent = '';
+          }
+          
           console.log('Abriendo modal...');
           modal.classList.add('open');
           console.log('Modal classes:', modal.className);
@@ -464,12 +501,193 @@
       console.error('No se pudo encontrar btnNuevoRol');
     }
 
+    // Validar que no se ingresen números en nombre y descripción
+    document.getElementById('r_nombre')?.addEventListener('input', function() {
+      // Eliminar números del valor
+      this.value = this.value.replace(/\d/g, '');
+      
+      // Limpiar error
+      const errorNombre = document.getElementById('errorNombre');
+      if (errorNombre && errorNombre.style.display !== 'none') {
+        errorNombre.style.display = 'none';
+        errorNombre.textContent = '';
+      }
+    });
+    
+    document.getElementById('r_desc')?.addEventListener('input', function() {
+      // Eliminar números del valor
+      this.value = this.value.replace(/\d/g, '');
+      
+      // Limpiar error
+      const errorDescripcion = document.getElementById('errorDescripcion');
+      if (errorDescripcion && errorDescripcion.style.display !== 'none') {
+        errorDescripcion.style.display = 'none';
+        errorDescripcion.textContent = '';
+      }
+    });
+    
     // Renderizar tabla inicial
     renderTablaRoles();
     
     // Verificar que el modal funcione
     console.log('btnNuevoRol:', document.getElementById('btnNuevoRol'));
     console.log('modalRol:', document.getElementById('modalRol'));
+    
+    // ====== Manejar envío del formulario de rol ======
+    const formRol = document.getElementById('formRol');
+    if (formRol) {
+      formRol.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const form = this;
+        const formData = new FormData(form);
+        const errorNombre = document.getElementById('errorNombre');
+        const errorDescripcion = document.getElementById('errorDescripcion');
+        const nombre = formData.get('nombre') || '';
+        const descripcion = formData.get('descripcion') || '';
+        
+        // Validar que no contenga números
+        if (/\d/.test(nombre)) {
+          if (errorNombre) {
+            errorNombre.textContent = 'El nombre del rol no puede contener números.';
+            errorNombre.style.display = 'block';
+          }
+          return;
+        }
+        
+        if (descripcion && /\d/.test(descripcion)) {
+          if (errorDescripcion) {
+            errorDescripcion.textContent = 'La descripción no puede contener números.';
+            errorDescripcion.style.display = 'block';
+          }
+          return;
+        }
+        
+        // Limpiar errores anteriores
+        if (errorNombre) {
+          errorNombre.style.display = 'none';
+          errorNombre.textContent = '';
+        }
+        if (errorDescripcion) {
+          errorDescripcion.style.display = 'none';
+          errorDescripcion.textContent = '';
+        }
+        
+        try {
+          const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            body: formData,
+            redirect: 'manual'
+          });
+          
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            
+            if (data.ok) {
+              // Cerrar el modal
+              const modal = document.getElementById('modalRol');
+              if (modal) modal.classList.remove('open');
+              
+              // Mostrar mensaje de éxito
+              Toastify({
+                text: "✅ " + (data.message || "Rol guardado correctamente"),
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#10b981",
+              }).showToast();
+              
+              // Recargar la página para actualizar la lista
+              window.location.reload();
+            } else {
+              // Mostrar error en el modal
+              if (data.error) {
+                // Determinar si el error es de nombre o descripción
+                if (data.error.includes('descripción') || data.error.includes('descripcion')) {
+                  if (errorDescripcion) {
+                    errorDescripcion.textContent = data.error;
+                    errorDescripcion.style.display = 'block';
+                  }
+                } else {
+                  if (errorNombre) {
+                    errorNombre.textContent = data.error;
+                    errorNombre.style.display = 'block';
+                  }
+                }
+              }
+            }
+          } else {
+            // Si no es JSON, el servidor redirigió (petición no AJAX)
+            // En este caso, dejar que el navegador siga el redirect
+            window.location.href = form.action;
+          }
+        } catch (error) {
+          console.error('Error en submit:', error);
+          if (errorNombre) {
+            errorNombre.textContent = 'Error de conexión';
+            errorNombre.style.display = 'block';
+          }
+        }
+      });
+    }
+    
+    // ====== Manejar envío del formulario de borrar rol ======
+    document.getElementById('formConfirmarBorrarRol')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const form = this;
+      const formData = new FormData(form);
+      
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          // Cerrar el modal
+          const modal = document.getElementById('modalConfirmarBorrarRol');
+          if (modal) modal.classList.remove('open');
+          
+          // Mostrar mensaje de éxito
+          Toastify({
+            text: "✅ Rol borrado correctamente",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#10b981",
+          }).showToast();
+          
+          // Recargar la página para actualizar datos
+          window.location.reload();
+        } else {
+          // Cerrar el modal
+          const modal = document.getElementById('modalConfirmarBorrarRol');
+          if (modal) modal.classList.remove('open');
+          
+          Toastify({
+            text: "❌ Error al borrar el rol",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#ef4444",
+          }).showToast();
+        }
+      } catch (error) {
+        Toastify({
+          text: "❌ Error de conexión",
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#ef4444",
+        }).showToast();
+      }
+    });
 
     // ====== Búsqueda (sin jQuery) ======
     const buscarInput = document.getElementById('buscarRolInput');

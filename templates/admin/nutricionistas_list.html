@@ -43,7 +43,7 @@
                         <td>{{ n.email }}</td>
                         <td>{{ n.nombres or '' }}</td>
                         <td>{{ n.apellidos or '' }}</td>
-                        <td>{{ n.sexo or '' }}</td>
+                        <td>{{ n.sexo if n.sexo else 'sin especificar' }}</td>
                         <td>{{ n.colegiatura or '' }}</td>
                         <td>{{ n.especialidad or '' }}</td>
                         <td>{{ n.telefono or '' }}</td>
@@ -126,13 +126,25 @@
                     <!-- Izquierda -->
                     <div class="form-col">
                         <div class="form-row">
-                            <label>Email</label>
+                            <label>Email <span style="color: #ef4444;">*</span></label>
                             <input class="input" type="email" id="n_email" name="email" required>
+                            <div id="errorEmail" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
                         </div>
 
                         <div class="form-row">
-                            <label>Contraseña (opcional)</label>
-                            <input class="input" type="password" id="n_pwd" name="password" placeholder="(vacío = no cambiar)">
+                            <label>Contraseña <span style="color: #ef4444;">*</span></label>
+                            <div style="position: relative;">
+                                <input class="input" type="text" id="n_pwd" name="password" required autocomplete="new-password" data-form-type="other" style="-webkit-text-security: disc; -moz-text-security: disc; text-security: disc; padding-right: 45px; width: 100%; box-sizing: border-box;">
+                            </div>
+                            <div id="errorPassword" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
+                        </div>
+
+                        <div class="form-row">
+                            <label>Confirmar Contraseña <span style="color: #ef4444;">*</span></label>
+                            <div style="position: relative;">
+                                <input class="input" type="text" id="n_pwd_confirm" name="password_confirm" required autocomplete="new-password" data-form-type="other" style="-webkit-text-security: disc; -moz-text-security: disc; text-security: disc; padding-right: 45px; width: 100%; box-sizing: border-box;">
+                            </div>
+                            <div id="errorPasswordConfirm" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
                         </div>
 
                         <div class="form-row">
@@ -142,25 +154,20 @@
                                 <option value="bloqueado">bloqueado</option>
                             </select>
                         </div>
-
-                        <div class="form-row inline">
-                            <label class="checkbox">
-                                Requiere MFA
-                                <input type="checkbox" id="n_mfa" name="mfa" checked>
-                            </label>
-                        </div>
                     </div>
 
                     <!-- Derecha -->
                     <div class="form-col">
                         <div class="form-row">
-                            <label>Nombres</label>
-                            <input class="input" type="text" id="n_nombres" name="nombres" maxlength="80">
+                            <label>Nombres <span style="color: #ef4444;">*</span></label>
+                            <input class="input" type="text" id="n_nombres" name="nombres" maxlength="80" required>
+                            <div id="errorNombres" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
                         </div>
 
                         <div class="form-row">
-                            <label>Apellidos</label>
-                            <input class="input" type="text" id="n_apellidos" name="apellidos" maxlength="80">
+                            <label>Apellidos <span style="color: #ef4444;">*</span></label>
+                            <input class="input" type="text" id="n_apellidos" name="apellidos" maxlength="80" required>
+                            <div id="errorApellidos" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
                         </div>
 
                         <div class="form-row">
@@ -174,18 +181,21 @@
                         </div>
 
                         <div class="form-row">
-                            <label>Colegiatura</label>
-                            <input class="input" type="text" id="n_colegiatura" name="colegiatura" maxlength="40">
+                            <label>Colegiatura <span style="color: #ef4444;">*</span></label>
+                            <input class="input" type="text" id="n_colegiatura" name="colegiatura" maxlength="40" required>
+                            <div id="errorColegiatura" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
                         </div>
 
                         <div class="form-row">
                             <label>Especialidad</label>
                             <input class="input" type="text" id="n_especialidad" name="especialidad" maxlength="80">
+                            <div id="errorEspecialidad" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
                         </div>
 
                         <div class="form-row">
                             <label>Teléfono</label>
-                            <input class="input" type="text" id="n_telefono" name="telefono" maxlength="20">
+                            <input class="input" type="text" id="n_telefono" name="telefono" maxlength="9">
+                            <div id="errorTelefono" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
                         </div>
                     </div>
                 </div>
@@ -565,10 +575,21 @@ document.getElementById('btnNuevoNutri')?.addEventListener('click', () => {
     const f = document.getElementById('formNutri');
     f.action = "{{ url_for('admin_nutri_nuevo') }}";
     document.getElementById('nutri_titulo').innerText = "Nuevo nutricionista";
-    ['n_email','n_pwd','n_nombres','n_apellidos','n_sexo','n_colegiatura','n_especialidad','n_telefono']
+    ['n_email','n_pwd','n_pwd_confirm','n_nombres','n_apellidos','n_sexo','n_colegiatura','n_especialidad','n_telefono']
       .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
     document.getElementById('n_estado').value = "activo";
-    document.getElementById('n_mfa').checked = true;
+    
+    // Limpiar errores
+    ['errorPassword', 'errorPasswordConfirm', 'errorNombres', 'errorApellidos', 'errorColegiatura', 'errorTelefono', 'errorEmail'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.style.display = 'none'; el.textContent = ''; }
+    });
+    
+    // Inicializar botones de contraseña
+    setTimeout(() => {
+        initTogglePasswordNutri();
+    }, 100);
+    
     openModal('#modalNutri');
 });
 
@@ -582,8 +603,10 @@ document.querySelectorAll('.js-edit').forEach(btn => {
         document.getElementById('nutri_titulo').innerText = "Editar nutricionista";
         document.getElementById('n_email').value = btn.dataset.email || "";
         document.getElementById('n_pwd').value = "";
+        document.getElementById('n_pwd_confirm').value = "";
+        document.getElementById('n_pwd').required = false;
+        document.getElementById('n_pwd_confirm').required = false;
         document.getElementById('n_estado').value = btn.dataset.estado || "activo";
-        document.getElementById('n_mfa').checked = (btn.dataset.mfa === '1');
 
         document.getElementById('n_nombres').value = btn.dataset.nombres || "";
         document.getElementById('n_apellidos').value = btn.dataset.apellidos || "";
@@ -591,9 +614,504 @@ document.querySelectorAll('.js-edit').forEach(btn => {
         document.getElementById('n_colegiatura').value = btn.dataset.colegiatura || "";
         document.getElementById('n_especialidad').value = btn.dataset.especialidad || "";
         document.getElementById('n_telefono').value = btn.dataset.telefono || "";
+        
+        // Limpiar errores
+        ['errorPassword', 'errorPasswordConfirm', 'errorNombres', 'errorApellidos', 'errorColegiatura', 'errorEspecialidad', 'errorTelefono', 'errorEmail'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.style.display = 'none'; el.textContent = ''; }
+        });
+        
+        // Inicializar botones de contraseña
+        setTimeout(() => {
+            initTogglePasswordNutri();
+        }, 100);
+        
         openModal('#modalNutri');
     });
 });
+
+// ====== Funciones para mostrar/ocultar contraseña ======
+function createToggleButtonNutri(inputId, buttonId) {
+    const input = document.getElementById(inputId);
+    if (!input) return null;
+    
+    const container = input.parentElement;
+    if (!container) return null;
+    
+    // Eliminar cualquier botón existente primero
+    const existingButton = container.querySelector('.toggle-password-btn');
+    if (existingButton) {
+        existingButton.remove();
+    }
+    
+    // Crear nuevo botón
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'toggle-password-btn';
+    button.id = buttonId;
+    button.setAttribute('aria-label', 'Mostrar u ocultar contraseña');
+    button.style.cssText = 'position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6b7280; padding: 4px; font-size: 16px;';
+    button.innerHTML = '<i class="fas fa-eye"></i>';
+    
+    // Agregar el evento
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const isHidden = input.style.webkitTextSecurity === 'disc' || 
+                        input.style.textSecurity === 'disc' ||
+                        (!input.style.webkitTextSecurity && !input.style.textSecurity);
+        
+        if (isHidden) {
+            // Mostrar contraseña
+            input.style.webkitTextSecurity = 'none';
+            input.style.mozTextSecurity = 'none';
+            input.style.textSecurity = 'none';
+            const icon = button.querySelector('i');
+            if (icon) {
+                icon.className = 'fas fa-eye-slash';
+            }
+        } else {
+            // Ocultar contraseña
+            input.style.webkitTextSecurity = 'disc';
+            input.style.mozTextSecurity = 'disc';
+            input.style.textSecurity = 'disc';
+            const icon = button.querySelector('i');
+            if (icon) {
+                icon.className = 'fas fa-eye';
+            }
+        }
+    });
+    
+    container.appendChild(button);
+    return button;
+}
+
+function initTogglePasswordNutri() {
+    // Crear botón para contraseña principal
+    createToggleButtonNutri('n_pwd', 'togglePasswordNutri');
+    
+    // Crear botón para confirmar contraseña
+    createToggleButtonNutri('n_pwd_confirm', 'togglePasswordConfirmNutri');
+}
+
+// ====== Validaciones de campos ======
+function validarCampoTexto(inputId, errorId, campoNombre, soloLetras = true, obligatorio = true) {
+    const input = document.getElementById(inputId);
+    const error = document.getElementById(errorId);
+    
+    if (!input || !error) return true;
+    
+    const valor = input.value.trim();
+    
+    if (obligatorio && !valor) {
+        error.textContent = `${campoNombre} es obligatorio.`;
+        error.style.display = 'block';
+        return false;
+    }
+    
+    if (valor && soloLetras) {
+        // Solo letras y espacios
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(valor)) {
+            error.textContent = `${campoNombre} solo puede contener letras.`;
+            error.style.display = 'block';
+            return false;
+        }
+    }
+    
+    error.style.display = 'none';
+    error.textContent = '';
+    return true;
+}
+
+function validarColegiatura(inputId, errorId) {
+    const input = document.getElementById(inputId);
+    const error = document.getElementById(errorId);
+    
+    if (!input || !error) return true;
+    
+    let valor = input.value.trim().toUpperCase();
+    
+    if (!valor) {
+        error.textContent = 'Colegiatura es obligatorio.';
+        error.style.display = 'block';
+        return false;
+    }
+    
+    // Formato: 3 letras, guión, 3 números (ABC-123)
+    if (!/^[A-Z]{3}-\d{3}$/.test(valor)) {
+        error.textContent = 'La colegiatura debe tener el formato: 3 letras, guión, 3 números (ej: ABC-123)';
+        error.style.display = 'block';
+        return false;
+    }
+    
+    // Actualizar el valor con mayúsculas
+    input.value = valor;
+    
+    error.style.display = 'none';
+    error.textContent = '';
+    return true;
+}
+
+function validarTelefono(inputId, errorId) {
+    const input = document.getElementById(inputId);
+    const error = document.getElementById(errorId);
+    
+    if (!input || !error) return true;
+    
+    let valor = input.value.trim();
+    
+    // Si está vacío, es opcional
+    if (!valor) {
+        error.style.display = 'none';
+        error.textContent = '';
+        return true;
+    }
+    
+    // Eliminar caracteres no numéricos
+    const soloNumeros = valor.replace(/\D/g, '');
+    
+    // Solo 9 dígitos
+    if (soloNumeros.length !== 9) {
+        error.textContent = 'El teléfono debe tener exactamente 9 dígitos.';
+        error.style.display = 'block';
+        return false;
+    }
+    
+    // Actualizar el valor con solo números
+    input.value = soloNumeros;
+    
+    error.style.display = 'none';
+    error.textContent = '';
+    return true;
+}
+
+// ====== Aplicar validaciones en tiempo real ======
+document.getElementById('n_nombres')?.addEventListener('input', function() {
+    // Eliminar números y caracteres no permitidos
+    this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+    validarCampoTexto('n_nombres', 'errorNombres', 'Nombres', true);
+});
+
+document.getElementById('n_apellidos')?.addEventListener('input', function() {
+    // Eliminar números y caracteres no permitidos
+    this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+    validarCampoTexto('n_apellidos', 'errorApellidos', 'Apellidos', true);
+});
+
+document.getElementById('n_colegiatura')?.addEventListener('input', function() {
+    let valor = this.value.toUpperCase();
+    
+    // Permitir solo letras, números y guión
+    valor = valor.replace(/[^A-Z0-9\-]/g, '');
+    
+    // Limitar formato: máximo 3 letras, guión, máximo 3 números
+    if (valor.length > 0) {
+        const partes = valor.split('-');
+        if (partes.length > 2) {
+            // Si hay más de un guión, mantener solo el primero
+            valor = partes[0] + '-' + partes.slice(1).join('');
+        }
+        
+        // Limitar letras a 3
+        if (partes[0] && partes[0].length > 3) {
+            partes[0] = partes[0].substring(0, 3);
+        }
+        
+        // Limitar números a 3 después del guión
+        if (partes.length > 1 && partes[1]) {
+            partes[1] = partes[1].replace(/\D/g, '').substring(0, 3);
+        }
+        
+        if (partes.length > 1 && partes[1]) {
+            valor = partes[0] + '-' + partes[1];
+        } else if (partes[0] && !valor.includes('-')) {
+            valor = partes[0];
+        }
+    }
+    
+    this.value = valor;
+    validarColegiatura('n_colegiatura', 'errorColegiatura');
+});
+
+document.getElementById('n_especialidad')?.addEventListener('input', function() {
+    // Eliminar números y caracteres no permitidos
+    this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+    const errorEspecialidad = document.getElementById('errorEspecialidad');
+    if (errorEspecialidad && errorEspecialidad.style.display !== 'none') {
+        errorEspecialidad.style.display = 'none';
+        errorEspecialidad.textContent = '';
+    }
+});
+
+document.getElementById('n_telefono')?.addEventListener('input', function() {
+    // Eliminar todo lo que no sea número
+    let valor = this.value.replace(/\D/g, '');
+    
+    // Limitar a 9 dígitos
+    if (valor.length > 9) {
+        valor = valor.substring(0, 9);
+    }
+    
+    this.value = valor;
+    validarTelefono('n_telefono', 'errorTelefono');
+});
+
+document.getElementById('n_pwd')?.addEventListener('input', function() {
+    const errorPassword = document.getElementById('errorPassword');
+    if (errorPassword && errorPassword.style.display !== 'none') {
+        errorPassword.style.display = 'none';
+        errorPassword.textContent = '';
+    }
+});
+
+document.getElementById('n_pwd_confirm')?.addEventListener('input', function() {
+    const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+    if (errorPasswordConfirm && errorPasswordConfirm.style.display !== 'none') {
+        errorPasswordConfirm.style.display = 'none';
+        errorPasswordConfirm.textContent = '';
+    }
+    
+    // Validar en tiempo real si coinciden
+    const password = document.getElementById('n_pwd');
+    if (password && this.value && password.value !== this.value) {
+        if (errorPasswordConfirm) {
+            errorPasswordConfirm.textContent = 'Las contraseñas no coinciden';
+            errorPasswordConfirm.style.display = 'block';
+        }
+    } else if (password && this.value && password.value === this.value) {
+        if (errorPasswordConfirm) {
+            errorPasswordConfirm.style.display = 'none';
+            errorPasswordConfirm.textContent = '';
+        }
+    }
+});
+
+// ====== Manejar envío del formulario ======
+document.getElementById('formNutri')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const form = this;
+    const isNuevo = form.action.includes('/nuevo');
+    
+    // Limpiar errores
+    ['errorPassword', 'errorPasswordConfirm', 'errorNombres', 'errorApellidos', 'errorColegiatura', 'errorTelefono', 'errorEmail'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.style.display = 'none'; el.textContent = ''; }
+    });
+    
+    // Validar campos
+    let esValido = true;
+    
+    // Validar nombres
+    if (!validarCampoTexto('n_nombres', 'errorNombres', 'Nombres', true)) {
+        esValido = false;
+    }
+    
+    // Validar apellidos
+    if (!validarCampoTexto('n_apellidos', 'errorApellidos', 'Apellidos', true)) {
+        esValido = false;
+    }
+    
+    // Validar colegiatura
+    if (!validarColegiatura('n_colegiatura', 'errorColegiatura')) {
+        esValido = false;
+    }
+    
+    // Validar especialidad (opcional pero solo letras)
+    if (!validarCampoTexto('n_especialidad', 'errorEspecialidad', 'Especialidad', true, false)) {
+        esValido = false;
+    }
+    
+    // Validar teléfono
+    if (!validarTelefono('n_telefono', 'errorTelefono')) {
+        esValido = false;
+    }
+    
+    // Validar contraseñas (solo si es nuevo o si se proporciona contraseña)
+    const password = document.getElementById('n_pwd').value;
+    const passwordConfirm = document.getElementById('n_pwd_confirm').value;
+    
+    if (isNuevo) {
+        if (!password) {
+            const errorPassword = document.getElementById('errorPassword');
+            if (errorPassword) {
+                errorPassword.textContent = 'La contraseña es obligatoria';
+                errorPassword.style.display = 'block';
+            }
+            esValido = false;
+        } else if (password.length < 6) {
+            const errorPassword = document.getElementById('errorPassword');
+            if (errorPassword) {
+                errorPassword.textContent = 'La contraseña debe tener al menos 6 caracteres';
+                errorPassword.style.display = 'block';
+            }
+            esValido = false;
+        }
+        
+        if (!passwordConfirm) {
+            const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+            if (errorPasswordConfirm) {
+                errorPasswordConfirm.textContent = 'Debe confirmar la contraseña';
+                errorPasswordConfirm.style.display = 'block';
+            }
+            esValido = false;
+        } else if (password !== passwordConfirm) {
+            const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+            if (errorPasswordConfirm) {
+                errorPasswordConfirm.textContent = 'Las contraseñas no coinciden';
+                errorPasswordConfirm.style.display = 'block';
+            }
+            esValido = false;
+        }
+    } else if (password) {
+        // Si se está editando y se proporciona contraseña, validar
+        if (!passwordConfirm) {
+            const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+            if (errorPasswordConfirm) {
+                errorPasswordConfirm.textContent = 'Debe confirmar la contraseña';
+                errorPasswordConfirm.style.display = 'block';
+            }
+            esValido = false;
+        } else if (password !== passwordConfirm) {
+            const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+            if (errorPasswordConfirm) {
+                errorPasswordConfirm.textContent = 'Las contraseñas no coinciden';
+                errorPasswordConfirm.style.display = 'block';
+            }
+            esValido = false;
+        } else if (password.length < 6) {
+            const errorPassword = document.getElementById('errorPassword');
+            if (errorPassword) {
+                errorPassword.textContent = 'La contraseña debe tener al menos 6 caracteres';
+                errorPassword.style.display = 'block';
+            }
+            esValido = false;
+        }
+    }
+    
+    if (!esValido) {
+        return;
+    }
+    
+    // Si todo es válido, enviar el formulario con AJAX
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        body: formData,
+        redirect: 'manual'
+    })
+    .then(response => {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            // Si no es JSON, puede ser un redirect o error HTML
+            return response.text().then(text => {
+                throw new Error('Respuesta no JSON');
+            });
+        }
+    })
+    .then(data => {
+        if (data.ok) {
+            // Mostrar mensaje de éxito
+            Toastify({
+                text: "✅ " + (data.message || "Nutricionista guardado correctamente"),
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#10b981",
+            }).showToast();
+            
+            // Cerrar modal y recargar
+            closeModal('#modalNutri');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            // Mostrar errores en los campos correspondientes
+            if (data.errores) {
+                if (data.errores.email) {
+                    const errorEmail = document.getElementById('errorEmail');
+                    if (errorEmail) {
+                        errorEmail.textContent = data.errores.email;
+                        errorEmail.style.display = 'block';
+                    }
+                }
+                if (data.errores.telefono) {
+                    const errorTelefono = document.getElementById('errorTelefono');
+                    if (errorTelefono) {
+                        errorTelefono.textContent = data.errores.telefono;
+                        errorTelefono.style.display = 'block';
+                    }
+                }
+                if (data.errores.nombres) {
+                    const errorNombres = document.getElementById('errorNombres');
+                    if (errorNombres) {
+                        errorNombres.textContent = data.errores.nombres;
+                        errorNombres.style.display = 'block';
+                    }
+                }
+                if (data.errores.apellidos) {
+                    const errorApellidos = document.getElementById('errorApellidos');
+                    if (errorApellidos) {
+                        errorApellidos.textContent = data.errores.apellidos;
+                        errorApellidos.style.display = 'block';
+                    }
+                }
+                if (data.errores.especialidad) {
+                    const errorEspecialidad = document.getElementById('errorEspecialidad');
+                    if (errorEspecialidad) {
+                        errorEspecialidad.textContent = data.errores.especialidad;
+                        errorEspecialidad.style.display = 'block';
+                    }
+                }
+                if (data.errores.password) {
+                    const errorPassword = document.getElementById('errorPassword');
+                    if (errorPassword) {
+                        errorPassword.textContent = data.errores.password;
+                        errorPassword.style.display = 'block';
+                    }
+                }
+                if (data.errores.password_confirm) {
+                    const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+                    if (errorPasswordConfirm) {
+                        errorPasswordConfirm.textContent = data.errores.password_confirm;
+                        errorPasswordConfirm.style.display = 'block';
+                    }
+                }
+                if (data.errores.general) {
+                    Toastify({
+                        text: "❌ " + data.errores.general,
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#ef4444",
+                    }).showToast();
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // En caso de error, enviar el formulario normalmente
+        form.submit();
+    });
+});
+
+// Inicializar cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        initTogglePasswordNutri();
+    });
+} else {
+    initTogglePasswordNutri();
+}
 
 // Borrar con modal de confirmación
 document.querySelectorAll('.js-confirmar-borrar-nutri').forEach(btn => {

@@ -43,7 +43,7 @@
                         <td>{{ n.email }}</td>
                         <td>{{ n.nombres or '' }}</td>
                         <td>{{ n.apellidos or '' }}</td>
-                        <td>{{ n.sexo or '' }}</td>
+                        <td>{{ n.sexo if n.sexo else 'sin especificar' }}</td>
                         <td>{{ n.colegiatura or '' }}</td>
                         <td>{{ n.especialidad or '' }}</td>
                         <td>{{ n.telefono or '' }}</td>

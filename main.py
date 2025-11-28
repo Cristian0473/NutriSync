@@ -1638,9 +1638,8 @@ def _placeholder(nombre):
 @admin_only_required
 def admin_usuarios():
     rows = fetch_all("""
-        SELECT u.id, u.email, u.estado,
-               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles,
-               COALESCE(MAX(ur.rol_id), NULL) AS rol_id
+        SELECT u.id, u.email, u.estado, u.mfa,
+               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles
         FROM usuario u
         LEFT JOIN usuario_rol ur ON ur.usuario_id = u.id
         LEFT JOIN rol r ON r.id = ur.rol_id
@@ -1682,9 +1681,8 @@ def api_usuarios_page():
 
     # Datos + roles agregados
     rows = fetch_all(f"""
-        SELECT u.id, u.email, u.estado,
-               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles,
-               COALESCE(MAX(ur.rol_id), NULL) AS rol_id
+        SELECT u.id, u.email, u.estado, u.mfa,
+               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles
         FROM usuario u
         LEFT JOIN usuario_rol ur ON ur.usuario_id = u.id
         LEFT JOIN rol r ON r.id = ur.rol_id
@@ -1698,8 +1696,8 @@ def api_usuarios_page():
         "id": r[0],
         "email": r[1],
         "estado": r[2],
-        "roles": r[3] or "",
-        "rol_id": str(r[4]) if r[4] else ""
+        "mfa": bool(r[3]),
+        "roles": r[4] or ""
     } for r in rows]
 
     total_pages = (total + per_page - 1) // per_page
@@ -2947,41 +2945,135 @@ def admin_nutricionistas():
 @app.route("/admin/nutricionistas/nuevo", methods=["POST"])
 @admin_only_required
 def admin_nutri_nuevo():
+    # Verificar si es una petición AJAX
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    
     email   = (request.form.get("email") or "").strip().lower()
     pwd     = request.form.get("password") or ""
     estado  = (request.form.get("estado") or "activo").strip()
-    mfa     = "mfa" in request.form
+    # Siempre guardar sin MFA para nuevos nutricionistas
+    mfa     = False
 
+    errores = {}
+    
     if not email:
-        flash("El email es obligatorio.", "error")
-        return redirect(url_for("admin_nutricionistas"))
-
-    # Crea o actualiza usuario
-    row_u = fetch_one("SELECT id FROM usuario WHERE email=%s", (email,))
-    if row_u:
-        uid = row_u[0]
-        if pwd:
-            execute("UPDATE usuario SET hash_pwd=%s, estado=%s, mfa=%s WHERE id=%s",
-                    (generate_password_hash(pwd), estado, mfa, uid))
-        else:
-            execute("UPDATE usuario SET estado=%s, mfa=%s WHERE id=%s",
-                    (estado, mfa, uid))
+        errores['email'] = "El email es obligatorio."
+    elif not pwd:
+        errores['password'] = "La contraseña es obligatoria."
     else:
-        uid = fetch_one(
-            "INSERT INTO usuario (email, hash_pwd, estado, mfa) VALUES (%s,%s,%s,%s) RETURNING id",
-            (email, generate_password_hash(pwd) if pwd else None, estado, mfa)
-        )[0]
+        # Validar confirmación de contraseña
+        pwd_confirm = request.form.get("password_confirm") or ""
+        if pwd != pwd_confirm:
+            errores['password_confirm'] = "Las contraseñas no coinciden."
+        elif len(pwd) < 6:
+            errores['password'] = "La contraseña debe tener al menos 6 caracteres."
+    
+    # IMPORTANTE: Validar email ANTES que otras cosas para evitar problemas
+    # Verificar si el email ya existe en la base de datos (cualquier rol)
+    # Esta ruta es solo para NUEVOS nutricionistas, así que si el email existe, es un error
+    if email:
+        existe_email = fetch_one("SELECT id FROM usuario WHERE email=%s", (email,))
+        if existe_email:
+            errores['email'] = f"Ya existe un usuario registrado con el email {email} (puede ser admin, paciente u otro nutricionista)."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['email'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+    
+    if errores:
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        primer_error = list(errores.values())[0]
+        flash(primer_error, "error")
+        return redirect(url_for("admin_nutricionistas"))
+    
+    # Validar teléfono si se proporciona
+    telefono = (request.form.get("telefono") or "").strip() or None
+    if telefono:
+        # Validar formato: 9 dígitos
+        import re
+        telefono_limpio = re.sub(r'\D', '', telefono)
+        if len(telefono_limpio) != 9:
+            errores['telefono'] = "El teléfono debe tener exactamente 9 dígitos."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+        telefono = telefono_limpio
+    
+    # Validar nombres, apellidos y especialidad: solo letras
+    nombres_val = (request.form.get("nombres") or "").strip() or None
+    apellidos_val = (request.form.get("apellidos") or "").strip() or None
+    especialidad_val = (request.form.get("especialidad") or "").strip() or None
+    
+    import re
+    if nombres_val and re.search(r'\d', nombres_val):
+        errores['nombres'] = "Los nombres solo pueden contener letras."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['nombres'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    if apellidos_val and re.search(r'\d', apellidos_val):
+        errores['apellidos'] = "Los apellidos solo pueden contener letras."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['apellidos'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    if especialidad_val and re.search(r'\d', especialidad_val):
+        errores['especialidad'] = "La especialidad solo puede contener letras."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['especialidad'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    
+    # Validar teléfono duplicado si se proporciona - buscar en toda la base de datos
+    if telefono:
+        # Para nuevos nutricionistas, siempre verificar sin excluir ningún usuario
+        existe_telefono_nutri = fetch_one("""
+            SELECT pn.usuario_id FROM perfil_nutricionista pn 
+            WHERE pn.telefono = %s
+        """, (telefono,))
+        if existe_telefono_nutri:
+            errores['telefono'] = f"Ya existe un nutricionista con el teléfono {telefono}."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+        
+        # Verificar en paciente
+        existe_telefono_paciente = fetch_one("SELECT telefono FROM paciente WHERE telefono = %s", (telefono,))
+        if existe_telefono_paciente:
+            errores['telefono'] = f"Ya existe un paciente con el teléfono {telefono}."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+        
+        # Verificar en pre_registro
+        existe_telefono_prereg = fetch_one("SELECT telefono FROM pre_registro WHERE telefono = %s", (telefono,))
+        if existe_telefono_prereg:
+            errores['telefono'] = f"Ya existe un pre-registro con el teléfono {telefono}."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+
+    # Crear nuevo usuario (ya validamos que el email no existe)
+    uid = fetch_one(
+        "INSERT INTO usuario (email, hash_pwd, estado, mfa) VALUES (%s,%s,%s,%s) RETURNING id",
+        (email, generate_password_hash(pwd) if pwd else None, estado, mfa)
+    )[0]
 
     # Asegurar rol nutricionista
     ensure_role(uid, "nutricionista")
 
     # Perfil simplificado según esquema actual
     colegiatura  = (request.form.get("colegiatura") or "").strip() or None
-    especialidad = (request.form.get("especialidad") or "").strip() or None
-    nombres      = (request.form.get("nombres") or "").strip() or None
-    apellidos    = (request.form.get("apellidos") or "").strip() or None
+    especialidad = especialidad_val  # Ya validado arriba
+    nombres      = nombres_val  # Ya validado arriba
+    apellidos    = apellidos_val  # Ya validado arriba
     sexo         = _norm_sexo(request.form.get("sexo"))
-    telefono     = (request.form.get("telefono") or "").strip() or None
+    # telefono ya se validó arriba
     activo       = (estado == "activo")
 
     existe = fetch_one("SELECT 1 FROM perfil_nutricionista WHERE usuario_id=%s", (uid,))
@@ -3000,6 +3092,8 @@ def admin_nutri_nuevo():
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (uid, colegiatura, especialidad, nombres, apellidos, sexo, telefono, activo))
 
+    if is_ajax:
+        return {"ok": True, "message": "Nutricionista guardado correctamente."}
     flash("Nutricionista guardado.", "success")
     return redirect(url_for("admin_nutricionistas"))
 
@@ -3007,16 +3101,109 @@ def admin_nutri_nuevo():
 @app.route("/admin/nutricionistas/<int:uid>/editar", methods=["POST"])
 @admin_only_required
 def admin_nutri_editar(uid):
+    # Verificar si es una petición AJAX
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    
     email   = (request.form.get("email") or "").strip().lower()
     pwd     = request.form.get("password") or ""
     estado  = (request.form.get("estado") or "activo").strip()
     mfa     = "mfa" in request.form
 
+    errores = {}
+    
     if not email:
-        flash("El email es obligatorio.", "error")
+        errores['email'] = "El email es obligatorio."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['email'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    
+    # Validar que el email no esté en uso por OTRO usuario (excluyendo el actual)
+    existe_email_otro = fetch_one("SELECT id FROM usuario WHERE email=%s AND id != %s", (email, uid))
+    if existe_email_otro:
+        errores['email'] = f"Ya existe otro usuario registrado con el email {email} (puede ser admin, paciente u otro nutricionista)."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['email'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    
+    # Validar nombres, apellidos y especialidad: solo letras
+    nombres_val = (request.form.get("nombres") or "").strip() or None
+    apellidos_val = (request.form.get("apellidos") or "").strip() or None
+    especialidad_val = (request.form.get("especialidad") or "").strip() or None
+    
+    import re
+    if nombres_val and re.search(r'\d', nombres_val):
+        errores['nombres'] = "Los nombres solo pueden contener letras."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['nombres'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    if apellidos_val and re.search(r'\d', apellidos_val):
+        errores['apellidos'] = "Los apellidos solo pueden contener letras."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['apellidos'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    if especialidad_val and re.search(r'\d', especialidad_val):
+        errores['especialidad'] = "La especialidad solo puede contener letras."
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        flash(errores['especialidad'], "error")
+        return redirect(url_for("admin_nutricionistas"))
+    
+    # Validar teléfono si se proporciona
+    telefono = (request.form.get("telefono") or "").strip() or None
+    if telefono:
+        # Validar formato: 9 dígitos
+        telefono_limpio = re.sub(r'\D', '', telefono)
+        if len(telefono_limpio) != 9:
+            errores['telefono'] = "El teléfono debe tener exactamente 9 dígitos."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+        telefono = telefono_limpio
+        
+        # Validar teléfono duplicado - buscar en toda la base de datos (excluyendo el usuario actual)
+        existe_telefono_nutri = fetch_one("""
+            SELECT pn.usuario_id FROM perfil_nutricionista pn 
+            WHERE pn.telefono = %s AND pn.usuario_id != %s
+        """, (telefono, uid))
+        if existe_telefono_nutri:
+            errores['telefono'] = f"Ya existe un nutricionista con el teléfono {telefono}."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+        
+        # Verificar en paciente
+        existe_telefono_paciente = fetch_one("SELECT telefono FROM paciente WHERE telefono = %s", (telefono,))
+        if existe_telefono_paciente:
+            errores['telefono'] = f"Ya existe un paciente con el teléfono {telefono}."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+        
+        # Verificar en pre_registro
+        existe_telefono_prereg = fetch_one("SELECT telefono FROM pre_registro WHERE telefono = %s", (telefono,))
+        if existe_telefono_prereg:
+            errores['telefono'] = f"Ya existe un pre-registro con el teléfono {telefono}."
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            flash(errores['telefono'], "error")
+            return redirect(url_for("admin_nutricionistas"))
+    
+    # Verificar que no haya errores antes de actualizar
+    if errores:
+        if is_ajax:
+            return {"ok": False, "errores": errores}, 400
+        primer_error = list(errores.values())[0]
+        flash(primer_error, "error")
         return redirect(url_for("admin_nutricionistas"))
 
-    # Usuario
+    # Usuario - Solo actualizar si no hay errores
     if pwd:
         execute("UPDATE usuario SET email=%s, hash_pwd=%s, estado=%s, mfa=%s WHERE id=%s",
                 (email, generate_password_hash(pwd), estado, mfa, uid))
@@ -3112,20 +3299,112 @@ def admin_preregistro():
         telefono  = (request.form.get("telefono") or "").strip() or None
         email     = (request.form.get("email") or "").strip().lower() or None
 
-        if not (dni.isdigit() and len(dni) == 8):
-            flash("DNI inválido (8 dígitos).", "error")
+        # Verificar si es una petición AJAX
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        
+        errores = {}
+        
+        # Validar DNI: solo números, 8 dígitos
+        if not dni.isdigit():
+            errores['dni'] = "El DNI solo puede contener números."
+        elif len(dni) != 8:
+            errores['dni'] = "El DNI debe tener exactamente 8 dígitos."
         else:
-            execute("""
-                INSERT INTO pre_registro (dni, nombres, apellidos, telefono, email, estado, creado_en, actualizado_en)
-                VALUES (%s, %s, %s, %s, %s, 'pendiente', NOW(), NOW())
-                ON CONFLICT (dni) DO UPDATE
-                   SET nombres = EXCLUDED.nombres,
-                       apellidos = EXCLUDED.apellidos,
-                       telefono = EXCLUDED.telefono,
-                       email = EXCLUDED.email,
-                       actualizado_en = NOW()
-            """, (dni, nombres, apellidos, telefono, email))
-            flash("Pre-registro guardado/actualizado.", "success")
+            # Verificar si ya existe un preregistro con este DNI
+            existe_dni = fetch_one("SELECT dni FROM pre_registro WHERE dni = %s", (dni,))
+            if existe_dni:
+                errores['dni'] = f"Ya existe un pre-registro con el DNI {dni}."
+        
+        # Validar nombres: solo letras
+        if nombres:
+            import re
+            if re.search(r'\d', nombres):
+                errores['nombres'] = "Los nombres solo pueden contener letras."
+            elif not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombres):
+                errores['nombres'] = "Los nombres contienen caracteres inválidos."
+        
+        # Validar apellidos: solo letras
+        if apellidos:
+            import re
+            if re.search(r'\d', apellidos):
+                errores['apellidos'] = "Los apellidos solo pueden contener letras."
+            elif not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', apellidos):
+                errores['apellidos'] = "Los apellidos contienen caracteres inválidos."
+        
+        # Validar email si se proporciona - buscar en toda la base de datos
+        if email:
+            # Verificar en usuario (cualquier rol)
+            existe_email_usuario = fetch_one("SELECT email FROM usuario WHERE email = %s", (email,))
+            if existe_email_usuario:
+                errores['email'] = f"Ya existe un usuario registrado con el email {email}."
+            else:
+                # Verificar en pre_registro
+                existe_email_prereg = fetch_one("SELECT email FROM pre_registro WHERE email = %s", (email,))
+                if existe_email_prereg:
+                    errores['email'] = f"Ya existe un pre-registro con el email {email}."
+        
+        # Validar teléfono si se proporciona - buscar en toda la base de datos
+        if telefono:
+            # Validar formato: 9 dígitos
+            import re
+            telefono_limpio = re.sub(r'\D', '', telefono)
+            if len(telefono_limpio) != 9:
+                errores['telefono'] = "El teléfono debe tener exactamente 9 dígitos."
+            else:
+                # Normalizar teléfono a solo números
+                telefono = telefono_limpio
+                # Verificar en perfil_nutricionista
+                existe_telefono_nutri = fetch_one("SELECT telefono FROM perfil_nutricionista WHERE telefono = %s", (telefono,))
+                if existe_telefono_nutri:
+                    errores['telefono'] = f"Ya existe un nutricionista registrado con el teléfono {telefono}."
+                else:
+                    # Verificar en paciente
+                    existe_telefono_paciente = fetch_one("SELECT telefono FROM paciente WHERE telefono = %s", (telefono,))
+                    if existe_telefono_paciente:
+                        errores['telefono'] = f"Ya existe un paciente registrado con el teléfono {telefono}."
+                    else:
+                        # Verificar en pre_registro
+                        existe_telefono_prereg = fetch_one("SELECT telefono FROM pre_registro WHERE telefono = %s", (telefono,))
+                        if existe_telefono_prereg:
+                            errores['telefono'] = f"Ya existe un pre-registro con el teléfono {telefono}."
+        
+        if errores:
+            if is_ajax:
+                return {"ok": False, "errores": errores}, 400
+            # Para peticiones no AJAX, mostrar el primer error
+            primer_error = list(errores.values())[0]
+            flash(primer_error, "error")
+        else:
+            try:
+                execute("""
+                    INSERT INTO pre_registro (dni, nombres, apellidos, telefono, email, estado, creado_en, actualizado_en)
+                    VALUES (%s, %s, %s, %s, %s, 'pendiente', NOW(), NOW())
+                """, (dni, nombres, apellidos, telefono, email))
+                if is_ajax:
+                    return {"ok": True, "message": "Pre-registro guardado correctamente."}
+                flash("Pre-registro guardado correctamente.", "success")
+            except Exception as e:
+                error_msg = str(e)
+                errores = {}
+                
+                # Detectar errores de UniqueViolation
+                if "uk_prereg_email" in error_msg or ("llave duplicada" in error_msg.lower() and "email" in error_msg.lower()):
+                    errores['email'] = f"Ya existe un pre-registro con el email {email}."
+                elif "uk_prereg_dni" in error_msg or ("llave duplicada" in error_msg.lower() and "dni" in error_msg.lower()):
+                    errores['dni'] = f"Ya existe un pre-registro con el DNI {dni}."
+                elif "llave duplicada" in error_msg.lower():
+                    # Si no podemos determinar cuál campo, intentar ambos
+                    if email:
+                        errores['email'] = f"Ya existe un pre-registro con el email {email}."
+                    if not errores:
+                        errores['dni'] = f"Ya existe un pre-registro con el DNI {dni}."
+                else:
+                    errores['general'] = "Error al guardar el pre-registro."
+                
+                if is_ajax:
+                    return {"ok": False, "errores": errores}, 400
+                primer_error = list(errores.values())[0]
+                flash(primer_error, "error")
 
     # Listado con paginación
     page = int(request.args.get('page', 1))
@@ -3270,166 +3549,69 @@ def admin_usuario_json(uid):
 @app.route("/admin/usuarios/nuevo", methods=["POST"])
 @admin_only_required
 def admin_usuario_nuevo():
-    # Detectar si es petición AJAX
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
-    
-    try:
+    if request.is_json:
+        data = request.get_json(force=True)
+        email  = (data.get("email") or "").strip().lower()
+        estado = (data.get("estado") or "activo").strip()
+        mfa    = bool(data.get("mfa", True))
+        pwd    = data.get("password") or ""
+    else:
+        email  = (request.form.get("email") or "").strip().lower()
+        estado = request.form.get("estado") or "activo"
+        mfa    = request.form.get("mfa") == "on"
+        pwd    = request.form.get("password") or ""
+
+    if not email:
         if request.is_json:
-            data = request.get_json(force=True)
-            email  = (data.get("email") or "").strip().lower()
-            estado = (data.get("estado") or "activo").strip()
-            pwd    = data.get("password") or ""
-            rol_id = data.get("rol") or ""
-        else:
-            email  = (request.form.get("email") or "").strip().lower()
-            estado = request.form.get("estado") or "activo"
-            pwd    = request.form.get("password") or ""
-            rol_id = request.form.get("rol") or ""
-
-        if not email:
-            error_msg = "El email es obligatorio"
-            # Si es petición AJAX (fetch), devolver JSON
-            if is_ajax:
-                return jsonify({"ok": False, "error": error_msg}), 400
-            flash(error_msg, "error")
-            return redirect(url_for("admin_usuarios"))
-
-        # Validar que el password sea obligatorio
-        if not pwd:
-            error_msg = "La contraseña es obligatoria"
-            # Si es petición AJAX (fetch), devolver JSON
-            if is_ajax:
-                return jsonify({"ok": False, "error": error_msg}), 400
-            flash(error_msg, "error")
-            return redirect(url_for("admin_usuarios"))
-
-        # Validar que se haya seleccionado un rol
-        if not rol_id:
-            error_msg = "Debe seleccionar un rol"
-            # Si es petición AJAX (fetch), devolver JSON
-            if is_ajax:
-                return jsonify({"ok": False, "error": error_msg}), 400
-            flash(error_msg, "error")
-            return redirect(url_for("admin_usuarios"))
-
-        # Validar que el correo no esté registrado
-        usuario_existente = fetch_one("SELECT id FROM usuario WHERE email=%s", (email,))
-        if usuario_existente:
-            error_msg = "El correo electrónico ya está registrado"
-            # Si es petición AJAX (fetch), devolver JSON
-            if is_ajax:
-                return jsonify({"ok": False, "error": error_msg}), 400
-            flash(error_msg, "error")
-            return redirect(url_for("admin_usuarios"))
-
-        try:
-            hash_pwd = generate_password_hash(pwd) if pwd else None
-            # Insertar usuario sin MFA (siempre False)
-            execute(
-                "INSERT INTO usuario (email, hash_pwd, estado, mfa) VALUES (%s,%s,%s,%s)",
-                (email, hash_pwd, estado, False)
-            )
-            # Obtener el ID del usuario recién creado
-            nuevo_usuario = fetch_one("SELECT id FROM usuario WHERE email=%s", (email,))
-            usuario_id = nuevo_usuario[0]
-            
-            # Asignar el rol seleccionado (eliminar roles anteriores y asignar el nuevo)
-            execute("DELETE FROM usuario_rol WHERE usuario_id=%s", (usuario_id,))
-            execute("INSERT INTO usuario_rol (usuario_id, rol_id) VALUES (%s,%s)", (usuario_id, rol_id))
-        except Exception as e:
-            # Manejar error de violación de unicidad como respaldo
-            error_str = str(e)
-            if "uk_usuario_email" in error_str or "llave duplicada" in error_str.lower() or "unique" in error_str.lower():
-                error_msg = "El correo electrónico ya está registrado"
-                # Si es petición AJAX (fetch), devolver JSON
-                if is_ajax:
-                    return jsonify({"ok": False, "error": error_msg}), 400
-                flash(error_msg, "error")
-                return redirect(url_for("admin_usuarios"))
-            # Si es otro error y es AJAX, devolver JSON con el error
-            if is_ajax:
-                return jsonify({"ok": False, "error": f"Error al crear usuario: {error_str}"}), 500
-            # Si no es AJAX, relanzar el error para que Flask lo maneje
-            raise
-
-        # Si es petición AJAX (fetch), devolver JSON
-        if is_ajax:
-            return jsonify({"ok": True})
-
-        flash("Usuario creado", "success")
+            return {"ok": False, "error": "El email es obligatorio"}, 400
+        flash("El email es obligatorio", "error")
         return redirect(url_for("admin_usuarios"))
-    
-    except Exception as e:
-        # Capturar cualquier error no manejado
-        if is_ajax:
-            # Si es AJAX, siempre devolver JSON
-            error_str = str(e)
-            return jsonify({"ok": False, "error": f"Error inesperado: {error_str}"}), 500
-        # Si no es AJAX, relanzar para que Flask muestre la página de error
-        raise
+
+    hash_pwd = generate_password_hash(pwd) if pwd else None
+    execute(
+        "INSERT INTO usuario (email, hash_pwd, estado, mfa) VALUES (%s,%s,%s,%s)",
+        (email, hash_pwd, estado, mfa)
+    )
+
+    if request.is_json:
+        return {"ok": True}
+
+    flash("Usuario creado", "success")
+    return redirect(url_for("admin_usuarios"))
 
 
 @app.route("/admin/usuarios/<int:uid>/editar", methods=["POST"])
 @admin_only_required
 def admin_usuario_editar(uid):
-    # Detectar si es petición AJAX
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
-    
     if request.is_json:
         data = request.get_json(force=True)
         email  = (data.get("email") or "").strip().lower()
         estado = (data.get("estado") or "activo").strip()
+        mfa    = bool(data.get("mfa", True))
         pwd    = data.get("password") or ""
-        rol_id = data.get("rol") or ""
     else:
         email  = (request.form.get("email") or "").strip().lower()
         estado = request.form.get("estado") or "activo"
+        mfa    = request.form.get("mfa") == "on"
         pwd    = request.form.get("password") or ""
-        rol_id = request.form.get("rol") or ""
 
     if not email:
-        error_msg = "El email es obligatorio"
-        if is_ajax:
-            return jsonify({"ok": False, "error": error_msg}), 400
-        flash(error_msg, "error")
+        if request.is_json:
+            return {"ok": False, "error": "El email es obligatorio"}, 400
+        flash("El email es obligatorio", "error")
         return redirect(url_for("admin_usuarios"))
 
-    # Validar que se haya seleccionado un rol
-    if not rol_id:
-        error_msg = "Debe seleccionar un rol"
-        if is_ajax:
-            return jsonify({"ok": False, "error": error_msg}), 400
-        flash(error_msg, "error")
-        return redirect(url_for("admin_usuarios"))
-
-    try:
-        if pwd:
-            hash_pwd = generate_password_hash(pwd)
-            execute(
-                "UPDATE usuario SET email=%s, estado=%s, mfa=%s, hash_pwd=%s WHERE id=%s",
-                (email, estado, False, hash_pwd, uid)  # mfa siempre False
-            )
-        else:
-            execute(
-                "UPDATE usuario SET email=%s, estado=%s, mfa=%s WHERE id=%s",
-                (email, estado, False, uid)  # mfa siempre False
-            )
-        
-        # Actualizar el rol (eliminar roles anteriores y asignar el nuevo)
-        execute("DELETE FROM usuario_rol WHERE usuario_id=%s", (uid,))
-        if rol_id:
-            execute("INSERT INTO usuario_rol (usuario_id, rol_id) VALUES (%s,%s)", (uid, rol_id))
-        
-        if is_ajax:
-            return jsonify({"ok": True})
-        flash("Usuario actualizado", "success")
-        return redirect(url_for("admin_usuarios"))
-    except Exception as e:
-        error_str = str(e)
-        if is_ajax:
-            return jsonify({"ok": False, "error": f"Error al actualizar usuario: {error_str}"}), 500
-        flash(f"Error al actualizar usuario: {error_str}", "error")
-        return redirect(url_for("admin_usuarios"))
+    if pwd:
+        hash_pwd = generate_password_hash(pwd)
+        execute(
+            "UPDATE usuario SET email=%s, estado=%s, mfa=%s, hash_pwd=%s WHERE id=%s",
+            (email, estado, mfa, hash_pwd, uid)
+        )
+    else:
+        execute(
+            "UPDATE usuario SET email=%s, estado=%s, mfa=%s WHERE id=%s",
+            (email, estado, mfa, uid)
+        )
 
     if request.is_json:
         return {"ok": True}
@@ -3466,17 +3648,39 @@ def admin_rol_nuevo():
     nombre = (request.form.get("nombre") or "").strip().lower()
     descripcion = (request.form.get("descripcion") or "").strip() or None
 
+    # Verificar si es una petición AJAX
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     if not nombre:
+        if is_ajax:
+            return {"ok": False, "error": "El nombre del rol es obligatorio."}, 400
         flash("El nombre del rol es obligatorio.", "error")
+        return redirect(url_for("admin_roles_list"))
+
+    # Validar que no contenga números
+    if any(char.isdigit() for char in nombre):
+        if is_ajax:
+            return {"ok": False, "error": "El nombre del rol no puede contener números."}, 400
+        flash("El nombre del rol no puede contener números.", "error")
+        return redirect(url_for("admin_roles_list"))
+
+    if descripcion and any(char.isdigit() for char in descripcion):
+        if is_ajax:
+            return {"ok": False, "error": "La descripción no puede contener números."}, 400
+        flash("La descripción no puede contener números.", "error")
         return redirect(url_for("admin_roles_list"))
 
     # evita duplicados
     dup = fetch_one("SELECT 1 FROM rol WHERE LOWER(nombre)=%s", (nombre,))
     if dup:
+        if is_ajax:
+            return {"ok": False, "error": "Ya existe un rol con ese nombre."}, 400
         flash("Ya existe un rol con ese nombre.", "error")
         return redirect(url_for("admin_roles_list"))
 
     execute("INSERT INTO rol (nombre, descripcion) VALUES (%s, %s)", (nombre, descripcion))
+    if is_ajax:
+        return {"ok": True, "message": "Rol creado correctamente."}
     flash("Rol creado.", "success")
     return redirect(url_for("admin_roles_list"))
 
@@ -3486,8 +3690,13 @@ def admin_rol_editar(rid):
     nombre = (request.form.get("nombre") or "").strip()
     descripcion = (request.form.get("descripcion") or "").strip() or None
 
+    # Verificar si es una petición AJAX
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     row = fetch_one("SELECT nombre FROM rol WHERE id=%s", (rid,))
     if not row:
+        if is_ajax:
+            return {"ok": False, "error": "El rol no existe."}, 404
         flash("El rol no existe.", "error")
         return redirect(url_for("admin_roles_list"))
 
@@ -3496,21 +3705,42 @@ def admin_rol_editar(rid):
     # no permitir renombrar admin/paciente
     if nombre_actual in ("admin", "paciente"):
         execute("UPDATE rol SET descripcion=%s WHERE id=%s", (descripcion, rid))
+        if is_ajax:
+            return {"ok": True, "message": "Descripción actualizada (el nombre de este rol es fijo)."}
         flash("Descripción actualizada (el nombre de este rol es fijo).", "info")
         return redirect(url_for("admin_roles_list"))
 
     if not nombre:
+        if is_ajax:
+            return {"ok": False, "error": "El nombre del rol es obligatorio."}, 400
         flash("El nombre del rol es obligatorio.", "error")
+        return redirect(url_for("admin_roles_list"))
+
+    # Validar que no contenga números
+    if any(char.isdigit() for char in nombre):
+        if is_ajax:
+            return {"ok": False, "error": "El nombre del rol no puede contener números."}, 400
+        flash("El nombre del rol no puede contener números.", "error")
+        return redirect(url_for("admin_roles_list"))
+
+    if descripcion and any(char.isdigit() for char in descripcion):
+        if is_ajax:
+            return {"ok": False, "error": "La descripción no puede contener números."}, 400
+        flash("La descripción no puede contener números.", "error")
         return redirect(url_for("admin_roles_list"))
 
     # check duplicado si cambió nombre
     if nombre.lower() != nombre_actual:
         dup = fetch_one("SELECT 1 FROM rol WHERE LOWER(nombre)=%s", (nombre.lower(),))
         if dup:
+            if is_ajax:
+                return {"ok": False, "error": "Ya existe otro rol con ese nombre."}, 400
             flash("Ya existe otro rol con ese nombre.", "error")
             return redirect(url_for("admin_roles_list"))
 
     execute("UPDATE rol SET nombre=%s, descripcion=%s WHERE id=%s", (nombre, descripcion, rid))
+    if is_ajax:
+        return {"ok": True, "message": "Rol actualizado correctamente."}
     flash("Rol actualizado.", "success")
     return redirect(url_for("admin_roles_list"))
 

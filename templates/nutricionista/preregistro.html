@@ -12,32 +12,37 @@
   <div class="card-body">
     
 
-    <form method="post" action="{{ url_for('admin_preregistro') }}">
+    <form method="post" action="{{ url_for('admin_preregistro') }}" id="formPreregistro">
       <div class="form-grid">
         <div class="form-row">
           <label>DNI
-            <input type="text" name="dni" maxlength="8" required/>
+            <input type="text" name="dni" id="dni_input" maxlength="8" required/>
           </label>
+          <div id="errorDni" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
         <div class="form-row">
           <label>Nombres
-            <input type="text" name="nombres" required/>
+            <input type="text" name="nombres" id="nombres_input" required/>
           </label>
+          <div id="errorNombres" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
         <div class="form-row">
           <label>Apellidos
-            <input type="text" name="apellidos" required/>
+            <input type="text" name="apellidos" id="apellidos_input" required/>
           </label>
+          <div id="errorApellidos" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
         <div class="form-row">
           <label>Teléfono
-            <input type="text" name="telefono"/>
+            <input type="text" name="telefono" id="telefono_input" maxlength="9"/>
           </label>
+          <div id="errorTelefono" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
         <div class="form-row full">
           <label>Email
-            <input type="email" name="email"/>
+            <input type="email" name="email" id="email_input"/>
           </label>
+          <div id="errorEmail" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
       </div>
       <div class="form-actions" style="margin-top:8px">
@@ -227,6 +232,197 @@
   const closeModal = sel => document.querySelector(sel).classList.remove('open');
   document.querySelectorAll('.js-close-modal').forEach(b => {
     b.addEventListener('click', () => closeModal(b.dataset.target));
+  });
+  
+  // ====== Limpiar errores cuando se escribe ======
+  document.getElementById('dni_input')?.addEventListener('input', function() {
+    // Solo permitir números
+    this.value = this.value.replace(/\D/g, '');
+    
+    const errorDni = document.getElementById('errorDni');
+    if (errorDni && errorDni.style.display !== 'none') {
+      errorDni.style.display = 'none';
+      errorDni.textContent = '';
+    }
+  });
+  
+  document.getElementById('nombres_input')?.addEventListener('input', function() {
+    // Eliminar números
+    this.value = this.value.replace(/\d/g, '');
+    
+    const errorNombres = document.getElementById('errorNombres');
+    if (errorNombres && errorNombres.style.display !== 'none') {
+      errorNombres.style.display = 'none';
+      errorNombres.textContent = '';
+    }
+  });
+  
+  document.getElementById('apellidos_input')?.addEventListener('input', function() {
+    // Eliminar números
+    this.value = this.value.replace(/\d/g, '');
+    
+    const errorApellidos = document.getElementById('errorApellidos');
+    if (errorApellidos && errorApellidos.style.display !== 'none') {
+      errorApellidos.style.display = 'none';
+      errorApellidos.textContent = '';
+    }
+  });
+  
+  document.getElementById('email_input')?.addEventListener('input', function() {
+    const errorEmail = document.getElementById('errorEmail');
+    if (errorEmail && errorEmail.style.display !== 'none') {
+      errorEmail.style.display = 'none';
+      errorEmail.textContent = '';
+    }
+  });
+  
+  // ====== Validar teléfono en tiempo real ======
+  document.getElementById('telefono_input')?.addEventListener('input', function() {
+    // Eliminar todo lo que no sea número
+    let valor = this.value.replace(/\D/g, '');
+    
+    // Limitar a 9 dígitos
+    if (valor.length > 9) {
+      valor = valor.substring(0, 9);
+    }
+    
+    this.value = valor;
+    
+    const errorTelefono = document.getElementById('errorTelefono');
+    if (errorTelefono && errorTelefono.style.display !== 'none') {
+      errorTelefono.style.display = 'none';
+      errorTelefono.textContent = '';
+    }
+  });
+  
+  // ====== Manejar envío del formulario con AJAX ======
+  const formPreregistro = document.getElementById('formPreregistro');
+  if (formPreregistro) {
+    formPreregistro.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const form = this;
+      const formData = new FormData(form);
+      const errorDni = document.getElementById('errorDni');
+      const errorNombres = document.getElementById('errorNombres');
+      const errorApellidos = document.getElementById('errorApellidos');
+      const errorEmail = document.getElementById('errorEmail');
+      const errorTelefono = document.getElementById('errorTelefono');
+      
+      // Limpiar errores anteriores
+      ['errorDni', 'errorNombres', 'errorApellidos', 'errorEmail', 'errorTelefono'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.display = 'none';
+          el.textContent = '';
+        }
+      });
+      
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          },
+          body: formData,
+          redirect: 'manual'
+        });
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          
+          if (data.ok) {
+            // Mostrar mensaje de éxito
+            Toastify({
+              text: "✅ " + (data.message || "Pre-registro guardado correctamente"),
+              duration: 3000,
+              gravity: "top",
+              position: "right",
+              backgroundColor: "#10b981",
+            }).showToast();
+            
+            // Limpiar formulario
+            form.reset();
+            
+            // Recargar la página después de un momento
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            // Mostrar errores en los campos correspondientes
+            if (data.errores) {
+              if (data.errores.dni && errorDni) {
+                errorDni.textContent = data.errores.dni;
+                errorDni.style.display = 'block';
+              }
+              if (data.errores.nombres && errorNombres) {
+                errorNombres.textContent = data.errores.nombres;
+                errorNombres.style.display = 'block';
+              }
+              if (data.errores.apellidos && errorApellidos) {
+                errorApellidos.textContent = data.errores.apellidos;
+                errorApellidos.style.display = 'block';
+              }
+              if (data.errores.email && errorEmail) {
+                errorEmail.textContent = data.errores.email;
+                errorEmail.style.display = 'block';
+              }
+              if (data.errores.telefono && errorTelefono) {
+                errorTelefono.textContent = data.errores.telefono;
+                errorTelefono.style.display = 'block';
+              }
+              if (data.errores.general) {
+                Toastify({
+                  text: "❌ " + data.errores.general,
+                  duration: 3000,
+                  gravity: "top",
+                  position: "right",
+                  backgroundColor: "#ef4444",
+                }).showToast();
+              }
+            }
+          }
+        } else {
+          // Si no es JSON, dejar que el navegador siga el redirect normal
+          form.submit();
+        }
+      } catch (error) {
+        console.error('Error en submit:', error);
+        // En caso de error, enviar el formulario normalmente
+        form.submit();
+      }
+    });
+  }
+  
+  // ====== Verificar si hay mensajes flash de error ======
+  document.addEventListener('DOMContentLoaded', function() {
+    // Buscar mensajes flash de error
+    const flashMessages = document.querySelectorAll('.alert.error, .flash .error');
+    flashMessages.forEach(function(msg) {
+      const text = msg.textContent || msg.innerText;
+      const errorDni = document.getElementById('errorDni');
+      const errorEmail = document.getElementById('errorEmail');
+      
+      if (text.includes('DNI')) {
+        if (errorDni) {
+          errorDni.textContent = text;
+          errorDni.style.display = 'block';
+        }
+      } else if (text.includes('email') || text.includes('Email')) {
+        if (errorEmail) {
+          errorEmail.textContent = text;
+          errorEmail.style.display = 'block';
+        }
+      }
+      
+      // Hacer scroll al formulario si hay error
+      if (errorDni || errorEmail) {
+        document.getElementById('formPreregistro')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
   });
 </script>
 

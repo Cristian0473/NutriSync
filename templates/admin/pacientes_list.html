@@ -69,13 +69,13 @@
         <!-- Selector de paciente (para nuevo registro) -->
         <div id="selector-paciente-container" style="margin-bottom: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
           <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
-            <i class="fas fa-search"></i> Buscar paciente existente (opcional)
+            <i class="fas fa-search"></i> Buscar paciente existente 
           </label>
           <select id="selectPacienteExistente" style="width: 100%;" class="form-select">
             <option value="">-- Nuevo paciente --</option>
           </select>
           <small style="display: block; margin-top: 8px; color: #6b7280;">
-            Si seleccionas un paciente, se cargarán sus datos del preregistro. Si dejas "Nuevo paciente", podrás crear uno nuevo.
+            Si seleccionas un paciente, se cargarán sus datos del preregistro.
           </small>
         </div>
 
@@ -102,9 +102,9 @@
         <!-- TAB: Datos personales -->
         <div class="tab-content active" id="tab-datos">
           <div class="form-grid two-cols">
-            <div class="form-row"><label>DNI</label><input type="text" id="dni" name="dni" maxlength="8" required></div>
-            <div class="form-row"><label>Nombres</label><input type="text" id="nombres" name="nombres"></div>
-            <div class="form-row"><label>Apellidos</label><input type="text" id="apellidos" name="apellidos"></div>
+            <div class="form-row"><label>DNI</label><input type="text" id="dni" name="dni" maxlength="8" required pattern="[0-9]{8}" title="Debe contener exactamente 8 dígitos numéricos"></div>
+            <div class="form-row"><label>Nombres</label><input type="text" id="nombres" name="nombres" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras"></div>
+            <div class="form-row"><label>Apellidos</label><input type="text" id="apellidos" name="apellidos" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras"></div>
             <div class="form-row">
               <label>Sexo</label>
               <select id="sexo" name="sexo">
@@ -116,7 +116,7 @@
             </div>
             <div class="form-row"><label>Fecha de nacimiento</label><input type="date" id="fecha_nac" name="fecha_nac">
             </div>
-            <div class="form-row"><label>Teléfono</label><input type="text" id="telefono" name="telefono"></div>
+            <div class="form-row"><label>Teléfono</label><input type="text" id="telefono" name="telefono" maxlength="9" pattern="[0-9]{9}" title="Debe contener exactamente 9 dígitos numéricos"></div>
             <div class="form-row full"><label>Email (usuario)</label><input type="email" id="email" name="email"
                 placeholder="email@ejemplo.com"></div>
           </div>
@@ -1830,6 +1830,41 @@ function setActiveTab(tabKey = 'datos') {
     });
   });
 
+  // Validaciones en tiempo real
+  document.addEventListener('DOMContentLoaded', function() {
+    // Validar DNI: solo números, máximo 8 dígitos
+    const dniInput = document.getElementById("dni");
+    if (dniInput) {
+      dniInput.addEventListener("input", function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+      });
+    }
+    
+    // Validar teléfono: solo números, máximo 9 dígitos
+    const telefonoInput = document.getElementById("telefono");
+    if (telefonoInput) {
+      telefonoInput.addEventListener("input", function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
+      });
+    }
+    
+    // Validar nombres: solo letras y espacios
+    const nombresInput = document.getElementById("nombres");
+    if (nombresInput) {
+      nombresInput.addEventListener("input", function(e) {
+        this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, '');
+      });
+    }
+    
+    // Validar apellidos: solo letras y espacios
+    const apellidosInput = document.getElementById("apellidos");
+    if (apellidosInput) {
+      apellidosInput.addEventListener("input", function(e) {
+        this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, '');
+      });
+    }
+  });
+
 
 
 
@@ -2036,6 +2071,108 @@ async function cargarDatosPacientePorFecha(pacienteId, fecha) {
   document.getElementById("formPacienteFull").addEventListener("submit", async ev => {
     ev.preventDefault();
     const f = ev.target;
+    
+    // Validaciones del frontend
+    const errores = [];
+    
+    // Validar DNI: solo números, exactamente 8 dígitos
+    const dni = document.getElementById("dni").value.trim();
+    if (dni) {
+      if (!/^[0-9]{8}$/.test(dni)) {
+        errores.push("El DNI debe contener exactamente 8 dígitos numéricos.");
+      }
+    }
+    
+    // Validar teléfono: solo números, exactamente 9 dígitos
+    const telefono = document.getElementById("telefono").value.trim();
+    if (telefono) {
+      if (!/^[0-9]{9}$/.test(telefono)) {
+        errores.push("El teléfono debe contener exactamente 9 dígitos numéricos.");
+      }
+    }
+    
+    // Validar nombres: solo letras
+    const nombres = document.getElementById("nombres").value.trim();
+    if (nombres) {
+      if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(nombres)) {
+        errores.push("Los nombres solo pueden contener letras.");
+      }
+    }
+    
+    // Validar apellidos: solo letras
+    const apellidos = document.getElementById("apellidos").value.trim();
+    if (apellidos) {
+      if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(apellidos)) {
+        errores.push("Los apellidos solo pueden contener letras.");
+      }
+    }
+    
+    // Validar que si es nuevo registro (no edición) y hay datos de antropometría/clínico, debe haber seleccionado un paciente existente
+    const esNuevoRegistro = f.action.includes('/guardar') || f.action === "{{ url_for('admin_paciente_guardar') }}";
+    if (esNuevoRegistro) {
+      // Verificar si hay datos de antropometría o clínico
+      const tieneDatosAntro = document.getElementById("peso").value || document.getElementById("talla").value || 
+                               document.getElementById("cc").value || document.getElementById("bf_pct").value ||
+                               document.getElementById("actividad").value;
+      const tieneDatosClinico = document.getElementById("hba1c").value || document.getElementById("glucosa_ayunas").value ||
+                                document.getElementById("ldl").value || document.getElementById("trigliceridos").value ||
+                                document.getElementById("pa_sis").value || document.getElementById("pa_dia").value;
+      
+      if (tieneDatosAntro || tieneDatosClinico) {
+        const pacienteSeleccionado = document.getElementById("selectPacienteExistente").value;
+        if (!pacienteSeleccionado) {
+          errores.push("Para guardar nuevos datos (antropometría o clínicos), primero debe seleccionar un paciente existente.");
+        }
+      }
+    }
+    
+    // Validar email: verificar que no exista (excepto si es edición del mismo paciente)
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    if (email) {
+      try {
+        // Obtener el PID actual si es edición
+        const urlParts = f.action.split('/');
+        const pidIndex = urlParts.findIndex(part => part === 'pacientes');
+        const currentPid = pidIndex !== -1 && urlParts[pidIndex + 1] && !isNaN(urlParts[pidIndex + 1]) 
+          ? parseInt(urlParts[pidIndex + 1]) : null;
+        
+        // Si es edición, necesitamos obtener el usuario_id del paciente para excluirlo
+        let excludeUid = null;
+        if (currentPid) {
+          try {
+            const pacienteRes = await fetch(`/api/pacientes/${currentPid}/detalle`);
+            const pacienteData = await pacienteRes.json();
+            if (pacienteData.ok && pacienteData.paciente && pacienteData.paciente.usuario_id) {
+              excludeUid = pacienteData.paciente.usuario_id;
+            }
+          } catch (e) {
+            console.error("Error obteniendo datos del paciente:", e);
+          }
+        }
+        
+        const emailCheckUrl = excludeUid 
+          ? `/api/usuarios/verificar-email?email=${encodeURIComponent(email)}&exclude_uid=${excludeUid}`
+          : `/api/usuarios/verificar-email?email=${encodeURIComponent(email)}`;
+        
+        const emailCheck = await fetch(emailCheckUrl, {
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        if (emailCheck.ok) {
+          const emailData = await emailCheck.json();
+          if (emailData.existe) {
+            errores.push("El correo electrónico ya está registrado por otro usuario.");
+          }
+        }
+      } catch (e) {
+        console.error("Error verificando email:", e);
+      }
+    }
+    
+    if (errores.length > 0) {
+      mostrarAviso("❌ " + errores.join(" "), "error");
+      return;
+    }
+    
     document.getElementById("meds_json").value = JSON.stringify(getMeds());
     document.getElementById("alergias_json").value = recolectarAlergias();
 

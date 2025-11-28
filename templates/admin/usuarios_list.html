@@ -41,66 +41,59 @@
     <form id="formUsuario" method="post">
       <div class="modal-body">
         <div class="form-row">
-          <label>Email
-            <input type="email" name="email" id="u_email" required>
-          </label>
+          <label for="u_email">Email <span style="color: #ef4444;">*</span></label>
+          <input type="email" name="email" id="u_email" required>
+          <div id="errorEmail" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
 
         <div class="form-row">
-          <label>Estado
-            <select name="estado" id="u_estado">
-              <option value="activo">activo</option>
-              <option value="bloqueado">bloqueado</option>
-            </select>
-          </label>
+          <label for="u_estado">Estado <span style="color: #ef4444;">*</span></label>
+          <select name="estado" id="u_estado" required>
+            <option value="activo">activo</option>
+            <option value="bloqueado">bloqueado</option>
+          </select>
+          <div id="errorEstado" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
 
         <div class="form-row">
-          <label class="checkbox-label">
-            Requiere MFA
-            <input type="checkbox" id="u_mfa" name="mfa">
-          </label>
+          <label>Rol <span style="color: #ef4444;">*</span></label>
+          <div class="roles-radio-group" id="rolesGroup">
+            {% for r in all_roles %}
+            <label class="radio-option">
+              <input type="radio" name="rol" value="{{ r[0] }}" id="rol_{{ r[0] }}" required>
+              <span>{{ r[1] }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <div id="errorRol" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
 
         <div class="form-row">
-          <label>Contraseña
-            <input type="password" name="password" id="u_password" placeholder="">
-          </label>
+          <label for="u_password">Contraseña <span id="pwdRequired" style="color: #ef4444;">*</span></label>
+          <div style="position: relative;">
+            <input type="text" name="password" id="u_password" placeholder="" required autocomplete="new-password" data-form-type="other" style="-webkit-text-security: disc; -moz-text-security: disc; text-security: disc; padding-right: 45px; width: 100%;">
+            <button type="button" class="toggle-password-btn" id="togglePassword" aria-label="Mostrar u ocultar contraseña" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6b7280; padding: 4px; font-size: 16px;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
           <small class="muted" id="u_pwd_help"></small>
+          <div id="errorPassword" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
+        </div>
+
+        <div class="form-row" id="confirmPasswordRow" style="display: none;">
+          <label for="u_password_confirm">Confirmar Contraseña <span id="pwdConfirmRequired" style="color: #ef4444;">*</span></label>
+          <div style="position: relative;">
+            <input type="text" name="password_confirm" id="u_password_confirm" placeholder="" autocomplete="new-password" data-form-type="other" style="-webkit-text-security: disc; -moz-text-security: disc; text-security: disc; padding-right: 45px; width: 100%;">
+            <button type="button" class="toggle-password-btn" id="togglePasswordConfirm" aria-label="Mostrar u ocultar contraseña" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6b7280; padding: 4px; font-size: 16px;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <div id="errorPasswordConfirm" style="color: #ef4444; font-size: 13px; margin-top: 5px; padding-left: 2px; display: none; font-weight: 500;"></div>
         </div>
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn js-close-modal" data-target="#modalUsuario">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Guardar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ============ MODAL: ROLES ============ -->
-<div class="modal" id="modalRoles" aria-hidden="true">
-  <div class="modal-backdrop js-close-modal" data-target="#modalRoles"></div>
-  <div class="modal-dialog">
-    <div class="modal-header">
-      <h3><i class="fas fa-user-shield"></i> Roles de <span id="roles_email"></span></h3>
-      <button class="modal-close js-close-modal" data-target="#modalRoles" aria-label="Cerrar">×</button>
-    </div>
-
-    <form id="formRoles" method="post">
-      <div class="modal-body">
-        <div id="roles_checks" class="roles-grid">
-          {% for r in all_roles %}
-          <label class="chk">
-            <input type="checkbox" name="roles" value="{{ r[0] }}">
-            {{ r[1] }}
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn js-close-modal" data-target="#modalRoles">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
       </div>
     </form>
@@ -326,6 +319,22 @@
     box-sizing: border-box;
   }
   
+  /* Ocultar botones nativos de revelar contraseña del navegador */
+  .form-row input[type="password"]::-webkit-credentials-auto-fill-button,
+  .form-row input[type="password"]::-webkit-strong-password-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Ocultar cualquier botón o ícono que el navegador pueda agregar */
+  .form-row input[type="password"]::after,
+  .form-row input[type="password"]::before {
+    display: none !important;
+    content: none !important;
+  }
+  
   .form-row select {
     min-height: 48px;
     appearance: none;
@@ -353,6 +362,55 @@
   .checkbox-label input[type="checkbox"] {
     width: auto;
     margin: 0;
+  }
+  
+  /* Estilos para radio buttons de roles */
+  .roles-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #ffffff;
+  }
+  
+  .radio-option:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
+  
+  .radio-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #3b82f6;
+  }
+  
+  .radio-option input[type="radio"]:checked + span {
+    font-weight: 600;
+    color: #3b82f6;
+  }
+  
+  .radio-option:has(input[type="radio"]:checked) {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+  
+  .radio-option span {
+    flex: 1;
+    font-size: 14px;
+    color: #374151;
   }
   
   .modal-footer {
@@ -472,7 +530,7 @@
       <table class="tbl">
         <thead>
           <tr>
-            <th>ID</th><th>Email</th><th>Estado</th><th>MFA</th><th>Roles</th><th style="width:220px;">Acciones</th>
+            <th>ID</th><th>Email</th><th>Estado</th><th>Rol</th><th style="width:180px;">Acciones</th>
           </tr>
         </thead>
         <tbody>`;
@@ -483,14 +541,10 @@
           <td>${u.id}</td>
           <td>${u.email}</td>
           <td><span class="badge ${u.estado==='activo' ? 'ok' : 'warn'}">${u.estado}</span></td>
-          <td>${u.mfa ? 'Sí' : 'No'}</td>
-          <td>${u.roles || ''}</td>
+          <td>${u.roles || 'Sin rol'}</td>
           <td class="actions">
-            <button class="btn btn-sm js-edit" data-id="${u.id}" data-email="${u.email}" data-estado="${u.estado}" data-mfa="${u.mfa ? 1 : 0}">
+            <button class="btn btn-sm js-edit" data-id="${u.id}" data-email="${u.email}" data-estado="${u.estado}" data-rol="${u.rol_id || ''}">
               <i class="fas fa-edit"></i> Editar
-            </button>
-            <button class="btn btn-sm js-roles" data-id="${u.id}" data-email="${u.email}">
-              <i class="fas fa-user-shield"></i> Roles
             </button>
             <button class="btn btn-sm btn-danger js-borrar" data-id="${u.id}" data-email="${u.email}">
               <i class="fas fa-trash"></i> Borrar
@@ -610,6 +664,245 @@
     }
   });
 
+  // ====== Manejar envío del formulario de usuario ======
+  (function() {
+    const formUsuario = document.getElementById('formUsuario');
+    if (!formUsuario) return;
+    
+    formUsuario.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const form = this;
+      const formData = new FormData(form);
+      
+      // Obtener divs de error para cada campo
+      const errorEmail = document.getElementById('errorEmail');
+      const errorEstado = document.getElementById('errorEstado');
+      const errorRol = document.getElementById('errorRol');
+      const errorPassword = document.getElementById('errorPassword');
+      
+      // Obtener div de error de confirmación de contraseña
+      const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+      
+      // Función para limpiar todos los errores
+      function limpiarErrores() {
+        if (errorEmail) { errorEmail.style.display = 'none'; errorEmail.textContent = ''; }
+        if (errorEstado) { errorEstado.style.display = 'none'; errorEstado.textContent = ''; }
+        if (errorRol) { errorRol.style.display = 'none'; errorRol.textContent = ''; }
+        if (errorPassword) { errorPassword.style.display = 'none'; errorPassword.textContent = ''; }
+        if (errorPasswordConfirm) { errorPasswordConfirm.style.display = 'none'; errorPasswordConfirm.textContent = ''; }
+      }
+      
+      // Limpiar errores anteriores
+      limpiarErrores();
+      
+      // Validaciones del lado del cliente
+      const email = formData.get('email')?.trim();
+      const password = formData.get('password')?.trim();
+      const passwordConfirm = formData.get('password_confirm')?.trim();
+      const rol = formData.get('rol');
+      const estado = formData.get('estado');
+      const isNuevo = form.action.includes('/nuevo');
+      
+      // Validar email
+      if (!email) {
+        if (errorEmail) {
+          errorEmail.textContent = 'El email es obligatorio';
+          errorEmail.style.display = 'block';
+        }
+        document.getElementById('u_email').focus();
+        return;
+      }
+      
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        if (errorEmail) {
+          errorEmail.textContent = 'El formato del email no es válido';
+          errorEmail.style.display = 'block';
+        }
+        document.getElementById('u_email').focus();
+        return;
+      }
+      
+      // Validar estado
+      if (!estado) {
+        if (errorEstado) {
+          errorEstado.textContent = 'Debe seleccionar un estado';
+          errorEstado.style.display = 'block';
+        }
+        document.getElementById('u_estado').focus();
+        return;
+      }
+      
+      // Validar rol
+      if (!rol) {
+        if (errorRol) {
+          errorRol.textContent = 'Debe seleccionar un rol';
+          errorRol.style.display = 'block';
+        }
+        const firstRadio = document.querySelector('input[name="rol"]');
+        if (firstRadio) firstRadio.focus();
+        return;
+      }
+      
+      // Validar contraseña (solo al crear)
+      if (isNuevo && !password) {
+        if (errorPassword) {
+          errorPassword.textContent = 'La contraseña es obligatoria para crear un nuevo usuario';
+          errorPassword.style.display = 'block';
+        }
+        document.getElementById('u_password').focus();
+        return;
+      }
+      
+      // Validar confirmación de contraseña (obligatoria al crear, o si se proporciona contraseña al editar)
+      if ((isNuevo || password) && !passwordConfirm) {
+        if (errorPasswordConfirm) {
+          errorPasswordConfirm.textContent = 'Debe confirmar la contraseña';
+          errorPasswordConfirm.style.display = 'block';
+        }
+        document.getElementById('u_password_confirm').focus();
+        return;
+      }
+      
+      // Validar longitud mínima de contraseña (si se proporciona)
+      if (password && password.length < 6) {
+        if (errorPassword) {
+          errorPassword.textContent = 'La contraseña debe tener al menos 6 caracteres';
+          errorPassword.style.display = 'block';
+        }
+        document.getElementById('u_password').focus();
+        return;
+      }
+      
+      // Validar que las contraseñas coincidan (solo al crear o si se proporciona contraseña al editar)
+      if ((isNuevo || password) && password !== passwordConfirm) {
+        if (errorPasswordConfirm) {
+          errorPasswordConfirm.textContent = 'Las contraseñas no coinciden';
+          errorPasswordConfirm.style.display = 'block';
+        }
+        document.getElementById('u_password_confirm').focus();
+        return;
+      }
+      
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          },
+          body: formData,
+          redirect: 'manual' // Evitar que el navegador siga redirects automáticamente
+        });
+        
+        // Si la respuesta es un redirect (status 301, 302, etc), el servidor no detectó AJAX
+        if (response.type === 'opaqueredirect' || response.status === 302 || response.status === 301) {
+          if (errorEmail) {
+            errorEmail.textContent = 'Error: El servidor redirigió la petición. Por favor, verifica que el correo no esté duplicado.';
+            errorEmail.style.display = 'block';
+          }
+          return;
+        }
+        
+        // Verificar el Content-Type de la respuesta
+        const contentType = response.headers.get('content-type');
+        
+        // Si la respuesta es HTML en lugar de JSON, el servidor no detectó la petición AJAX
+        if (!contentType || !contentType.includes('application/json')) {
+          // Si es un error (400, 500, etc), intentar leer el texto
+          if (!response.ok) {
+            const errorText = await response.text();
+            // Intentar extraer el mensaje de error si hay uno
+            if (errorEmail) {
+              errorEmail.textContent = 'Error al guardar el usuario. Por favor, verifica que el correo no esté duplicado.';
+              errorEmail.style.display = 'block';
+            }
+            return;
+          }
+          // Si no es JSON, mostrar error genérico
+          if (errorEmail) {
+            errorEmail.textContent = 'Error: El servidor no procesó la petición correctamente.';
+            errorEmail.style.display = 'block';
+          }
+          return;
+        }
+        
+        let data;
+        try {
+          const responseText = await response.text();
+          // Intentar parsear como JSON
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            // Si no es JSON, el servidor devolvió HTML o texto
+            console.error('El servidor no devolvió JSON:', responseText.substring(0, 200));
+            // Si el servidor devolvió un error, intentar mostrar un mensaje útil
+            if (errorEmail) {
+              if (response.status === 400 || response.status === 500) {
+                errorEmail.textContent = 'El correo electrónico ya está registrado o hay un error en el servidor.';
+              } else {
+                errorEmail.textContent = 'Error al procesar la respuesta del servidor. Por favor, intenta de nuevo.';
+              }
+              errorEmail.style.display = 'block';
+            }
+            return;
+          }
+        } catch (error) {
+          console.error('Error al leer la respuesta:', error);
+          if (errorEmail) {
+            errorEmail.textContent = 'Error de conexión con el servidor';
+            errorEmail.style.display = 'block';
+          }
+          return;
+        }
+        
+        if (data.ok) {
+          // Cerrar el modal
+          closeModal('#modalUsuario');
+          
+          // Mostrar mensaje de éxito
+          Toastify({
+            text: "✅ Usuario guardado correctamente",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#10b981",
+          }).showToast();
+          
+          // Recargar la tabla
+          cargarUsuarios(currentPageU, currentQueryU);
+        } else {
+          // Mostrar error. Si es error de email, mostrarlo en errorEmail, sino en errorEmail también
+          const errorMsg = data.error || 'Error al guardar el usuario';
+          if (errorEmail) {
+            // Detectar si es error de email o contraseña
+            if (errorMsg.toLowerCase().includes('correo') || errorMsg.toLowerCase().includes('email')) {
+              errorEmail.textContent = errorMsg;
+              errorEmail.style.display = 'block';
+            } else if (errorMsg.toLowerCase().includes('contraseña') || errorMsg.toLowerCase().includes('password')) {
+              if (errorPassword) {
+                errorPassword.textContent = errorMsg;
+                errorPassword.style.display = 'block';
+              }
+            } else {
+              errorEmail.textContent = errorMsg;
+              errorEmail.style.display = 'block';
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error en submit:', error);
+        if (errorEmail) {
+          errorEmail.textContent = 'Error de conexión';
+          errorEmail.style.display = 'block';
+        }
+      }
+    });
+  })();
+
   // ====== Nuevo usuario ======
   document.getElementById('btnNuevoUsuario')?.addEventListener('click', () => {
     const f = document.getElementById('formUsuario');
@@ -617,9 +910,35 @@
     document.getElementById('modalUsuarioTitulo').innerText = "Nuevo usuario";
     document.getElementById('u_email').value = "";
     document.getElementById('u_estado').value = "activo";
-    document.getElementById('u_mfa').checked = true;
+    // Limpiar selección de roles
+    document.querySelectorAll('input[name="rol"]').forEach(radio => {
+      radio.checked = false;
+    });
     document.getElementById('u_password').value = "";
+    document.getElementById('u_password').required = true;
+    document.getElementById('pwdRequired').style.display = 'inline';
     document.getElementById('u_pwd_help').innerText = "";
+    // Mostrar campo de confirmación de contraseña
+    const confirmPasswordRow = document.getElementById('confirmPasswordRow');
+    const passwordConfirmInput = document.getElementById('u_password_confirm');
+    const pwdConfirmRequired = document.getElementById('pwdConfirmRequired');
+    if (confirmPasswordRow) confirmPasswordRow.style.display = 'block';
+    if (passwordConfirmInput) {
+      passwordConfirmInput.value = "";
+      passwordConfirmInput.required = true;
+    }
+    if (pwdConfirmRequired) pwdConfirmRequired.style.display = 'inline';
+    // Limpiar errores
+    const errorEmail = document.getElementById('errorEmail');
+    const errorPassword = document.getElementById('errorPassword');
+    const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+    const errorEstado = document.getElementById('errorEstado');
+    const errorRol = document.getElementById('errorRol');
+    if (errorEmail) { errorEmail.style.display = 'none'; errorEmail.textContent = ''; }
+    if (errorPassword) { errorPassword.style.display = 'none'; errorPassword.textContent = ''; }
+    if (errorPasswordConfirm) { errorPasswordConfirm.style.display = 'none'; errorPasswordConfirm.textContent = ''; }
+    if (errorEstado) { errorEstado.style.display = 'none'; errorEstado.textContent = ''; }
+    if (errorRol) { errorRol.style.display = 'none'; errorRol.textContent = ''; }
     openModal('#modalUsuario');
   });
 
@@ -627,45 +946,76 @@
   function bindAccionesUsuarios() {
     // Editar
     document.querySelectorAll('.js-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const uid = btn.dataset.id;
         const email = btn.dataset.email;
         const estado = btn.dataset.estado;
-        const mfa = btn.dataset.mfa === "1";
+        const rolId = btn.dataset.rol;
 
         const f = document.getElementById('formUsuario');
         f.action = "{{ url_for('admin_usuario_editar', uid=0) }}".replace('/0/', '/' + uid + '/');
         document.getElementById('modalUsuarioTitulo').innerText = "Editar usuario";
         document.getElementById('u_email').value = email;
         document.getElementById('u_estado').value = estado;
-        document.getElementById('u_mfa').checked = mfa;
-        document.getElementById('u_password').value = "";
-        document.getElementById('u_pwd_help').innerText = "Deja vacío para no cambiar la contraseña.";
-        openModal('#modalUsuario');
-      });
-    });
-
-    // Roles
-    document.querySelectorAll('.js-roles').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const uid = btn.dataset.id;
-        const email = btn.dataset.email;
-
-        const f = document.getElementById('formRoles');
-        f.action = "{{ url_for('admin_usuario_roles', uid=0) }}".replace('/0/', '/' + uid + '/');
-
-        // Lee roles de la fila
-        const row = btn.closest('tr');
-        const rolesTexto = row ? (row.children[4].innerText || "") : "";
-        const actuales = rolesTexto.split(',').map(s => s.trim()).filter(Boolean);
-
-        // Desmarcar / marcar
-        document.querySelectorAll('#roles_checks input[type=checkbox]').forEach(chk => {
-          chk.checked = actuales.includes(chk.parentElement.textContent.trim());
+        
+        // Marcar el rol actual
+        document.querySelectorAll('input[name="rol"]').forEach(radio => {
+          radio.checked = radio.value === rolId;
         });
-
-        document.getElementById('roles_email').innerText = email;
-        openModal('#modalRoles');
+        
+        document.getElementById('u_password').value = "";
+        document.getElementById('u_password').required = false;
+        document.getElementById('pwdRequired').style.display = 'none';
+        document.getElementById('u_pwd_help').innerText = "Deja vacío para no cambiar la contraseña.";
+        // Mostrar campo de confirmación solo si se va a cambiar la contraseña
+        const confirmPasswordRow = document.getElementById('confirmPasswordRow');
+        const passwordConfirmInput = document.getElementById('u_password_confirm');
+        const pwdConfirmRequired = document.getElementById('pwdConfirmRequired');
+        if (confirmPasswordRow) confirmPasswordRow.style.display = 'block';
+        if (passwordConfirmInput) {
+          passwordConfirmInput.value = "";
+          passwordConfirmInput.required = false;
+        }
+        if (pwdConfirmRequired) pwdConfirmRequired.style.display = 'none';
+        
+        // Agregar listener para hacer obligatorio el campo de confirmación si se escribe contraseña
+        const passwordInput = document.getElementById('u_password');
+        if (passwordInput && passwordConfirmInput) {
+          // Remover listener anterior si existe usando una función nombrada
+          const handler = function() {
+            if (passwordInput.value && passwordConfirmInput) {
+              passwordConfirmInput.required = true;
+              if (pwdConfirmRequired) pwdConfirmRequired.style.display = 'inline';
+            } else if (!passwordInput.value && passwordConfirmInput) {
+              passwordConfirmInput.required = false;
+              if (pwdConfirmRequired) pwdConfirmRequired.style.display = 'none';
+              passwordConfirmInput.value = '';
+              const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+              if (errorPasswordConfirm) {
+                errorPasswordConfirm.style.display = 'none';
+                errorPasswordConfirm.textContent = '';
+              }
+            }
+          };
+          
+          // Remover listener anterior si existe
+          passwordInput.removeEventListener('input', passwordInput._passwordHandler);
+          passwordInput._passwordHandler = handler;
+          passwordInput.addEventListener('input', handler);
+        }
+        
+        // Limpiar errores
+        const errorEmail = document.getElementById('errorEmail');
+        const errorPassword = document.getElementById('errorPassword');
+        const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+        const errorEstado = document.getElementById('errorEstado');
+        const errorRol = document.getElementById('errorRol');
+        if (errorEmail) { errorEmail.style.display = 'none'; errorEmail.textContent = ''; }
+        if (errorPassword) { errorPassword.style.display = 'none'; errorPassword.textContent = ''; }
+        if (errorPasswordConfirm) { errorPasswordConfirm.style.display = 'none'; errorPasswordConfirm.textContent = ''; }
+        if (errorEstado) { errorEstado.style.display = 'none'; errorEstado.textContent = ''; }
+        if (errorRol) { errorRol.style.display = 'none'; errorRol.textContent = ''; }
+        openModal('#modalUsuario');
       });
     });
 
@@ -685,6 +1035,203 @@
       });
     });
   }
+
+
+  // ====== Asegurar que los campos de contraseña usen text-security ======
+  function ensurePasswordSecurity() {
+    const passwordInput = document.getElementById('u_password');
+    const passwordConfirmInput = document.getElementById('u_password_confirm');
+    
+    [passwordInput, passwordConfirmInput].forEach(input => {
+      if (input && input.type === 'text') {
+        // Asegurar que tenga el estilo de text-security
+        if (!input.style.webkitTextSecurity && !input.style.textSecurity) {
+          input.style.webkitTextSecurity = 'disc';
+          input.style.mozTextSecurity = 'disc';
+          input.style.textSecurity = 'disc';
+        }
+      }
+    });
+  }
+  
+  // ====== Funciones para mostrar/ocultar contraseña ======
+  function initTogglePassword() {
+    // Botón para contraseña principal
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('u_password');
+    
+    if (togglePassword && passwordInput) {
+      // Remover listener anterior si existe
+      if (togglePassword._clickHandler) {
+        togglePassword.removeEventListener('click', togglePassword._clickHandler);
+      }
+      
+      togglePassword._clickHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const isHidden = passwordInput.style.webkitTextSecurity === 'disc' || 
+                        passwordInput.style.textSecurity === 'disc' ||
+                        (!passwordInput.style.webkitTextSecurity && !passwordInput.style.textSecurity);
+        
+        if (isHidden) {
+          // Mostrar contraseña
+          passwordInput.style.webkitTextSecurity = 'none';
+          passwordInput.style.mozTextSecurity = 'none';
+          passwordInput.style.textSecurity = 'none';
+          const icon = togglePassword.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-eye-slash';
+          }
+        } else {
+          // Ocultar contraseña
+          passwordInput.style.webkitTextSecurity = 'disc';
+          passwordInput.style.mozTextSecurity = 'disc';
+          passwordInput.style.textSecurity = 'disc';
+          const icon = togglePassword.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-eye';
+          }
+        }
+      };
+      
+      togglePassword.addEventListener('click', togglePassword._clickHandler);
+    }
+    
+    // Botón para confirmar contraseña
+    const togglePasswordConfirm = document.getElementById('togglePasswordConfirm');
+    const passwordConfirmInput = document.getElementById('u_password_confirm');
+    
+    if (togglePasswordConfirm && passwordConfirmInput) {
+      // Remover listener anterior si existe
+      if (togglePasswordConfirm._clickHandler) {
+        togglePasswordConfirm.removeEventListener('click', togglePasswordConfirm._clickHandler);
+      }
+      
+      togglePasswordConfirm._clickHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const isHidden = passwordConfirmInput.style.webkitTextSecurity === 'disc' || 
+                        passwordConfirmInput.style.textSecurity === 'disc' ||
+                        (!passwordConfirmInput.style.webkitTextSecurity && !passwordConfirmInput.style.textSecurity);
+        
+        if (isHidden) {
+          // Mostrar contraseña
+          passwordConfirmInput.style.webkitTextSecurity = 'none';
+          passwordConfirmInput.style.mozTextSecurity = 'none';
+          passwordConfirmInput.style.textSecurity = 'none';
+          const icon = togglePasswordConfirm.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-eye-slash';
+          }
+        } else {
+          // Ocultar contraseña
+          passwordConfirmInput.style.webkitTextSecurity = 'disc';
+          passwordConfirmInput.style.mozTextSecurity = 'disc';
+          passwordConfirmInput.style.textSecurity = 'disc';
+          const icon = togglePasswordConfirm.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-eye';
+          }
+        }
+      };
+      
+      togglePasswordConfirm.addEventListener('click', togglePasswordConfirm._clickHandler);
+    }
+  }
+  
+  // Ejecutar cuando se abre el modal
+  document.getElementById('btnNuevoUsuario')?.addEventListener('click', function() {
+    setTimeout(ensurePasswordSecurity, 100);
+    setTimeout(initTogglePassword, 100);
+  });
+  
+  // Ejecutar cuando se edita un usuario
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.js-edit')) {
+      setTimeout(ensurePasswordSecurity, 100);
+      setTimeout(initTogglePassword, 100);
+    }
+  });
+  
+  // Ejecutar cuando se hace focus en los campos
+  document.getElementById('u_password')?.addEventListener('focus', ensurePasswordSecurity);
+  document.getElementById('u_password_confirm')?.addEventListener('focus', ensurePasswordSecurity);
+  
+  // Inicializar cuando el DOM esté listo
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      ensurePasswordSecurity();
+      initTogglePassword();
+    });
+  } else {
+    ensurePasswordSecurity();
+    initTogglePassword();
+  }
+
+  // ====== Limpiar errores cuando el usuario escribe ======
+  document.getElementById('u_email')?.addEventListener('input', function() {
+    const errorEmail = document.getElementById('errorEmail');
+    if (errorEmail && errorEmail.style.display !== 'none') {
+      errorEmail.style.display = 'none';
+      errorEmail.textContent = '';
+    }
+  });
+  
+  document.getElementById('u_password')?.addEventListener('input', function() {
+    const errorPassword = document.getElementById('errorPassword');
+    if (errorPassword && errorPassword.style.display !== 'none') {
+      errorPassword.style.display = 'none';
+      errorPassword.textContent = '';
+    }
+    // Si hay error de confirmación y las contraseñas coinciden, limpiarlo
+    const passwordConfirm = document.getElementById('u_password_confirm');
+    const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+    if (passwordConfirm && errorPasswordConfirm && this.value === passwordConfirm.value) {
+      if (errorPasswordConfirm.style.display !== 'none') {
+        errorPasswordConfirm.style.display = 'none';
+        errorPasswordConfirm.textContent = '';
+      }
+    }
+  });
+  
+  document.getElementById('u_password_confirm')?.addEventListener('input', function() {
+    const errorPasswordConfirm = document.getElementById('errorPasswordConfirm');
+    if (errorPasswordConfirm && errorPasswordConfirm.style.display !== 'none') {
+      errorPasswordConfirm.style.display = 'none';
+      errorPasswordConfirm.textContent = '';
+    }
+    // Validar en tiempo real si coinciden
+    const password = document.getElementById('u_password');
+    if (password && this.value && password.value !== this.value) {
+      if (errorPasswordConfirm) {
+        errorPasswordConfirm.textContent = 'Las contraseñas no coinciden';
+        errorPasswordConfirm.style.display = 'block';
+      }
+    } else if (password && this.value && password.value === this.value) {
+      if (errorPasswordConfirm) {
+        errorPasswordConfirm.style.display = 'none';
+        errorPasswordConfirm.textContent = '';
+      }
+    }
+  });
+  
+  document.getElementById('u_estado')?.addEventListener('change', function() {
+    const errorEstado = document.getElementById('errorEstado');
+    if (errorEstado && errorEstado.style.display !== 'none') {
+      errorEstado.style.display = 'none';
+      errorEstado.textContent = '';
+    }
+  });
+  
+  document.querySelectorAll('input[name="rol"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const errorRol = document.getElementById('errorRol');
+      if (errorRol && errorRol.style.display !== 'none') {
+        errorRol.style.display = 'none';
+        errorRol.textContent = '';
+      }
+    });
+  });
 
   // ====== Carga inicial ======
   cargarUsuarios();

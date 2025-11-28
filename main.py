@@ -1638,8 +1638,9 @@ def _placeholder(nombre):
 @admin_only_required
 def admin_usuarios():
     rows = fetch_all("""
-        SELECT u.id, u.email, u.estado, u.mfa,
-               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles
+        SELECT u.id, u.email, u.estado,
+               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles,
+               COALESCE(MAX(ur.rol_id), NULL) AS rol_id
         FROM usuario u
         LEFT JOIN usuario_rol ur ON ur.usuario_id = u.id
         LEFT JOIN rol r ON r.id = ur.rol_id
@@ -1681,8 +1682,9 @@ def api_usuarios_page():
 
     # Datos + roles agregados
     rows = fetch_all(f"""
-        SELECT u.id, u.email, u.estado, u.mfa,
-               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles
+        SELECT u.id, u.email, u.estado,
+               COALESCE(string_agg(r.nombre, ', ' ORDER BY r.nombre), '') AS roles,
+               COALESCE(MAX(ur.rol_id), NULL) AS rol_id
         FROM usuario u
         LEFT JOIN usuario_rol ur ON ur.usuario_id = u.id
         LEFT JOIN rol r ON r.id = ur.rol_id
@@ -1696,8 +1698,8 @@ def api_usuarios_page():
         "id": r[0],
         "email": r[1],
         "estado": r[2],
-        "mfa": bool(r[3]),
-        "roles": r[4] or ""
+        "roles": r[3] or "",
+        "rol_id": str(r[4]) if r[4] else ""
     } for r in rows]
 
     total_pages = (total + per_page - 1) // per_page
@@ -3268,69 +3270,166 @@ def admin_usuario_json(uid):
 @app.route("/admin/usuarios/nuevo", methods=["POST"])
 @admin_only_required
 def admin_usuario_nuevo():
-    if request.is_json:
-        data = request.get_json(force=True)
-        email  = (data.get("email") or "").strip().lower()
-        estado = (data.get("estado") or "activo").strip()
-        mfa    = bool(data.get("mfa", True))
-        pwd    = data.get("password") or ""
-    else:
-        email  = (request.form.get("email") or "").strip().lower()
-        estado = request.form.get("estado") or "activo"
-        mfa    = request.form.get("mfa") == "on"
-        pwd    = request.form.get("password") or ""
-
-    if not email:
+    # Detectar si es petición AJAX
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+    
+    try:
         if request.is_json:
-            return {"ok": False, "error": "El email es obligatorio"}, 400
-        flash("El email es obligatorio", "error")
+            data = request.get_json(force=True)
+            email  = (data.get("email") or "").strip().lower()
+            estado = (data.get("estado") or "activo").strip()
+            pwd    = data.get("password") or ""
+            rol_id = data.get("rol") or ""
+        else:
+            email  = (request.form.get("email") or "").strip().lower()
+            estado = request.form.get("estado") or "activo"
+            pwd    = request.form.get("password") or ""
+            rol_id = request.form.get("rol") or ""
+
+        if not email:
+            error_msg = "El email es obligatorio"
+            # Si es petición AJAX (fetch), devolver JSON
+            if is_ajax:
+                return jsonify({"ok": False, "error": error_msg}), 400
+            flash(error_msg, "error")
+            return redirect(url_for("admin_usuarios"))
+
+        # Validar que el password sea obligatorio
+        if not pwd:
+            error_msg = "La contraseña es obligatoria"
+            # Si es petición AJAX (fetch), devolver JSON
+            if is_ajax:
+                return jsonify({"ok": False, "error": error_msg}), 400
+            flash(error_msg, "error")
+            return redirect(url_for("admin_usuarios"))
+
+        # Validar que se haya seleccionado un rol
+        if not rol_id:
+            error_msg = "Debe seleccionar un rol"
+            # Si es petición AJAX (fetch), devolver JSON
+            if is_ajax:
+                return jsonify({"ok": False, "error": error_msg}), 400
+            flash(error_msg, "error")
+            return redirect(url_for("admin_usuarios"))
+
+        # Validar que el correo no esté registrado
+        usuario_existente = fetch_one("SELECT id FROM usuario WHERE email=%s", (email,))
+        if usuario_existente:
+            error_msg = "El correo electrónico ya está registrado"
+            # Si es petición AJAX (fetch), devolver JSON
+            if is_ajax:
+                return jsonify({"ok": False, "error": error_msg}), 400
+            flash(error_msg, "error")
+            return redirect(url_for("admin_usuarios"))
+
+        try:
+            hash_pwd = generate_password_hash(pwd) if pwd else None
+            # Insertar usuario sin MFA (siempre False)
+            execute(
+                "INSERT INTO usuario (email, hash_pwd, estado, mfa) VALUES (%s,%s,%s,%s)",
+                (email, hash_pwd, estado, False)
+            )
+            # Obtener el ID del usuario recién creado
+            nuevo_usuario = fetch_one("SELECT id FROM usuario WHERE email=%s", (email,))
+            usuario_id = nuevo_usuario[0]
+            
+            # Asignar el rol seleccionado (eliminar roles anteriores y asignar el nuevo)
+            execute("DELETE FROM usuario_rol WHERE usuario_id=%s", (usuario_id,))
+            execute("INSERT INTO usuario_rol (usuario_id, rol_id) VALUES (%s,%s)", (usuario_id, rol_id))
+        except Exception as e:
+            # Manejar error de violación de unicidad como respaldo
+            error_str = str(e)
+            if "uk_usuario_email" in error_str or "llave duplicada" in error_str.lower() or "unique" in error_str.lower():
+                error_msg = "El correo electrónico ya está registrado"
+                # Si es petición AJAX (fetch), devolver JSON
+                if is_ajax:
+                    return jsonify({"ok": False, "error": error_msg}), 400
+                flash(error_msg, "error")
+                return redirect(url_for("admin_usuarios"))
+            # Si es otro error y es AJAX, devolver JSON con el error
+            if is_ajax:
+                return jsonify({"ok": False, "error": f"Error al crear usuario: {error_str}"}), 500
+            # Si no es AJAX, relanzar el error para que Flask lo maneje
+            raise
+
+        # Si es petición AJAX (fetch), devolver JSON
+        if is_ajax:
+            return jsonify({"ok": True})
+
+        flash("Usuario creado", "success")
         return redirect(url_for("admin_usuarios"))
-
-    hash_pwd = generate_password_hash(pwd) if pwd else None
-    execute(
-        "INSERT INTO usuario (email, hash_pwd, estado, mfa) VALUES (%s,%s,%s,%s)",
-        (email, hash_pwd, estado, mfa)
-    )
-
-    if request.is_json:
-        return {"ok": True}
-
-    flash("Usuario creado", "success")
-    return redirect(url_for("admin_usuarios"))
+    
+    except Exception as e:
+        # Capturar cualquier error no manejado
+        if is_ajax:
+            # Si es AJAX, siempre devolver JSON
+            error_str = str(e)
+            return jsonify({"ok": False, "error": f"Error inesperado: {error_str}"}), 500
+        # Si no es AJAX, relanzar para que Flask muestre la página de error
+        raise
 
 
 @app.route("/admin/usuarios/<int:uid>/editar", methods=["POST"])
 @admin_only_required
 def admin_usuario_editar(uid):
+    # Detectar si es petición AJAX
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+    
     if request.is_json:
         data = request.get_json(force=True)
         email  = (data.get("email") or "").strip().lower()
         estado = (data.get("estado") or "activo").strip()
-        mfa    = bool(data.get("mfa", True))
         pwd    = data.get("password") or ""
+        rol_id = data.get("rol") or ""
     else:
         email  = (request.form.get("email") or "").strip().lower()
         estado = request.form.get("estado") or "activo"
-        mfa    = request.form.get("mfa") == "on"
         pwd    = request.form.get("password") or ""
+        rol_id = request.form.get("rol") or ""
 
     if not email:
-        if request.is_json:
-            return {"ok": False, "error": "El email es obligatorio"}, 400
-        flash("El email es obligatorio", "error")
+        error_msg = "El email es obligatorio"
+        if is_ajax:
+            return jsonify({"ok": False, "error": error_msg}), 400
+        flash(error_msg, "error")
         return redirect(url_for("admin_usuarios"))
 
-    if pwd:
-        hash_pwd = generate_password_hash(pwd)
-        execute(
-            "UPDATE usuario SET email=%s, estado=%s, mfa=%s, hash_pwd=%s WHERE id=%s",
-            (email, estado, mfa, hash_pwd, uid)
-        )
-    else:
-        execute(
-            "UPDATE usuario SET email=%s, estado=%s, mfa=%s WHERE id=%s",
-            (email, estado, mfa, uid)
-        )
+    # Validar que se haya seleccionado un rol
+    if not rol_id:
+        error_msg = "Debe seleccionar un rol"
+        if is_ajax:
+            return jsonify({"ok": False, "error": error_msg}), 400
+        flash(error_msg, "error")
+        return redirect(url_for("admin_usuarios"))
+
+    try:
+        if pwd:
+            hash_pwd = generate_password_hash(pwd)
+            execute(
+                "UPDATE usuario SET email=%s, estado=%s, mfa=%s, hash_pwd=%s WHERE id=%s",
+                (email, estado, False, hash_pwd, uid)  # mfa siempre False
+            )
+        else:
+            execute(
+                "UPDATE usuario SET email=%s, estado=%s, mfa=%s WHERE id=%s",
+                (email, estado, False, uid)  # mfa siempre False
+            )
+        
+        # Actualizar el rol (eliminar roles anteriores y asignar el nuevo)
+        execute("DELETE FROM usuario_rol WHERE usuario_id=%s", (uid,))
+        if rol_id:
+            execute("INSERT INTO usuario_rol (usuario_id, rol_id) VALUES (%s,%s)", (uid, rol_id))
+        
+        if is_ajax:
+            return jsonify({"ok": True})
+        flash("Usuario actualizado", "success")
+        return redirect(url_for("admin_usuarios"))
+    except Exception as e:
+        error_str = str(e)
+        if is_ajax:
+            return jsonify({"ok": False, "error": f"Error al actualizar usuario: {error_str}"}), 500
+        flash(f"Error al actualizar usuario: {error_str}", "error")
+        return redirect(url_for("admin_usuarios"))
 
     if request.is_json:
         return {"ok": True}

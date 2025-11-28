@@ -3583,6 +3583,9 @@ def admin_usuario_nuevo():
 @app.route("/admin/usuarios/<int:uid>/editar", methods=["POST"])
 @admin_only_required
 def admin_usuario_editar(uid):
+    # Verificar si es una petición AJAX
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    
     if request.is_json:
         data = request.get_json(force=True)
         email  = (data.get("email") or "").strip().lower()
@@ -3596,10 +3599,30 @@ def admin_usuario_editar(uid):
         pwd    = request.form.get("password") or ""
 
     if not email:
-        if request.is_json:
+        if is_ajax or request.is_json:
             return {"ok": False, "error": "El email es obligatorio"}, 400
         flash("El email es obligatorio", "error")
         return redirect(url_for("admin_usuarios"))
+    
+    # Obtener el email actual del usuario
+    usuario_actual = fetch_one("SELECT email FROM usuario WHERE id=%s", (uid,))
+    if not usuario_actual:
+        if is_ajax or request.is_json:
+            return {"ok": False, "error": "Usuario no encontrado"}, 404
+        flash("Usuario no encontrado", "error")
+        return redirect(url_for("admin_usuarios"))
+    
+    email_actual = usuario_actual[0]
+    
+    # Solo validar duplicados si el email cambió
+    if email != email_actual:
+        # Verificar si el nuevo email ya está en uso por otro usuario
+        existe_email_otro = fetch_one("SELECT id FROM usuario WHERE email=%s AND id != %s", (email, uid))
+        if existe_email_otro:
+            if is_ajax or request.is_json:
+                return {"ok": False, "error": f"Ya existe otro usuario registrado con el email {email} (puede ser admin, paciente u otro nutricionista)."}, 400
+            flash(f"Ya existe otro usuario registrado con el email {email} (puede ser admin, paciente u otro nutricionista).", "error")
+            return redirect(url_for("admin_usuarios"))
 
     if pwd:
         hash_pwd = generate_password_hash(pwd)
@@ -3613,7 +3636,7 @@ def admin_usuario_editar(uid):
             (email, estado, mfa, uid)
         )
 
-    if request.is_json:
+    if is_ajax or request.is_json:
         return {"ok": True}
 
     flash("Usuario actualizado", "success")

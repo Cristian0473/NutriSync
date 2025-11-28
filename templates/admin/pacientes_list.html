@@ -102,23 +102,21 @@
         <!-- TAB: Datos personales -->
         <div class="tab-content active" id="tab-datos">
           <div class="form-grid two-cols">
-            <div class="form-row"><label>DNI</label><input type="text" id="dni" name="dni" maxlength="8" required pattern="[0-9]{8}" title="Debe contener exactamente 8 dígitos numéricos"></div>
-            <div class="form-row"><label>Nombres</label><input type="text" id="nombres" name="nombres" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras"></div>
-            <div class="form-row"><label>Apellidos</label><input type="text" id="apellidos" name="apellidos" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras"></div>
+            <div class="form-row"><label>DNI</label><input type="text" id="dni" name="dni" maxlength="8" required pattern="[0-9]{8}" title="Debe contener exactamente 8 dígitos numéricos" readonly></div>
+            <div class="form-row"><label>Nombres</label><input type="text" id="nombres" name="nombres" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras"></div>
+            <div class="form-row"><label>Apellidos</label><input type="text" id="apellidos" name="apellidos" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras"></div>
             <div class="form-row">
               <label>Sexo</label>
-              <select id="sexo" name="sexo">
+              <select id="sexo" name="sexo" required>
                 <option value="">(sin especificar)</option>
                 <option value="M">Masculino</option>
                 <option value="F">Femenino</option>
                 <option value="O">Otro</option>
               </select>
             </div>
-            <div class="form-row"><label>Fecha de nacimiento</label><input type="date" id="fecha_nac" name="fecha_nac">
-            </div>
-            <div class="form-row"><label>Teléfono</label><input type="text" id="telefono" name="telefono" maxlength="9" pattern="[0-9]{9}" title="Debe contener exactamente 9 dígitos numéricos"></div>
-            <div class="form-row full"><label>Email (usuario)</label><input type="email" id="email" name="email"
-                placeholder="email@ejemplo.com"></div>
+            <div class="form-row"><label>Fecha de nacimiento</label><input type="date" id="fecha_nac" name="fecha_nac" required></div>
+            <div class="form-row"><label>Teléfono</label><input type="text" id="telefono" name="telefono" maxlength="9" required pattern="[0-9]{9}" title="Debe contener exactamente 9 dígitos numéricos" readonly></div>
+            <div class="form-row full"><label>Email (usuario)</label><input type="email" id="email" name="email" required placeholder="email@ejemplo.com" readonly></div>
           </div>
         </div>
 
@@ -128,22 +126,21 @@
             <label style="font-weight: 600; color: #0369a1;">
               <i class="fas fa-calendar"></i> Fecha de medición
             </label>
-            <input type="date" id="fecha_medicion" name="fecha_medicion" style="margin-top: 8px; padding: 10px; border: 2px solid #bfdbfe; border-radius: 6px; font-size: 14px; width: 100%; max-width: 300px;" max="">
+            <input type="date" id="fecha_medicion" name="fecha_medicion" required style="margin-top: 8px; padding: 10px; border: 2px solid #bfdbfe; border-radius: 6px; font-size: 14px; width: 100%; max-width: 300px;" max="">
             <small style="display: block; margin-top: 6px; color: #0284c7;">
-              <i class="fas fa-info-circle" style="margin-right: 4px;"></i> Fecha en que se tomaron estas mediciones. No puede ser posterior a la fecha actual. Si no se especifica, se usará la fecha actual.
+              <i class="fas fa-info-circle" style="margin-right: 4px;"></i> Fecha en que se tomaron estas mediciones. No puede ser posterior a la fecha actual.
             </small>
           </div>
           <div class="form-grid two-cols">
-            <div class="form-row"><label>Peso (kg)</label><input type="number" step="0.01" id="peso" name="peso"></div>
-            <div class="form-row"><label>Talla (m)</label><input type="number" step="0.01" id="talla" name="talla">
-            </div>
-            <div class="form-row"><label>Cintura (cm)</label><input type="number" step="0.01" id="cc" name="cc"></div>
+            <div class="form-row"><label>Peso (kg)</label><input type="number" step="0.01" id="peso" name="peso" required></div>
+            <div class="form-row"><label>Talla (m)</label><input type="number" step="0.01" id="talla" name="talla" required></div>
+            <div class="form-row"><label>Cintura (cm)</label><input type="number" step="0.01" id="cc" name="cc" required></div>
             <div class="form-row"><label>Grasa corporal (%)</label><input type="number" step="0.01" id="bf_pct"
-                name="bf_pct"></div>
+                name="bf_pct" required></div>
             <div class="form-row">
               <label>Actividad</label>
-              <select id="actividad" name="actividad">
-                <option value="">(opcional)</option>
+              <select id="actividad" name="actividad" required>
+                <option value="">Seleccione...</option>
                 <option value="baja">Baja</option>
                 <option value="moderada">Moderada</option>
                 <option value="alta">Alta</option>
@@ -155,14 +152,13 @@
         <!-- TAB: Datos clínicos -->
         <div class="tab-content" id="tab-clinico">
           <div class="form-grid two-cols">
-            <div class="form-row"><label>HbA1c (%)</label><input type="number" step="0.01" id="hba1c" name="hba1c">
-            </div>
+            <div class="form-row"><label>HbA1c (%)</label><input type="number" step="0.01" id="hba1c" name="hba1c" required></div>
             <div class="form-row"><label>Glucosa ayunas (mg/dL)</label><input type="number" step="0.01"
-                id="glucosa_ayunas" name="glucosa_ayunas"></div>
-            <div class="form-row"><label>LDL (mg/dL)</label><input type="number" step="0.01" id="ldl" name="ldl"></div>
-            <div class="form-row"><label>Triglicéridos (mg/dL)</label><input type="number" step="0.01" id="trigliceridos" name="trigliceridos"></div>
-            <div class="form-row"><label>PA Sistólica</label><input type="number" id="pa_sis" name="pa_sis"></div>
-            <div class="form-row"><label>PA Diastólica</label><input type="number" id="pa_dia" name="pa_dia"></div>
+                id="glucosa_ayunas" name="glucosa_ayunas" required></div>
+            <div class="form-row"><label>LDL (mg/dL)</label><input type="number" step="0.01" id="ldl" name="ldl" required></div>
+            <div class="form-row"><label>Triglicéridos (mg/dL)</label><input type="number" step="0.01" id="trigliceridos" name="trigliceridos" required></div>
+            <div class="form-row"><label>PA Sistólica</label><input type="number" id="pa_sis" name="pa_sis" required></div>
+            <div class="form-row"><label>PA Diastólica</label><input type="number" id="pa_dia" name="pa_dia" required></div>
           </div>
 
           <!-- Tabla medicamentos -->
@@ -1739,6 +1735,18 @@ function setActiveTab(tabKey = 'datos') {
     // Limpiar campo de fecha de medición
     document.getElementById("fecha_medicion").value = "";
     
+    // Deshabilitar todos los campos hasta que se seleccione un paciente
+    const campos = ['dni', 'nombres', 'apellidos', 'sexo', 'fecha_nac', 'telefono', 'email', 
+                   'peso', 'talla', 'cc', 'bf_pct', 'actividad', 'fecha_medicion',
+                   'hba1c', 'glucosa_ayunas', 'ldl', 'trigliceridos', 'pa_sis', 'pa_dia'];
+    campos.forEach(id => {
+      const campo = document.getElementById(id);
+      if (campo) {
+        campo.disabled = true;
+        campo.required = false; // Temporalmente no requerido hasta seleccionar paciente
+      }
+    });
+    
     setActiveTab('datos');
     openModal("#modalPaciente");
   });
@@ -1785,6 +1793,27 @@ function setActiveTab(tabKey = 'datos') {
       const pacienteId = e.params.data.id;
       const pacienteData = e.params.data;
       
+      // Habilitar todos los campos cuando se selecciona un paciente
+      const campos = ['dni', 'nombres', 'apellidos', 'sexo', 'fecha_nac', 'telefono', 'email', 
+                     'peso', 'talla', 'cc', 'bf_pct', 'actividad', 'fecha_medicion',
+                     'hba1c', 'glucosa_ayunas', 'ldl', 'trigliceridos', 'pa_sis', 'pa_dia'];
+      campos.forEach(id => {
+        const campo = document.getElementById(id);
+        if (campo) {
+          // DNI, email y teléfono siempre readonly
+          if (id === 'dni' || id === 'email' || id === 'telefono') {
+            campo.readOnly = true;
+            campo.disabled = false; // Habilitar pero readonly
+          } else {
+            campo.disabled = false;
+          }
+          // Restaurar required para todos los campos excepto los readonly
+          if (id !== 'dni' && id !== 'email' && id !== 'telefono') {
+            campo.required = true;
+          }
+        }
+      });
+      
       // Cargar datos del paciente
       try {
         const res = await fetch(`/api/pacientes/${pacienteId}/detalle`);
@@ -1824,9 +1853,22 @@ function setActiveTab(tabKey = 'datos') {
       }
     });
     
-    // Cuando se deselecciona, limpiar formulario
+    // Cuando se deselecciona, limpiar formulario y deshabilitar campos
     $("#selectPacienteExistente").on('select2:clear', function() {
       document.getElementById("formPacienteFull").reset();
+      
+      // Deshabilitar todos los campos nuevamente
+      const campos = ['dni', 'nombres', 'apellidos', 'sexo', 'fecha_nac', 'telefono', 'email', 
+                     'peso', 'talla', 'cc', 'bf_pct', 'actividad', 'fecha_medicion',
+                     'hba1c', 'glucosa_ayunas', 'ldl', 'trigliceridos', 'pa_sis', 'pa_dia'];
+      campos.forEach(id => {
+        const campo = document.getElementById(id);
+        if (campo) {
+          campo.disabled = true;
+          campo.required = false;
+          campo.readOnly = false; // Quitar readonly también
+        }
+      });
     });
   });
 
@@ -1975,6 +2017,26 @@ async function cargarDatosPacientePorFecha(pacienteId, fecha) {
     document.getElementById("fecha_nac").value = p.fecha_nac || "";
     document.getElementById("telefono").value = p.telefono || "";
     document.getElementById("email").value = p.usuario_email || "";
+    
+    // Hacer DNI, email y teléfono readonly en edición
+    document.getElementById("dni").readOnly = true;
+    document.getElementById("email").readOnly = true;
+    document.getElementById("telefono").readOnly = true;
+    
+    // Habilitar todos los campos (ya están habilitados en edición)
+    const campos = ['dni', 'nombres', 'apellidos', 'sexo', 'fecha_nac', 'telefono', 'email', 
+                   'peso', 'talla', 'cc', 'bf_pct', 'actividad', 'fecha_medicion',
+                   'hba1c', 'glucosa_ayunas', 'ldl', 'trigliceridos', 'pa_sis', 'pa_dia'];
+    campos.forEach(id => {
+      const campo = document.getElementById(id);
+      if (campo) {
+        campo.disabled = false;
+        // DNI, email y teléfono siempre readonly
+        if (id === 'dni' || id === 'email' || id === 'telefono') {
+          campo.readOnly = true;
+        }
+      }
+    });
     
     // Rellena antropometría - limpiar primero para asegurar que se actualice
     const camposAntropo = ["peso", "talla", "cc", "bf_pct", "actividad", "fecha_medicion"];
